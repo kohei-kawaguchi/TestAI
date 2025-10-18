@@ -15,6 +15,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(tidyverse)
 library(knitr)
 library(kableExtra)
+library(here)
 ```
 
 # Overview
@@ -70,9 +71,9 @@ We will use the **`did`** R package, which implements the Callaway and Sant'Anna
 
 ```{r load-data}
 # Load the three datasets
-df_cov <- readRDS("../../output/difference_in_differences_multiperiods/df_design_cov.rds")
-df_nocov <- readRDS("../../output/difference_in_differences_multiperiods/df_design_nocov.rds")
-df_nyt <- readRDS("../../output/difference_in_differences_multiperiods/df_design_nyt.rds")
+df_cov <- readRDS(here("output/difference_in_differences_multiperiods/df_design_cov.rds"))
+df_nocov <- readRDS(here("output/difference_in_differences_multiperiods/df_design_nocov.rds"))
+df_nyt <- readRDS(here("output/difference_in_differences_multiperiods/df_design_nyt.rds"))
 ```
 
 # Dataset 1: With Covariates (df_design_cov)
