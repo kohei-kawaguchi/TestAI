@@ -1,0 +1,78 @@
+---
+title: "Randomization Inference and Fisher's Exact P-value"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+```
+
+## Load Data
+
+```{r load-data}
+data <- readRDS(here("output/randomization_fisher_pvalue/data_realized.rds"))
+```
+
+## Data Description
+
+```{r data-description}
+# Display data structure
+str(data)
+
+# Display first few rows
+head(data)
+```
+
+The dataset contains `r nrow(data)` observations and `r ncol(data)` variables.
+
+### Variable Summary
+
+```{r variable-summary}
+# Create summary statistics table
+library(knitr)
+
+# Function to get variable type
+get_var_type <- function(x) {
+  class(x)[1]
+}
+
+# Function to create summary for a variable
+create_var_summary <- function(var_name, var_data) {
+  data.frame(
+    Variable = var_name,
+    Type = get_var_type(var_data),
+    Min = min(var_data),
+    Q1 = quantile(var_data, 0.25),
+    Median = median(var_data),
+    Mean = mean(var_data),
+    Q3 = quantile(var_data, 0.75),
+    Max = max(var_data),
+    SD = sd(var_data)
+  )
+}
+
+# Create summary for all variables
+summary_table <- do.call(rbind, lapply(names(data), function(var_name) {
+  create_var_summary(var_name, data[[var_name]])
+}))
+
+kable(summary_table, digits = 3, caption = "Summary Statistics of Variables")
+```
+
+## Average Treatment Effect Estimation
+
+The variable `y` is an outcome variable and `z` is a binary treatment variable that is randomly assigned. Under random assignment, the average treatment effect (ATE) can be estimated by calculating the difference in means of `y` between the treated group (`z=1`) and control group (`z=0`).
+
+```{r ate-estimation}
+# Calculate mean outcomes by treatment group
+mean_treated <- mean(data$y[data$z == 1])
+mean_control <- mean(data$y[data$z == 0])
+
+# Estimate average treatment effect
+ate <- mean_treated - mean_control
+
+cat("Mean outcome (treated group):", round(mean_treated, 3), "\n")
+cat("Mean outcome (control group):", round(mean_control, 3), "\n")
+cat("Average Treatment Effect (ATE):", round(ate, 3), "\n")
+```
