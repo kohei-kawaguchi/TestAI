@@ -1,0 +1,279 @@
+---
+title: "Difference-in-Differences Multi-Period Data Analysis"
+author: "Data Description Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+
+# Overview
+
+This report describes the difference-in-differences multi-period datasets located in `output/difference_in_differences_multiperiods/`.
+
+# Load Data
+
+```{r load-data}
+# Load the three datasets
+df_cov <- readRDS("../../output/difference_in_differences_multiperiods/df_design_cov.rds")
+df_nocov <- readRDS("../../output/difference_in_differences_multiperiods/df_design_nocov.rds")
+df_nyt <- readRDS("../../output/difference_in_differences_multiperiods/df_design_nyt.rds")
+```
+
+# Dataset 1: With Covariates (df_design_cov)
+
+## Structure
+
+```{r cov-structure}
+str(df_cov)
+```
+
+## Summary Statistics
+
+### Numeric Variables
+
+```{r cov-summary-numeric}
+numeric_vars <- df_cov %>% select(where(is.numeric))
+if(ncol(numeric_vars) > 0) {
+  numeric_summary <- data.frame(
+    Variable = names(numeric_vars),
+    Min = sapply(numeric_vars, min, na.rm = TRUE),
+    Q1 = sapply(numeric_vars, quantile, 0.25, na.rm = TRUE),
+    Median = sapply(numeric_vars, median, na.rm = TRUE),
+    Mean = sapply(numeric_vars, mean, na.rm = TRUE),
+    Q3 = sapply(numeric_vars, quantile, 0.75, na.rm = TRUE),
+    Max = sapply(numeric_vars, max, na.rm = TRUE),
+    SD = sapply(numeric_vars, sd, na.rm = TRUE),
+    N_Missing = sapply(numeric_vars, function(x) sum(is.na(x)))
+  )
+  rownames(numeric_summary) <- NULL
+
+  numeric_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+### Logical Variables
+
+```{r cov-summary-logical}
+logical_vars <- df_cov %>% select(where(is.logical))
+if(ncol(logical_vars) > 0) {
+  logical_summary <- data.frame(
+    Variable = names(logical_vars),
+    N_TRUE = sapply(logical_vars, function(x) sum(x, na.rm = TRUE)),
+    N_FALSE = sapply(logical_vars, function(x) sum(!x, na.rm = TRUE)),
+    N_Missing = sapply(logical_vars, function(x) sum(is.na(x))),
+    Prop_TRUE = sapply(logical_vars, function(x) mean(x, na.rm = TRUE))
+  )
+  rownames(logical_summary) <- NULL
+
+  logical_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+### Character Variables
+
+```{r cov-summary-character}
+character_vars <- df_cov %>% select(where(is.character))
+if(ncol(character_vars) > 0) {
+  character_summary <- data.frame(
+    Variable = names(character_vars),
+    N_Unique = sapply(character_vars, function(x) length(unique(x))),
+    N_Missing = sapply(character_vars, function(x) sum(is.na(x) | x == "")),
+    Most_Common = sapply(character_vars, function(x) {
+      tbl <- table(x)
+      if(length(tbl) > 0) names(tbl)[which.max(tbl)] else NA
+    }),
+    Most_Common_Count = sapply(character_vars, function(x) {
+      tbl <- table(x)
+      if(length(tbl) > 0) max(tbl) else NA
+    })
+  )
+  rownames(character_summary) <- NULL
+
+  character_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+## Dimensions
+
+```{r cov-dimensions}
+cat("Number of observations:", nrow(df_cov), "\n")
+cat("Number of variables:", ncol(df_cov), "\n")
+```
+
+## First Few Rows
+
+```{r cov-head}
+head(df_cov, 10) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  scroll_box(width = "100%")
+```
+
+## Variable Distribution
+
+```{r cov-distributions, fig.width=10, fig.height=8}
+# Select numeric variables for plotting
+numeric_vars <- df_cov %>% select(where(is.numeric))
+
+if(ncol(numeric_vars) > 0) {
+  numeric_vars %>%
+    pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+    ggplot(aes(x = value)) +
+    geom_histogram(bins = 30, fill = "steelblue", alpha = 0.7) +
+    facet_wrap(~variable, scales = "free") +
+    theme_minimal() +
+    labs(title = "Distribution of Numeric Variables (df_design_cov)")
+}
+```
+
+---
+
+# Dataset 2: Without Covariates (df_design_nocov)
+
+## Structure
+
+```{r nocov-structure}
+str(df_nocov)
+```
+
+## Summary Statistics
+
+```{r nocov-summary}
+summary(df_nocov) %>%
+  kable(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+## Dimensions
+
+```{r nocov-dimensions}
+cat("Number of observations:", nrow(df_nocov), "\n")
+cat("Number of variables:", ncol(df_nocov), "\n")
+```
+
+## First Few Rows
+
+```{r nocov-head}
+head(df_nocov, 10) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  scroll_box(width = "100%")
+```
+
+## Variable Distribution
+
+```{r nocov-distributions, fig.width=10, fig.height=8}
+# Select numeric variables for plotting
+numeric_vars <- df_nocov %>% select(where(is.numeric))
+
+if(ncol(numeric_vars) > 0) {
+  numeric_vars %>%
+    pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+    ggplot(aes(x = value)) +
+    geom_histogram(bins = 30, fill = "darkgreen", alpha = 0.7) +
+    facet_wrap(~variable, scales = "free") +
+    theme_minimal() +
+    labs(title = "Distribution of Numeric Variables (df_design_nocov)")
+}
+```
+
+---
+
+# Dataset 3: NYT Design (df_design_nyt)
+
+## Structure
+
+```{r nyt-structure}
+str(df_nyt)
+```
+
+## Summary Statistics
+
+```{r nyt-summary}
+summary(df_nyt) %>%
+  kable(digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+## Dimensions
+
+```{r nyt-dimensions}
+cat("Number of observations:", nrow(df_nyt), "\n")
+cat("Number of variables:", ncol(df_nyt), "\n")
+```
+
+## First Few Rows
+
+```{r nyt-head}
+head(df_nyt, 10) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  scroll_box(width = "100%")
+```
+
+## Variable Distribution
+
+```{r nyt-distributions, fig.width=10, fig.height=8}
+# Select numeric variables for plotting
+numeric_vars <- df_nyt %>% select(where(is.numeric))
+
+if(ncol(numeric_vars) > 0) {
+  numeric_vars %>%
+    pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+    ggplot(aes(x = value)) +
+    geom_histogram(bins = 30, fill = "coral", alpha = 0.7) +
+    facet_wrap(~variable, scales = "free") +
+    theme_minimal() +
+    labs(title = "Distribution of Numeric Variables (df_design_nyt)")
+}
+```
+
+---
+
+# Dataset Comparison
+
+## Size Comparison
+
+```{r comparison-size}
+data.frame(
+  Dataset = c("df_design_cov", "df_design_nocov", "df_design_nyt"),
+  Observations = c(nrow(df_cov), nrow(df_nocov), nrow(df_nyt)),
+  Variables = c(ncol(df_cov), ncol(df_nocov), ncol(df_nyt))
+) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+## Variable Names Comparison
+
+```{r comparison-vars}
+data.frame(
+  df_design_cov = names(df_cov) %>% paste(collapse = ", "),
+  df_design_nocov = names(df_nocov) %>% paste(collapse = ", "),
+  df_design_nyt = names(df_nyt) %>% paste(collapse = ", ")
+) %>%
+  pivot_longer(everything(), names_to = "Dataset", values_to = "Variables") %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+# Conclusion
+
+This report provides a comprehensive description of the three difference-in-differences multi-period datasets. Each dataset has been examined for its structure, summary statistics, dimensions, and variable distributions.
