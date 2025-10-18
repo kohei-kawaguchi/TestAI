@@ -369,6 +369,69 @@ if(ncol(numeric_vars) > 0) {
 }
 ```
 
+## ATT Estimation using Callaway and Sant'Anna (2021)
+
+### Estimate Group-Time ATT (Without Covariates)
+
+```{r nocov-att-estimation}
+# Estimate group-time average treatment effects
+# No covariates (xformla = ~1 means intercept only)
+att_results_nocov <- att_gt(
+  yname = "y_it",           # Outcome variable
+  tname = "time",            # Time period
+  idname = "id",             # Unit identifier
+  gname = "group_i",         # Treatment timing (0 for never-treated)
+  xformla = ~1,              # No covariates
+  data = df_nocov,
+  control_group = "nevertreated",  # Use never-treated as comparison
+  est_method = "dr"          # Doubly robust estimator
+)
+
+# Display summary
+summary(att_results_nocov)
+```
+
+### Aggregate to Overall ATT
+
+```{r nocov-att-simple}
+# Simple weighted average ATT
+att_simple_nocov <- aggte(att_results_nocov, type = "simple")
+summary(att_simple_nocov)
+```
+
+### Event Study / Dynamic Effects
+
+```{r nocov-att-dynamic, fig.width=10, fig.height=6}
+# Dynamic treatment effects (event study)
+att_dynamic_nocov <- aggte(att_results_nocov, type = "dynamic")
+summary(att_dynamic_nocov)
+
+# Plot event study
+ggdid(att_dynamic_nocov, title = "Event Study: Dynamic Treatment Effects (No Covariates)")
+```
+
+### Group-Specific ATT
+
+```{r nocov-att-group, fig.width=10, fig.height=6}
+# Group-specific average treatment effects
+att_group_nocov <- aggte(att_results_nocov, type = "group")
+summary(att_group_nocov)
+
+# Plot group-specific effects
+ggdid(att_group_nocov, title = "Average Treatment Effects by Treatment Cohort (No Covariates)")
+```
+
+### Calendar Time Effects
+
+```{r nocov-att-calendar, fig.width=10, fig.height=6}
+# Calendar time average treatment effects
+att_calendar_nocov <- aggte(att_results_nocov, type = "calendar")
+summary(att_calendar_nocov)
+
+# Plot calendar time effects
+ggdid(att_calendar_nocov, title = "Average Treatment Effects by Calendar Time (No Covariates)")
+```
+
 ---
 
 # Dataset 3: NYT Design (df_design_nyt)
@@ -482,6 +545,69 @@ if(ncol(numeric_vars) > 0) {
     theme_minimal() +
     labs(title = "Distribution of Numeric Variables (df_design_nyt)")
 }
+```
+
+## ATT Estimation using Callaway and Sant'Anna (2021)
+
+### Estimate Group-Time ATT (Not-Yet-Treated Control)
+
+```{r nyt-att-estimation}
+# Estimate group-time average treatment effects
+# Using not-yet-treated as control (no never-treated group available)
+att_results_nyt <- att_gt(
+  yname = "y_it",           # Outcome variable
+  tname = "time",            # Time period
+  idname = "id",             # Unit identifier
+  gname = "group_i",         # Treatment timing (no 0 group in this dataset)
+  xformla = ~x1_i + x2_i,    # Covariates
+  data = df_nyt,
+  control_group = "notyettreated",  # Use not-yet-treated as comparison
+  est_method = "dr"          # Doubly robust estimator
+)
+
+# Display summary
+summary(att_results_nyt)
+```
+
+### Aggregate to Overall ATT
+
+```{r nyt-att-simple}
+# Simple weighted average ATT
+att_simple_nyt <- aggte(att_results_nyt, type = "simple")
+summary(att_simple_nyt)
+```
+
+### Event Study / Dynamic Effects
+
+```{r nyt-att-dynamic, fig.width=10, fig.height=6}
+# Dynamic treatment effects (event study)
+att_dynamic_nyt <- aggte(att_results_nyt, type = "dynamic")
+summary(att_dynamic_nyt)
+
+# Plot event study
+ggdid(att_dynamic_nyt, title = "Event Study: Dynamic Treatment Effects (NYT Design)")
+```
+
+### Group-Specific ATT
+
+```{r nyt-att-group, fig.width=10, fig.height=6}
+# Group-specific average treatment effects
+att_group_nyt <- aggte(att_results_nyt, type = "group")
+summary(att_group_nyt)
+
+# Plot group-specific effects
+ggdid(att_group_nyt, title = "Average Treatment Effects by Treatment Cohort (NYT Design)")
+```
+
+### Calendar Time Effects
+
+```{r nyt-att-calendar, fig.width=10, fig.height=6}
+# Calendar time average treatment effects
+att_calendar_nyt <- aggte(att_results_nyt, type = "calendar")
+summary(att_calendar_nyt)
+
+# Plot calendar time effects
+ggdid(att_calendar_nyt, title = "Average Treatment Effects by Calendar Time (NYT Design)")
 ```
 
 ---
