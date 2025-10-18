@@ -201,10 +201,74 @@ str(df_nocov)
 
 ## Summary Statistics
 
-```{r nocov-summary}
-summary(df_nocov) %>%
-  kable(digits = 3) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+### Numeric Variables
+
+```{r nocov-summary-numeric}
+numeric_vars <- df_nocov %>% select(where(is.numeric))
+if(ncol(numeric_vars) > 0) {
+  numeric_summary <- data.frame(
+    Variable = names(numeric_vars),
+    Min = sapply(numeric_vars, min, na.rm = TRUE),
+    Q1 = sapply(numeric_vars, quantile, 0.25, na.rm = TRUE),
+    Median = sapply(numeric_vars, median, na.rm = TRUE),
+    Mean = sapply(numeric_vars, mean, na.rm = TRUE),
+    Q3 = sapply(numeric_vars, quantile, 0.75, na.rm = TRUE),
+    Max = sapply(numeric_vars, max, na.rm = TRUE),
+    SD = sapply(numeric_vars, sd, na.rm = TRUE),
+    N_Missing = sapply(numeric_vars, function(x) sum(is.na(x)))
+  )
+  rownames(numeric_summary) <- NULL
+
+  numeric_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+### Logical Variables
+
+```{r nocov-summary-logical}
+logical_vars <- df_nocov %>% select(where(is.logical))
+if(ncol(logical_vars) > 0) {
+  logical_summary <- data.frame(
+    Variable = names(logical_vars),
+    N_TRUE = sapply(logical_vars, function(x) sum(x, na.rm = TRUE)),
+    N_FALSE = sapply(logical_vars, function(x) sum(!x, na.rm = TRUE)),
+    N_Missing = sapply(logical_vars, function(x) sum(is.na(x))),
+    Prop_TRUE = sapply(logical_vars, function(x) mean(x, na.rm = TRUE))
+  )
+  rownames(logical_summary) <- NULL
+
+  logical_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+### Character Variables
+
+```{r nocov-summary-character}
+character_vars <- df_nocov %>% select(where(is.character))
+if(ncol(character_vars) > 0) {
+  character_summary <- data.frame(
+    Variable = names(character_vars),
+    N_Unique = sapply(character_vars, function(x) length(unique(x))),
+    N_Missing = sapply(character_vars, function(x) sum(is.na(x) | x == "")),
+    Most_Common = sapply(character_vars, function(x) {
+      tbl <- table(x)
+      if(length(tbl) > 0) names(tbl)[which.max(tbl)] else NA
+    }),
+    Most_Common_Count = sapply(character_vars, function(x) {
+      tbl <- table(x)
+      if(length(tbl) > 0) max(tbl) else NA
+    })
+  )
+  rownames(character_summary) <- NULL
+
+  character_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
 ```
 
 ## Dimensions
@@ -252,10 +316,74 @@ str(df_nyt)
 
 ## Summary Statistics
 
-```{r nyt-summary}
-summary(df_nyt) %>%
-  kable(digits = 3) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+### Numeric Variables
+
+```{r nyt-summary-numeric}
+numeric_vars <- df_nyt %>% select(where(is.numeric))
+if(ncol(numeric_vars) > 0) {
+  numeric_summary <- data.frame(
+    Variable = names(numeric_vars),
+    Min = sapply(numeric_vars, min, na.rm = TRUE),
+    Q1 = sapply(numeric_vars, quantile, 0.25, na.rm = TRUE),
+    Median = sapply(numeric_vars, median, na.rm = TRUE),
+    Mean = sapply(numeric_vars, mean, na.rm = TRUE),
+    Q3 = sapply(numeric_vars, quantile, 0.75, na.rm = TRUE),
+    Max = sapply(numeric_vars, max, na.rm = TRUE),
+    SD = sapply(numeric_vars, sd, na.rm = TRUE),
+    N_Missing = sapply(numeric_vars, function(x) sum(is.na(x)))
+  )
+  rownames(numeric_summary) <- NULL
+
+  numeric_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+### Logical Variables
+
+```{r nyt-summary-logical}
+logical_vars <- df_nyt %>% select(where(is.logical))
+if(ncol(logical_vars) > 0) {
+  logical_summary <- data.frame(
+    Variable = names(logical_vars),
+    N_TRUE = sapply(logical_vars, function(x) sum(x, na.rm = TRUE)),
+    N_FALSE = sapply(logical_vars, function(x) sum(!x, na.rm = TRUE)),
+    N_Missing = sapply(logical_vars, function(x) sum(is.na(x))),
+    Prop_TRUE = sapply(logical_vars, function(x) mean(x, na.rm = TRUE))
+  )
+  rownames(logical_summary) <- NULL
+
+  logical_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
+```
+
+### Character Variables
+
+```{r nyt-summary-character}
+character_vars <- df_nyt %>% select(where(is.character))
+if(ncol(character_vars) > 0) {
+  character_summary <- data.frame(
+    Variable = names(character_vars),
+    N_Unique = sapply(character_vars, function(x) length(unique(x))),
+    N_Missing = sapply(character_vars, function(x) sum(is.na(x) | x == "")),
+    Most_Common = sapply(character_vars, function(x) {
+      tbl <- table(x)
+      if(length(tbl) > 0) names(tbl)[which.max(tbl)] else NA
+    }),
+    Most_Common_Count = sapply(character_vars, function(x) {
+      tbl <- table(x)
+      if(length(tbl) > 0) max(tbl) else NA
+    })
+  )
+  rownames(character_summary) <- NULL
+
+  character_summary %>%
+    kable(digits = 3) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+}
 ```
 
 ## Dimensions
