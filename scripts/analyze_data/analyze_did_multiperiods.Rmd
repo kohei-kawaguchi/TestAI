@@ -189,6 +189,71 @@ if(ncol(numeric_vars) > 0) {
 }
 ```
 
+## ATT Estimation using Callaway and Sant'Anna (2021)
+
+### Estimate Group-Time ATT
+
+```{r cov-att-estimation}
+library(did)
+
+# Estimate group-time average treatment effects
+# Using doubly robust estimator with covariates
+att_results <- att_gt(
+  yname = "y_it",           # Outcome variable
+  tname = "time",            # Time period
+  idname = "id",             # Unit identifier
+  gname = "group_i",         # Treatment timing (0 for never-treated)
+  xformla = ~x1_i + x2_i,    # Covariates
+  data = df_cov,
+  control_group = "nevertreated",  # Use never-treated as comparison
+  est_method = "dr"          # Doubly robust estimator
+)
+
+# Display summary
+summary(att_results)
+```
+
+### Aggregate to Overall ATT
+
+```{r cov-att-simple}
+# Simple weighted average ATT
+att_simple <- aggte(att_results, type = "simple")
+summary(att_simple)
+```
+
+### Event Study / Dynamic Effects
+
+```{r cov-att-dynamic, fig.width=10, fig.height=6}
+# Dynamic treatment effects (event study)
+att_dynamic <- aggte(att_results, type = "dynamic")
+summary(att_dynamic)
+
+# Plot event study
+ggdid(att_dynamic, title = "Event Study: Dynamic Treatment Effects")
+```
+
+### Group-Specific ATT
+
+```{r cov-att-group, fig.width=10, fig.height=6}
+# Group-specific average treatment effects
+att_group <- aggte(att_results, type = "group")
+summary(att_group)
+
+# Plot group-specific effects
+ggdid(att_group, title = "Average Treatment Effects by Treatment Cohort")
+```
+
+### Calendar Time Effects
+
+```{r cov-att-calendar, fig.width=10, fig.height=6}
+# Calendar time average treatment effects
+att_calendar <- aggte(att_results, type = "calendar")
+summary(att_calendar)
+
+# Plot calendar time effects
+ggdid(att_calendar, title = "Average Treatment Effects by Calendar Time")
+```
+
 ---
 
 # Dataset 2: Without Covariates (df_design_nocov)
