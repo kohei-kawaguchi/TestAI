@@ -45,10 +45,15 @@ TestAI/
 
 ### Datasets
 
-The project includes simulated panel datasets with:
+The project includes simulated datasets with:
+
+**DiD Multi-Period Datasets:**
 - **df_design_cov**: Panel data with covariates affecting treatment assignment and trends
 - **df_design_nocov**: Panel data with unconditional parallel trends
 - **df_design_nyt**: Panel data with no never-treated units (all eventually treated)
+
+**Randomization Inference Dataset:**
+- **data_realized**: Cross-sectional randomized experiment data with binary treatment assignment
 
 ## Usage
 
