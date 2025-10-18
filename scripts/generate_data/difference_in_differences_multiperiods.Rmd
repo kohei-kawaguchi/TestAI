@@ -673,7 +673,7 @@ att_pop_nyt_group
 
 ```{r}
 # 出力ディレクトリの作成
-output_dir <- "output/difference_in_differences_multiperiods"
+output_dir <- here::here("output/difference_in_differences_multiperiods")
 if (!dir.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
@@ -682,11 +682,6 @@ if (!dir.exists(output_dir)) {
 saveRDS(df_design_nocov, file.path(output_dir, "df_design_nocov.rds"))
 saveRDS(df_design_cov, file.path(output_dir, "df_design_cov.rds"))
 saveRDS(df_design_nyt, file.path(output_dir, "df_design_nyt.rds"))
-
-# CSV形式でも保存
-write.csv(df_design_nocov, file.path(output_dir, "df_design_nocov.csv"), row.names = FALSE)
-write.csv(df_design_cov, file.path(output_dir, "df_design_cov.csv"), row.names = FALSE)
-write.csv(df_design_nyt, file.path(output_dir, "df_design_nyt.csv"), row.names = FALSE)
 
 cat("データセットを", output_dir, "に保存しました。\n")
 ```
