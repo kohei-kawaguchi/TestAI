@@ -18,7 +18,7 @@ generate_dgp_LM_discrete <-
       tibble::tibble(
         s = s,
         y =
-          CausalInferenceTextbook::specify_mu_LM_flip(
+          TestAI::specify_mu_LM_flip(
             s = s
           ) +
         rnorm(
@@ -49,7 +49,7 @@ generate_dgp_LM_discrete_alternate <-
     dgp <-
       tibble::tibble(
         y =
-          CausalInferenceTextbook::specify_mu_LM_flip(
+          TestAI::specify_mu_LM_flip(
             s = s
           ) +
         rnorm(
@@ -135,7 +135,7 @@ return_OLS_cluster <-
 #' @export
 call_generate_dgp_LM_discrete <- function(rounding) {
   set.seed(1)
-  CausalInferenceTextbook::generate_dgp_LM_discrete(
+  TestAI::generate_dgp_LM_discrete(
     N = N,
     rounding = rounding
   )
