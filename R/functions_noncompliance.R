@@ -11,26 +11,26 @@ generate_data_noncompliance_oneside <-
     data_realized <-
       outcome_potential %>%
       dplyr::mutate(
-        z = 
+        z =
           (
-            1:N %in% 
+            1:N %in%
             sample(
-              N, 
+              N,
               N_1
             )
           ) %>%
           as.integer(),
-        d = 
+        d =
           ifelse(
-            g == "nc", 
-            0, 
+            g == "nc",
+            0,
             z
           ),
-        y_1 = 
-          y_1 + 
+        y_1 =
+          y_1 +
           (1 - exclusion) * y_z,
-        y = 
-          y_0 * (1 - d) + 
+        y =
+          y_0 * (1 - d) +
           y_1 * d
       ) %>%
       dplyr::select(
@@ -53,11 +53,11 @@ generate_data_noncompliance_twoside <-
     data_realized <-
       outcome_potential %>%
       dplyr::mutate(
-        z = 
+        z =
           (
-            1:N %in% 
+            1:N %in%
             sample(
-              N, 
+              N,
               N_1
               )
           ) %>%
@@ -75,8 +75,8 @@ generate_data_noncompliance_twoside <-
             )
           )
         ),
-        y = 
-          y_0 * (1 - d) + 
+        y =
+          y_0 * (1 - d) +
           y_1 * d
       ) %>%
       dplyr::select(

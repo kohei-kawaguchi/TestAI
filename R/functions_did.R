@@ -65,7 +65,7 @@ generate_df_no_covariates <-
           runif(
             n = N,
             min = 0,
-            max =1
+            max = 1
           ),
           T
         )
@@ -609,12 +609,12 @@ call_synthetic_control <-
       ) %>%
       tidysynth::generate_predictor(
         time_window = window_income_age,
-        ln_income = mean(lnincome, na.rm = T),
-        youth = mean(age15to24, na.rm = T)
+        ln_income = mean(lnincome, na.rm = TRUE),
+        youth = mean(age15to24, na.rm = TRUE)
       ) %>%
       tidysynth::generate_predictor(
         time_window = window_beer,
-        beer_sales = mean(beer, na.rm = T)
+        beer_sales = mean(beer, na.rm = TRUE)
       ) %>%
       tidysynth::generate_predictor(
         time_window = window_cigsale1,
