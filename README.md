@@ -33,15 +33,8 @@ TestAI/
 ### Implemented Methods
 
 1. **Difference-in-Differences (DiD)**
-   - Multi-period staggered adoption designs
-   - Callaway-Sant'Anna (2021) estimator
-   - Covariate adjustment for conditional parallel trends
-   - Support for "not-yet-treated" control groups
 
 2. **Randomization Inference**
-   - Fisher's exact p-values
-   - Permutation-based hypothesis testing
-   - Monte Carlo simulation
 
 ### Datasets
 
