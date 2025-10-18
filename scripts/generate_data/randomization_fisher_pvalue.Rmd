@@ -108,6 +108,6 @@ data_realized %>%
   modelsummary::datasummary_skim()
 
 # Save the data
-saveRDS(data_realized, "output/randomization_fisher_pvalue/data_realized.rds")
+saveRDS(data_realized, here::here("output/randomization_fisher_pvalue/data_realized.rds"))
 ```
 
