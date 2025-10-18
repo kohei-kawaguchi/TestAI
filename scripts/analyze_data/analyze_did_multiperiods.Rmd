@@ -21,6 +21,51 @@ library(kableExtra)
 
 This report describes the difference-in-differences multi-period datasets located in `output/difference_in_differences_multiperiods/`.
 
+## Data Context
+
+The datasets contain panel data with **staggered treatment adoption**:
+
+- **Panel structure**: Multiple units observed over multiple time periods
+- **Staggered interventions**: Different units receive treatment at different time points (periods 5, 6, 7, 8)
+- **Covariates**: Unit-level covariates (x1_i, x2_i) that affect both treatment assignment (selection) and outcomes
+- **Treatment persistence**: Once treated, units remain treated in subsequent periods
+
+## Analysis Plan
+
+### Objective
+Estimate the **Average Treatment Effect on the Treated (ATT)** accounting for:
+1. Staggered treatment timing across units
+2. Selection on observables (covariate confounding)
+
+### Method: Callaway and Sant'Anna (2021)
+
+We will use the **`did`** R package, which implements the Callaway and Sant'Anna (2021) estimator for difference-in-differences with multiple time periods.
+
+**Key features of this method:**
+
+1. **Group-Time ATT**: Estimates treatment effects for each treatment cohort (group) at each time period
+2. **Covariate adjustment**: Incorporates covariates to satisfy conditional parallel trends assumption
+3. **Three estimator options**:
+   - Outcome regression
+   - Inverse probability weighting (IPW)
+   - Doubly robust (default - combines both)
+4. **Proper comparison groups**: Uses not-yet-treated or never-treated units as controls
+5. **Aggregation flexibility**: Can aggregate to overall ATT, event study effects, group-specific effects, or calendar time effects
+
+**Required variables:**
+
+- `yname`: Outcome variable (y_it)
+- `tname`: Time period (time)
+- `idname`: Unit identifier (id)
+- `gname`: Treatment timing group (first period of treatment; 0 if never treated)
+- `xformla`: Covariate formula (~x1_i + x2_i)
+
+**Main functions:**
+
+- `att_gt()`: Estimates group-time average treatment effects
+- `aggte()`: Aggregates group-time effects into summary measures
+- `ggdid()`: Visualizes results
+
 # Load Data
 
 ```{r load-data}

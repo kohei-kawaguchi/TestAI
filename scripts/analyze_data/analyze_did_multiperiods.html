@@ -1810,6 +1810,71 @@ Analysis</h1>
 <p>This report describes the difference-in-differences multi-period
 datasets located in
 <code>output/difference_in_differences_multiperiods/</code>.</p>
+<div id="data-context" class="section level2">
+<h2>Data Context</h2>
+<p>The datasets contain panel data with <strong>staggered treatment
+adoption</strong>:</p>
+<ul>
+<li><strong>Panel structure</strong>: Multiple units observed over
+multiple time periods</li>
+<li><strong>Staggered interventions</strong>: Different units receive
+treatment at different time points (periods 5, 6, 7, 8)</li>
+<li><strong>Covariates</strong>: Unit-level covariates (x1_i, x2_i) that
+affect both treatment assignment (selection) and outcomes</li>
+<li><strong>Treatment persistence</strong>: Once treated, units remain
+treated in subsequent periods</li>
+</ul>
+</div>
+<div id="analysis-plan" class="section level2">
+<h2>Analysis Plan</h2>
+<div id="objective" class="section level3">
+<h3>Objective</h3>
+<p>Estimate the <strong>Average Treatment Effect on the Treated
+(ATT)</strong> accounting for: 1. Staggered treatment timing across
+units 2. Selection on observables (covariate confounding)</p>
+</div>
+<div id="method-callaway-and-santanna-2021" class="section level3">
+<h3>Method: Callaway and Sant’Anna (2021)</h3>
+<p>We will use the <strong><code>did</code></strong> R package, which
+implements the Callaway and Sant’Anna (2021) estimator for
+difference-in-differences with multiple time periods.</p>
+<p><strong>Key features of this method:</strong></p>
+<ol style="list-style-type: decimal">
+<li><strong>Group-Time ATT</strong>: Estimates treatment effects for
+each treatment cohort (group) at each time period</li>
+<li><strong>Covariate adjustment</strong>: Incorporates covariates to
+satisfy conditional parallel trends assumption</li>
+<li><strong>Three estimator options</strong>:
+<ul>
+<li>Outcome regression</li>
+<li>Inverse probability weighting (IPW)</li>
+<li>Doubly robust (default - combines both)</li>
+</ul></li>
+<li><strong>Proper comparison groups</strong>: Uses not-yet-treated or
+never-treated units as controls</li>
+<li><strong>Aggregation flexibility</strong>: Can aggregate to overall
+ATT, event study effects, group-specific effects, or calendar time
+effects</li>
+</ol>
+<p><strong>Required variables:</strong></p>
+<ul>
+<li><code>yname</code>: Outcome variable (y_it)</li>
+<li><code>tname</code>: Time period (time)</li>
+<li><code>idname</code>: Unit identifier (id)</li>
+<li><code>gname</code>: Treatment timing group (first period of
+treatment; 0 if never treated)</li>
+<li><code>xformla</code>: Covariate formula (~x1_i + x2_i)</li>
+</ul>
+<p><strong>Main functions:</strong></p>
+<ul>
+<li><code>att_gt()</code>: Estimates group-time average treatment
+effects</li>
+<li><code>aggte()</code>: Aggregates group-time effects into summary
+measures</li>
+<li><code>ggdid()</code>: Visualizes results</li>
+</ul>
+</div>
+</div>
 </div>
 <div id="load-data" class="section level1">
 <h1>Load Data</h1>
