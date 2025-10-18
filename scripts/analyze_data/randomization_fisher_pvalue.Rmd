@@ -121,3 +121,62 @@ The Neyman standard error estimator is consistent (i.e., converges to the true s
 
 This conservative bias makes the estimator useful for hypothesis testing, as it errs on the side of caution.
 ```
+
+## Summary of Estimation and Inference Results
+
+```{r summary-table}
+# Create summary table
+results_summary <- data.frame(
+  Statistic = c("Total Sample Size", "Treated Sample Size", "Control Sample Size",
+                "Mean Outcome (Treated)", "Mean Outcome (Control)",
+                "Average Treatment Effect", "Standard Error",
+                "95% CI Lower Bound", "95% CI Upper Bound",
+                "t-statistic", "p-value (two-sided)"),
+  Value = c(
+    nrow(data),
+    n_treated,
+    n_control,
+    mean_treated,
+    mean_control,
+    ate,
+    se_ate,
+    ate - 1.96 * se_ate,
+    ate + 1.96 * se_ate,
+    ate / se_ate,
+    2 * (1 - pnorm(abs(ate / se_ate)))
+  )
+)
+
+kable(results_summary, digits = 3, caption = "Summary of Estimation and Inference Results")
+```
+
+## Visualization
+
+```{r visualization}
+library(ggplot2)
+
+# Create data frame for plotting
+plot_data <- data.frame(
+  Group = c("Control", "Treated"),
+  Mean = c(mean_control, mean_treated),
+  SE = c(sqrt(var_control / n_control), sqrt(var_treated / n_treated))
+)
+
+# Bar chart with error bars
+ggplot(plot_data, aes(x = Group, y = Mean, fill = Group)) +
+  geom_bar(stat = "identity", width = 0.6) +
+  geom_errorbar(aes(ymin = Mean - 1.96 * SE, ymax = Mean + 1.96 * SE),
+                width = 0.2, linewidth = 1) +
+  labs(
+    title = "Mean Outcomes by Treatment Group",
+    subtitle = "Error bars show 95% confidence intervals",
+    x = "Treatment Group",
+    y = "Mean Outcome",
+    fill = "Group"
+  ) +
+  scale_fill_manual(values = c("Control" = "steelblue", "Treated" = "coral")) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
