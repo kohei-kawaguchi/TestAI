@@ -95,10 +95,20 @@ See [docs/conversation/ground_truth_comparison_conversation_transcript.md](docs/
 
 ## Documentation
 
-Conversation transcripts documenting the development process are available in `docs/conversation/`:
+### Conversation Transcripts
+
+Conversation transcripts documenting the development process are available in [docs/conversation/](docs/conversation/):
 - **DiD Multi-Period Analysis**: Development of Callaway-Sant'Anna estimator implementation
 - **Randomization Inference**: Fisher's exact p-value computation
 - **Ground Truth Comparison**: Validation methodology and results
+
+### Presentation
+
+A presentation on using AI as a research assistant for economic analysis is available at [docs/slide/use_ai_as_ra.md](docs/slide/use_ai_as_ra.md). This Marp-format slide deck covers:
+- Best practices for supervising AI research assistants
+- Workflow for solving and simulating economic models
+- Model-free analysis and data cleaning approaches
+- Tool recommendations and practical tips
 
 ## References
 
