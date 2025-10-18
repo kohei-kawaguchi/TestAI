@@ -1,0 +1,12 @@
+[
+  {
+    "key": "ctrl+shift+l",
+    "command": "r.loadAll",
+    "when": "editorLangId == r"
+  },
+  {
+    "key": "ctrl+shift+b",
+    "command": "r.install",
+    "when": "editorLangId == r"
+  }
+]
