@@ -485,6 +485,65 @@ cat(&quot;Mean outcome (treated group):&quot;, round(mean_treated, 3), &quot;\n&
 <pre class="r"><code>cat(&quot;Average Treatment Effect (ATE):&quot;, round(ate, 3), &quot;\n&quot;)</code></pre>
 <pre><code>## Average Treatment Effect (ATE): 0.236</code></pre>
 </div>
+<div id="standard-error-of-the-ate" class="section level2">
+<h2>Standard Error of the ATE</h2>
+<p>The standard error of the ATE can be estimated using the Neyman
+standard error formula:</p>
+<p><span class="math display">\[SE(\hat{ATE}) = \sqrt{\frac{s_1^2}{n_1}
++ \frac{s_0^2}{n_0}}\]</span></p>
+<p>where <span class="math inline">\(s_1^2\)</span> and <span class="math inline">\(s_0^2\)</span> are the sample variances in the
+treated and control groups, and <span class="math inline">\(n_1\)</span>
+and <span class="math inline">\(n_0\)</span> are the sample sizes.</p>
+<pre class="r"><code># Calculate sample sizes
+n_treated &lt;- sum(data$z == 1)
+n_control &lt;- sum(data$z == 0)
+
+# Calculate sample variances
+var_treated &lt;- var(data$y[data$z == 1])
+var_control &lt;- var(data$y[data$z == 0])
+
+# Calculate standard error
+se_ate &lt;- sqrt(var_treated / n_treated + var_control / n_control)
+
+cat(&quot;Sample size (treated):&quot;, n_treated, &quot;\n&quot;)</code></pre>
+<pre><code>## Sample size (treated): 500</code></pre>
+<pre class="r"><code>cat(&quot;Sample size (control):&quot;, n_control, &quot;\n&quot;)</code></pre>
+<pre><code>## Sample size (control): 500</code></pre>
+<pre class="r"><code>cat(&quot;Variance (treated):&quot;, round(var_treated, 3), &quot;\n&quot;)</code></pre>
+<pre><code>## Variance (treated): 1.037</code></pre>
+<pre class="r"><code>cat(&quot;Variance (control):&quot;, round(var_control, 3), &quot;\n&quot;)</code></pre>
+<pre><code>## Variance (control): 1.097</code></pre>
+<pre class="r"><code>cat(&quot;Standard Error of ATE:&quot;, round(se_ate, 3), &quot;\n&quot;)</code></pre>
+<pre><code>## Standard Error of ATE: 0.065</code></pre>
+<div id="properties-of-the-neyman-standard-error-estimator" class="section level3">
+<h3>Properties of the Neyman Standard Error Estimator</h3>
+<p>Under random assignment of treatment with the following
+assumptions:</p>
+<ol style="list-style-type: decimal">
+<li><strong>No interference</strong>: Potential outcomes are independent
+across units</li>
+<li><strong>Large sample approximation</strong>: The Central Limit
+Theorem applies as sample size increases</li>
+</ol>
+<p>The Neyman standard error estimator is consistent (i.e., converges to
+the true standard error as sample size goes to infinity).</p>
+<p><strong>Finite Sample Bias</strong>: In finite samples, the Neyman
+estimator is <strong>conservatively biased</strong> (upwardly biased),
+meaning it tends to overestimate the true standard error. This occurs
+because:</p>
+<ol style="list-style-type: decimal">
+<li>Treatment assignment is not independent in finite samples—in a
+completely randomized experiment, knowing some assignments provides
+information about others</li>
+<li>The standard formula omits a covariance term between potential
+outcomes that would reduce the variance</li>
+<li>The estimator is unbiased under constant treatment effects, but
+conservatively biased when treatment effects are heterogeneous</li>
+</ol>
+<p>This conservative bias makes the estimator useful for hypothesis
+testing, as it errs on the side of caution. ```</p>
+</div>
+</div>
 
 
 

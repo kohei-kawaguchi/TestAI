@@ -76,3 +76,48 @@ cat("Mean outcome (treated group):", round(mean_treated, 3), "\n")
 cat("Mean outcome (control group):", round(mean_control, 3), "\n")
 cat("Average Treatment Effect (ATE):", round(ate, 3), "\n")
 ```
+
+## Standard Error of the ATE
+
+The standard error of the ATE can be estimated using the Neyman standard error formula:
+
+$$SE(\hat{ATE}) = \sqrt{\frac{s_1^2}{n_1} + \frac{s_0^2}{n_0}}$$
+
+where $s_1^2$ and $s_0^2$ are the sample variances in the treated and control groups, and $n_1$ and $n_0$ are the sample sizes.
+
+```{r ate-se}
+# Calculate sample sizes
+n_treated <- sum(data$z == 1)
+n_control <- sum(data$z == 0)
+
+# Calculate sample variances
+var_treated <- var(data$y[data$z == 1])
+var_control <- var(data$y[data$z == 0])
+
+# Calculate standard error
+se_ate <- sqrt(var_treated / n_treated + var_control / n_control)
+
+cat("Sample size (treated):", n_treated, "\n")
+cat("Sample size (control):", n_control, "\n")
+cat("Variance (treated):", round(var_treated, 3), "\n")
+cat("Variance (control):", round(var_control, 3), "\n")
+cat("Standard Error of ATE:", round(se_ate, 3), "\n")
+```
+
+### Properties of the Neyman Standard Error Estimator
+
+Under random assignment of treatment with the following assumptions:
+
+1. **No interference**: Potential outcomes are independent across units
+2. **Large sample approximation**: The Central Limit Theorem applies as sample size increases
+
+The Neyman standard error estimator is consistent (i.e., converges to the true standard error as sample size goes to infinity).
+
+**Finite Sample Bias**: In finite samples, the Neyman estimator is **conservatively biased** (upwardly biased), meaning it tends to overestimate the true standard error. This occurs because:
+
+1. Treatment assignment is not independent in finite samples—in a completely randomized experiment, knowing some assignments provides information about others
+2. The standard formula omits a covariance term between potential outcomes that would reduce the variance
+3. The estimator is unbiased under constant treatment effects, but conservatively biased when treatment effects are heterogeneous
+
+This conservative bias makes the estimator useful for hypothesis testing, as it errs on the side of caution.
+```
