@@ -72,6 +72,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 - Follow the best practices of project management
 - Supervise AI RA **exactly** like human RA
+- If AI does not work, it is not because of AI, but because of your project management
 
 ---
 
@@ -91,7 +92,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 ### Economics
 
-- Equilibrium, endogenous/exogenous, observable/unobservable, parameters of interest/nuisance parameters are exotic concepts to AI
+- Equilibrium, endogenous/exogenous, observable/unobservable, parameters of interest/nuisance parameters are exotic concepts for AI
 → Translate them into CS/statistical concepts
 → Test knowledge with an oral exam
 
@@ -253,3 +254,23 @@ This oral exam method works for **data cleaning** tasks as well
 - Let AI write down pseudocode of the implementation
 - Let AI add a link to source for any method it suggests
 - Let AI read the document and git history to understand the current issue and status
+
+---
+
+<!-- _class: gradient -->
+
+## Mobile work
+
+
+- <img src="https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png" alt="AWS" width="60" style="vertical-align:middle; margin-right:8px;"/> **AWS**: Easily connect to cloud machines and access resources anywhere
+- <img src="https://avatars.githubusercontent.com/u/14285486?s=200&v=4" alt="Termius" width="40" style="vertical-align:middle; margin-right:8px;"/> **Termius**: Great SSH client for connecting to servers from your laptop, tablet, or phone
+
+---
+
+<!-- _class: gradient -->
+
+## Reviewing conversation history
+
+- Codex: ` ~/.codex/sessions/YYYY/MM/DD/*.jsonl`
+- Claude: `~/.claude/history.jsonl`
+- Ask AI to read the conversation history and git history to review your instruction
