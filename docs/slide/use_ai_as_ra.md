@@ -69,6 +69,15 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 ---
 
+<!-- _class: gradient -->
+
+## Demonstration
+
+- Solving and simulating equilibrium with Codex CLI
+- Running causal inferene with Claude Code CLI
+
+---
+
 
 <!-- _class: gradient -->
 
@@ -236,12 +245,6 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 
 This oral exam method works for **data cleaning** tasks as well
-
----
-
-<!-- _class: gradient -->
-
-## Demonstration
 
 ---
 
