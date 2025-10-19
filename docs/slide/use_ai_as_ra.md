@@ -43,6 +43,24 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 <!-- _class: gradient -->
 
+## Replacing Human RA with AI RA
+
+- **100\%** replaceable
+- Needs the same level of supervision
+- Merits
+  - Accelerate iterations
+  - Parallelize tasks
+  - Integrate research and implementation
+  - Better implementation
+- Demerits
+  - Integrity 
+  - Training opportunity
+
+---
+
+
+<!-- _class: gradient -->
+
 ## Resources
 
 - git clone git@github.com:kohei-kawaguchi/TestAI.git
@@ -79,22 +97,6 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ---
 
 
-<!-- _class: gradient -->
-
-## Replacing Human RA with AI RA
-
-- **100\%** replaceable
-- Needs the same level of supervision
-- Merits
-  - Accelerate iterations
-  - Parallelize tasks
-  - Integrate research and implementation
-  - Better implementation
-- Demerits
-  - Integrity 
-  - Training opportunity
-
----
 
 <!-- _class: gradient -->
 
