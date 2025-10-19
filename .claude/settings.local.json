@@ -4,7 +4,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(Rscript:*)",
-      "Bash(npx -y live-server:*)"
+      "Bash(npx -y live-server:*)",
+      "Bash(export PATH=\"$HOME/.elan/bin:$PATH\")",
+      "Bash(lean:*)"
     ],
     "deny": [],
     "ask": []
