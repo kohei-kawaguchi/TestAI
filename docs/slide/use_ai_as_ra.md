@@ -49,6 +49,27 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 ---
 
+
+<!-- _class: gradient -->
+
+## Which AI to use
+
+- OpenAI Codex CLI: [https://developers.openai.com/codex/cli/](https://developers.openai.com/codex/cli/)
+  - Smart, consistent, but not fun to work with
+  - Currently, needs WSL or Linux container on Windows
+  - Install the CLI and VS Code/Cursor extension
+- Claude Code CLI: [https://www.claude.com/product/claude-code](https://www.claude.com/product/claude-code)
+  - Less smart than Codex, but lovely
+  - Company understands the importance of UI/UX
+  - Works with Windows
+  - Install the CLI and VS Code/Cursor extension
+- Cursor: [https://cursor.com/](https://cursor.com/)
+  - Bad at task management
+
+
+---
+
+
 <!-- _class: gradient -->
 
 ## Replacing Human RA with AI RA
@@ -215,25 +236,6 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 
 This oral exam method works for **data cleaning** tasks as well
-
----
-
-
-<!-- _class: gradient -->
-
-## Which AI to use
-
-- OpenAI Codex CLI
-  - Smart, consistent, but not fun to work with
-  - Currently, needs WSL or Linux container on Windows
-  - Install the CLI and VS Code/Cursor extension
-- Claude Code CLI
-  - Less smart than Codex, but lovely
-  - Company understands the importance of UI/UX
-  - Works with Windows
-  - Install the CLI and VS Code/Cursor extension
-- Cursor
-  - Bad at task management
 
 ---
 
