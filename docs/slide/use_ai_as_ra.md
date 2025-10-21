@@ -157,7 +157,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 ### Multi-level validations
 
-- Consistency check, unit tests, visualized reports, but **no** code inspection
+- Consistency check, unit tests, visualized reports, but **minimum** code inspection
 
 ---
 
