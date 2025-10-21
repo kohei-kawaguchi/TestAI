@@ -84,28 +84,6 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 - Cursor: [https://cursor.com/](https://cursor.com/)
   - Bad at task management
 
-
----
-
-<!-- _class: gradient -->
-
-## Demonstration
-
-- Solving and simulating equilibrium with Codex CLI
-- Running causal inferene with Claude Code CLI
-
----
-
-
-
-<!-- _class: gradient -->
-
-## General Principle
-
-- Follow the best practices of project management
-- Supervise AI RA **exactly** like human RA
-- If AI does not work, it is not because of AI, but because of your project management
-
 ---
 
 <!-- _class: gradient -->
@@ -134,28 +112,52 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 → Always ask to find the **root cause** of the problem
 → Solution must be determined by the supervisor
 
+---
+
+<!-- _class: gradient -->
+
+## General Principle
+
+- Follow the best practices of project management
+- Supervise AI RA **exactly** like human RA
+- If AI does not work, it is not because of AI, but because of your project management
+
+---
+
+<!-- _class: gradient -->
+
+## Main Framework
+
+### Theory-driven approach
+
+- Start from documented ground truth
+  - Model setting, solution, pseudocode
+- Then ask AI to implement it
+
+### Oral exam method
+
+- Develop the ground truth interactively with AI
+- Effective when formulating the task is cumbersome
+  - Model-free analysis
+  - Data cleaning
 
 --- 
 
 <!-- _class: gradient -->
 
-## Key framework
+## Key best practices
 
 ### Pipeline management
 
 - Package-like folder structure, git version control, document → implementation → test → validation workflow, command scripts
 
-### Theory-driven approach
+### Scope management
 
-- Supervisor writes the ground truth as a document
+- Specify what can be changed and what cannot be changed
 
 ### Multi-level validations
 
 - Consistency check, unit tests, visualized reports, but **no** code inspection
-
-### Scope management
-
-- Specify what can be changed and what cannot be changed
 
 ---
 
