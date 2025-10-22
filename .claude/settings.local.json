@@ -9,7 +9,10 @@
       "Bash(lean:*)",
       "Bash(quarto render:*)"
     ],
-    "deny": [],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git pull:*)"
+    ],
     "ask": []
   }
 }
