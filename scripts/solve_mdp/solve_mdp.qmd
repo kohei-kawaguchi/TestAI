@@ -6,6 +6,8 @@ format:
     code-fold: false
     toc: true
 jupyter: python3
+execute:
+  daemon: false
 ---
 
 ## Introduction
@@ -284,23 +286,157 @@ For `epoch`: int = 1 to num_epochs:
 - **Batch updates**: Process all states in parallel for efficiency
 
 ```{python}
-# Import the MDP solver from the mdp_solver package
-# Set parameters: beta, gamma, delta
-# Create MDPSolver instance
+import sys
+sys.path.insert(0, '../../src')
+
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+from mdp_solver import SolveValueIteration
+
+# Set parameters
+beta = 0.5
+gamma = 0.1
+delta = 0.95
+gamma_E = 0.5772156649015329
+
+# Network hyperparameters
+hyperparameters = {
+    'hidden_sizes': [32, 32]
+}
+
+# State grid parameters
+N = 100
+state_range = (0.0, 10.0)
+
+# Training parameters
+max_iter = 100
+epsilon_tol = 1e-4
+num_epochs = 50
+learning_rate = 1e-3
+
 # Solve the MDP using value iteration
+print("Solving MDP with value iteration...")
+v_theta_0, v_theta_1, history = SolveValueIteration(
+    beta=beta,
+    gamma=gamma,
+    delta=delta,
+    gamma_E=gamma_E,
+    hyperparameters=hyperparameters,
+    N=N,
+    state_range=state_range,
+    max_iter=max_iter,
+    epsilon_tol=epsilon_tol,
+    num_epochs=num_epochs,
+    learning_rate=learning_rate,
+    verbose=True
+)
+
+print(f"\nConverged after {len(history['iterations'])} iterations")
+print(f"Final max error: {history['max_errors'][-1]:.6f}")
 ```
 
 ## Results
 
+### Convergence Plot
+
 ```{python}
 # Plot convergence history
+fig, ax = plt.subplots(figsize=(10, 6))
+
+ax.plot(history['iterations'], history['max_errors'], 'b-', linewidth=2, label='Max Error')
+ax.axhline(y=epsilon_tol, color='r', linestyle='--', linewidth=1.5, label=f'Tolerance (ε={epsilon_tol})')
+
+ax.set_xlabel('Iteration', fontsize=12)
+ax.set_ylabel('Maximum Error', fontsize=12)
+ax.set_title('Convergence of Value Function Iteration', fontsize=14, fontweight='bold')
+ax.set_yscale('log')
+ax.grid(True, alpha=0.3)
+ax.legend(fontsize=11)
+
+plt.tight_layout()
+plt.show()
+
+print(f"Converged in {len(history['iterations'])} iterations")
 ```
 
 ## Visualization
 
+### Choice-Specific Value Functions
+
 ```{python}
-# Plot value functions for both actions
-# Plot optimal policy (choice probabilities)
+# Generate dense grid for visualization
+s_plot = torch.linspace(state_range[0], state_range[1], 200).reshape(-1, 1)
+
+# Compute value functions for both actions
+with torch.no_grad():
+    v0_values = v_theta_0(s_plot).numpy().flatten()
+    v1_values = v_theta_1(s_plot).numpy().flatten()
+
+s_plot_np = s_plot.numpy().flatten()
+
+# Plot value functions
+fig, ax = plt.subplots(figsize=(10, 6))
+
+ax.plot(s_plot_np, v0_values, 'b-', linewidth=2.5, label='v(s, a=0)', alpha=0.8)
+ax.plot(s_plot_np, v1_values, 'r-', linewidth=2.5, label='v(s, a=1)', alpha=0.8)
+
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Value Function v(s, a)', fontsize=12)
+ax.set_title('Choice-Specific Value Functions', fontsize=14, fontweight='bold')
+ax.grid(True, alpha=0.3)
+ax.legend(fontsize=11, loc='best')
+
+plt.tight_layout()
+plt.show()
+
+# Print some statistics
+print(f"\nValue Function Statistics:")
+print(f"v(s, a=0): min={v0_values.min():.3f}, max={v0_values.max():.3f}, mean={v0_values.mean():.3f}")
+print(f"v(s, a=1): min={v1_values.min():.3f}, max={v1_values.max():.3f}, mean={v1_values.mean():.3f}")
+```
+
+### Optimal Policy
+
+```{python}
+from mdp_solver import GetPolicy
+
+# Compute optimal policy probabilities
+prob_a0 = []
+prob_a1 = []
+
+for s_val in s_plot_np:
+    p0, p1 = GetPolicy(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=float(s_val))
+    prob_a0.append(p0)
+    prob_a1.append(p1)
+
+prob_a0 = np.array(prob_a0)
+prob_a1 = np.array(prob_a1)
+
+# Plot optimal policy
+fig, ax = plt.subplots(figsize=(10, 6))
+
+ax.plot(s_plot_np, prob_a0, 'b-', linewidth=2.5, label='P(a=0|s)', alpha=0.8)
+ax.plot(s_plot_np, prob_a1, 'r-', linewidth=2.5, label='P(a=1|s)', alpha=0.8)
+ax.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Choice Probability', fontsize=12)
+ax.set_title('Optimal Policy (Choice Probabilities)', fontsize=14, fontweight='bold')
+ax.set_ylim([0, 1])
+ax.grid(True, alpha=0.3)
+ax.legend(fontsize=11, loc='best')
+
+plt.tight_layout()
+plt.show()
+
+# Find approximate threshold where policy switches
+diff = np.abs(prob_a0 - 0.5)
+threshold_idx = np.argmin(diff)
+threshold_s = s_plot_np[threshold_idx]
+
+print(f"\nPolicy switches near s ≈ {threshold_s:.3f}")
+print(f"At this state: P(a=0) = {prob_a0[threshold_idx]:.3f}, P(a=1) = {prob_a1[threshold_idx]:.3f}")
 ```
 
 ## Conclusion
