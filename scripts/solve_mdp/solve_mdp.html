@@ -112,7 +112,11 @@ window.Quarto = {
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
   <li><a href="#problem-setup" id="toc-problem-setup" class="nav-link" data-scroll-target="#problem-setup">Problem Setup</a></li>
   <li><a href="#optimal-markov-decision-policy" id="toc-optimal-markov-decision-policy" class="nav-link" data-scroll-target="#optimal-markov-decision-policy">Optimal Markov Decision Policy</a></li>
-  <li><a href="#value-iteration" id="toc-value-iteration" class="nav-link" data-scroll-target="#value-iteration">Value Iteration</a></li>
+  <li><a href="#value-iteration" id="toc-value-iteration" class="nav-link" data-scroll-target="#value-iteration">Value Iteration</a>
+  <ul class="collapse">
+  <li><a href="#neural-network-architecture-for-choice-specific-value-functions" id="toc-neural-network-architecture-for-choice-specific-value-functions" class="nav-link" data-scroll-target="#neural-network-architecture-for-choice-specific-value-functions">Neural Network Architecture for Choice-Specific Value Functions</a></li>
+  <li><a href="#value-function-iteration-algorithm" id="toc-value-function-iteration-algorithm" class="nav-link" data-scroll-target="#value-function-iteration-algorithm">Value Function Iteration Algorithm</a></li>
+  </ul></li>
   <li><a href="#policy-iteration" id="toc-policy-iteration" class="nav-link" data-scroll-target="#policy-iteration">Policy Iteration</a></li>
   <li><a href="#example-grid-world" id="toc-example-grid-world" class="nav-link" data-scroll-target="#example-grid-world">Example: Grid World</a></li>
   <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
@@ -169,19 +173,56 @@ window.Quarto = {
 </section>
 <section id="value-iteration" class="level2">
 <h2 class="anchored" data-anchor-id="value-iteration">Value Iteration</h2>
-<div id="2f549489" class="cell" data-execution_count="1">
+<section id="neural-network-architecture-for-choice-specific-value-functions" class="level3">
+<h3 class="anchored" data-anchor-id="neural-network-architecture-for-choice-specific-value-functions">Neural Network Architecture for Choice-Specific Value Functions</h3>
+<p>Since the action space is binary, we represent the choice-specific value function using <strong>two separate neural networks</strong>: - <span class="math inline">\(v_\theta^{(0)}(s)\)</span> for action <span class="math inline">\(a=0\)</span> - <span class="math inline">\(v_\theta^{(1)}(s)\)</span> for action <span class="math inline">\(a=1\)</span></p>
+<p>Each network maps the continuous state <span class="math inline">\(s \in \mathbb{R}\)</span> to a scalar value.</p>
+<p><strong>Network Design Requirements:</strong></p>
+<ol type="1">
+<li><p><strong>Smoothness in <span class="math inline">\(s\)</span></strong>: We use smooth activation functions (tanh or softplus) to ensure the value function is differentiable with respect to the state.</p></li>
+<li><p><strong>Monotonicity in <span class="math inline">\(s\)</span></strong>: Since higher state values should lead to higher rewards (due to the <span class="math inline">\(\beta s\)</span> term), we enforce monotonicity by constraining the network weights to be non-negative. This is achieved by applying the softplus transformation: <span class="math display">\[w = \text{softplus}(\tilde{w}) = \log(1 + \exp(\tilde{w}))\]</span> where <span class="math inline">\(\tilde{w}\)</span> are unconstrained parameters. The softplus function is used instead of exponential to avoid weight explosion.</p></li>
+<li><p><strong>Shallow Architecture</strong>: Given that the reward function is linear in <span class="math inline">\(s\)</span> and the state space is one-dimensional, we use a shallow network (2-3 hidden layers) with moderate width (e.g., 32-64 units).</p></li>
+</ol>
+<p><strong>Network Structure:</strong> <span class="math display">\[v_\theta^{(a)}(s) = W_L^{(a)} h_{L-1} + b_L^{(a)}\]</span> where: - <span class="math inline">\(h_0 = s\)</span> (input) - <span class="math inline">\(h_\ell = \sigma(W_\ell^{(a)} h_{\ell-1} + b_\ell^{(a)})\)</span> for <span class="math inline">\(\ell = 1, \ldots, L-1\)</span> - <span class="math inline">\(W_\ell^{(a)} = \text{softplus}(\tilde{W}_\ell^{(a)})\)</span> (non-negative weights) - <span class="math inline">\(\sigma\)</span> is a smooth activation function (e.g., tanh)</p>
+</section>
+<section id="value-function-iteration-algorithm" class="level3">
+<h3 class="anchored" data-anchor-id="value-function-iteration-algorithm">Value Function Iteration Algorithm</h3>
+<p>The value iteration algorithm solves for the optimal choice-specific value functions by iteratively applying the Bellman operator.</p>
+<p><strong>Bellman Update for Choice-Specific Value Function:</strong></p>
+<p>Given the current value function approximations <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span>, we can compute the expected value of the next state: <span class="math display">\[\mathbb{E}_{\epsilon'} [V(s', \epsilon')] = \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}(s'))\right) + \gamma_E\]</span> where <span class="math inline">\(\gamma_E \approx 0.5772\)</span> is the Euler-Mascheroni constant (this formula uses the property of the Type-I Extreme Value distribution).</p>
+<p>The Bellman update for the choice-specific value function is: <span class="math display">\[v_{\text{new}}(s, a) = \bar{r}(s, a) + \delta \mathbb{E}_{\epsilon'} [V(s', \epsilon')]\]</span> <span class="math display">\[= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1-\gamma)s + a))\right) + \delta \gamma_E\]</span></p>
+<p><strong>Algorithm:</strong></p>
+<ol type="1">
+<li><p><strong>Initialize</strong>: Set <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span> to initial values (e.g., zeros or small random values)</p></li>
+<li><p><strong>Sample states</strong>: Generate a set of state values <span class="math inline">\(\{s_i\}_{i=1}^N\)</span> covering the relevant state space</p></li>
+<li><p><strong>Iterate</strong> until convergence:</p>
+<ol type="a">
+<li><p>For each sampled state <span class="math inline">\(s_i\)</span> and action <span class="math inline">\(a \in \{0,1\}\)</span>:</p>
+<ul>
+<li>Compute next state: <span class="math inline">\(s'_i = (1-\gamma)s_i + a\)</span></li>
+<li>Compute expected continuation value: <span class="math display">\[\text{EV}_i = \log\left(\exp(v_\theta^{(0)}(s'_i)) + \exp(v_\theta^{(1)}(s'_i))\right) + \gamma_E\]</span></li>
+<li>Compute target value: <span class="math display">\[y_i^{(a)} = \beta s_i - a + \delta \cdot \text{EV}_i\]</span></li>
+</ul></li>
+<li><p>Update network parameters <span class="math inline">\(\theta\)</span> by minimizing the loss: <span class="math display">\[L(\theta) = \sum_{i=1}^N \sum_{a \in \{0,1\}} \left(v_\theta^{(a)}(s_i) - y_i^{(a)}\right)^2\]</span></p></li>
+<li><p>Check convergence: If <span class="math inline">\(\max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}| &lt; \epsilon_{\text{tol}}\)</span>, stop</p></li>
+</ol></li>
+<li><p><strong>Output</strong>: The converged networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span> approximate the optimal choice-specific value functions</p></li>
+</ol>
+<p><strong>Convergence</strong>: The value iteration algorithm is guaranteed to converge to the unique fixed point by the Contraction Mapping Theorem, since the Bellman operator is a contraction with modulus <span class="math inline">\(\delta &lt; 1\)</span>.</p>
+<div id="04a3272c" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Value iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
+</section>
 <section id="policy-iteration" class="level2">
 <h2 class="anchored" data-anchor-id="policy-iteration">Policy Iteration</h2>
-<div id="22f2ac34" class="cell" data-execution_count="2">
+<div id="cfb2883d" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Policy iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="example-grid-world" class="level2">
 <h2 class="anchored" data-anchor-id="example-grid-world">Example: Grid World</h2>
-<div id="c1067dc5" class="cell" data-execution_count="3">
+<div id="65e0c665" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid world example</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
@@ -190,7 +231,7 @@ window.Quarto = {
 </section>
 <section id="visualization" class="level2">
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
-<div id="3e81e623" class="cell" data-execution_count="4">
+<div id="d3c0d87e" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization code</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>

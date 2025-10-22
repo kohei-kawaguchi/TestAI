@@ -71,6 +71,70 @@ $$P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$$
 
 ## Value Iteration
 
+### Neural Network Architecture for Choice-Specific Value Functions
+
+Since the action space is binary, we represent the choice-specific value function using **two separate neural networks**:
+- $v_\theta^{(0)}(s)$ for action $a=0$
+- $v_\theta^{(1)}(s)$ for action $a=1$
+
+Each network maps the continuous state $s \in \mathbb{R}$ to a scalar value.
+
+**Network Design Requirements:**
+
+1. **Smoothness in $s$**: We use smooth activation functions (tanh or softplus) to ensure the value function is differentiable with respect to the state.
+
+2. **Monotonicity in $s$**: Since higher state values should lead to higher rewards (due to the $\beta s$ term), we enforce monotonicity by constraining the network weights to be non-negative. This is achieved by applying the softplus transformation:
+   $$w = \text{softplus}(\tilde{w}) = \log(1 + \exp(\tilde{w}))$$
+   where $\tilde{w}$ are unconstrained parameters. The softplus function is used instead of exponential to avoid weight explosion.
+
+3. **Shallow Architecture**: Given that the reward function is linear in $s$ and the state space is one-dimensional, we use a shallow network (2-3 hidden layers) with moderate width (e.g., 32-64 units).
+
+**Network Structure:**
+$$v_\theta^{(a)}(s) = W_L^{(a)} h_{L-1} + b_L^{(a)}$$
+where:
+- $h_0 = s$ (input)
+- $h_\ell = \sigma(W_\ell^{(a)} h_{\ell-1} + b_\ell^{(a)})$ for $\ell = 1, \ldots, L-1$
+- $W_\ell^{(a)} = \text{softplus}(\tilde{W}_\ell^{(a)})$ (non-negative weights)
+- $\sigma$ is a smooth activation function (e.g., tanh)
+
+### Value Function Iteration Algorithm
+
+The value iteration algorithm solves for the optimal choice-specific value functions by iteratively applying the Bellman operator.
+
+**Bellman Update for Choice-Specific Value Function:**
+
+Given the current value function approximations $v_\theta^{(0)}$ and $v_\theta^{(1)}$, we can compute the expected value of the next state:
+$$\mathbb{E}_{\epsilon'} [V(s', \epsilon')] = \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}(s'))\right) + \gamma_E$$
+where $\gamma_E \approx 0.5772$ is the Euler-Mascheroni constant (this formula uses the property of the Type-I Extreme Value distribution).
+
+The Bellman update for the choice-specific value function is:
+$$v_{\text{new}}(s, a) = \bar{r}(s, a) + \delta \mathbb{E}_{\epsilon'} [V(s', \epsilon')]$$
+$$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1-\gamma)s + a))\right) + \delta \gamma_E$$
+
+**Algorithm:**
+
+1. **Initialize**: Set $v_\theta^{(0)}$ and $v_\theta^{(1)}$ to initial values (e.g., zeros or small random values)
+
+2. **Sample states**: Generate a set of state values $\{s_i\}_{i=1}^N$ covering the relevant state space
+
+3. **Iterate** until convergence:
+
+   a. For each sampled state $s_i$ and action $a \in \{0,1\}$:
+      - Compute next state: $s'_i = (1-\gamma)s_i + a$
+      - Compute expected continuation value:
+        $$\text{EV}_i = \log\left(\exp(v_\theta^{(0)}(s'_i)) + \exp(v_\theta^{(1)}(s'_i))\right) + \gamma_E$$
+      - Compute target value:
+        $$y_i^{(a)} = \beta s_i - a + \delta \cdot \text{EV}_i$$
+
+   b. Update network parameters $\theta$ by minimizing the loss:
+      $$L(\theta) = \sum_{i=1}^N \sum_{a \in \{0,1\}} \left(v_\theta^{(a)}(s_i) - y_i^{(a)}\right)^2$$
+
+   c. Check convergence: If $\max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}| < \epsilon_{\text{tol}}$, stop
+
+4. **Output**: The converged networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$ approximate the optimal choice-specific value functions
+
+**Convergence**: The value iteration algorithm is guaranteed to converge to the unique fixed point by the Contraction Mapping Theorem, since the Bellman operator is a contraction with modulus $\delta < 1$.
+
 ```{python}
 # Value iteration implementation
 ```
