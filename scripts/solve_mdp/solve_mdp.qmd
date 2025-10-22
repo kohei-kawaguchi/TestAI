@@ -155,21 +155,21 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 ### Main Algorithm
 
-**Procedure** `SolveValueIteration`($\beta$, $\gamma$, $\delta$, hyperparameters)
+**Procedure** `SolveValueIteration`($\beta$: float, $\gamma$: float, $\delta$: float, hyperparameters: dict) $\to$ (Network, Network)
 
-1. $v_\theta^{(0)}, v_\theta^{(1)} \leftarrow$ `InitializeNetworks`(hyperparameters)
+1. $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network $\leftarrow$ `InitializeNetworks`(hyperparameters)
 
-2. $S \leftarrow$ `GenerateStateGrid`($N$, state_range)
+2. $S$: Tensor[$N \times 1$] $\leftarrow$ `GenerateStateGrid`($N$: int, state_range: tuple)
 
-3. For `iteration` = 1 to `max_iter`:
+3. For `iteration`: int = 1 to `max_iter`: int:
 
-   a. $\{y_i^{(a)}\} \leftarrow$ `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$)
+   a. $\{y_i^{(a)}\}$: Tensor[$N \times 2$] $\leftarrow$ `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$)
 
-   b. $v_\theta^{(0)}, v_\theta^{(1)} \leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs)
+   b. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs: int)
 
-   c. max_error $\leftarrow$ `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+   c. max_error: float $\leftarrow$ `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
 
-   d. **If** max_error $< \epsilon_{\text{tol}}$: **Break**
+   d. **If** max_error $< \epsilon_{\text{tol}}$: float: **Break**
 
 4. **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 
@@ -177,70 +177,70 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 ### Subroutines
 
-**Procedure** `InitializeNetworks`(hyperparameters)
+**Procedure** `InitializeNetworks`(hyperparameters: dict) $\to$ (Network, Network)
 
-- Create networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$ with monotonic weight constraints
+- Create networks $v_\theta^{(0)}$: Network and $v_\theta^{(1)}$: Network with monotonic weight constraints
 - Initialize parameters $\theta$ randomly
 - **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 
 ---
 
-**Procedure** `GenerateStateGrid`($N$, state_range)
+**Procedure** `GenerateStateGrid`($N$: int, state_range: tuple[float, float]) $\to$ Tensor[$N \times 1$]
 
-- Create uniform grid: $S = \{s_1, \ldots, s_N\}$ over state_range
+- Create uniform grid: $S$: Tensor[$N \times 1$] = $\{s_1, \ldots, s_N\}$ over state_range
 - **Return** $S$
 
 ---
 
-**Procedure** `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$)
+**Procedure** `ComputeBellmanTargets`($S$: Tensor[$N \times 1$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float) $\to$ Tensor[$N \times 2$]
 
-For each $s_i \in S$ and $a \in \{0, 1\}$:
+For each $s_i$: float $\in S$ and $a$: int $\in \{0, 1\}$:
 
-&nbsp;&nbsp;&nbsp;&nbsp;$s'_i \leftarrow$ `ComputeNextState`($s_i$, $a$, $\gamma$)
+&nbsp;&nbsp;&nbsp;&nbsp;$s'_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeNextState`($s_i$, $a$, $\gamma$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i \leftarrow$ `ComputeExpectedValue`($s'_i$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$)
+&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeExpectedValue`($s'_i$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$: float)
 
-&nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)} \leftarrow$ `ComputeMeanReward`($s_i$, $a$, $\beta$) $+ \delta \cdot \text{EV}_i$
+&nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)}$: Tensor[$N \times 1$] $\leftarrow$ `ComputeMeanReward`($s_i$, $a$, $\beta$) $+ \delta \cdot \text{EV}_i$
 
-**Return** $\{y_i^{(a)}\}$ for all $i$, $a$
+**Return** $\{y_i^{(a)}\}$: Tensor[$N \times 2$] for all $i$, $a$
 
 ---
 
-**Procedure** `ComputeNextState`($s$, $a$, $\gamma$)
+**Procedure** `ComputeNextState`($s$: Tensor[$N \times 1$], $a$: int, $\gamma$: float) $\to$ Tensor[$N \times 1$]
 
 - **Return** $(1 - \gamma) \cdot s + a$
 
 ---
 
-**Procedure** `ComputeMeanReward`($s$, $a$, $\beta$)
+**Procedure** `ComputeMeanReward`($s$: Tensor[$N \times 1$], $a$: int, $\beta$: float) $\to$ Tensor[$N \times 1$]
 
 - **Return** $\beta \cdot s - a$
 
 ---
 
-**Procedure** `ComputeExpectedValue`($s'$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$)
+**Procedure** `ComputeExpectedValue`($s'$: Tensor[$N \times 1$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\gamma_E$: float) $\to$ Tensor[$N \times 1$]
 
-- $v_0 \leftarrow v_\theta^{(0)}(s')$
-- $v_1 \leftarrow v_\theta^{(1)}(s')$
-- $\text{EV} \leftarrow$ `LogSumExp`($v_0$, $v_1$) $+ \gamma_E$
+- $v_0$: Tensor[$N \times 1$] $\leftarrow v_\theta^{(0)}(s')$
+- $v_1$: Tensor[$N \times 1$] $\leftarrow v_\theta^{(1)}(s')$
+- $\text{EV}$: Tensor[$N \times 1$] $\leftarrow$ `LogSumExp`($v_0$, $v_1$) $+ \gamma_E$
 - **Return** EV
 
 ---
 
-**Procedure** `LogSumExp`($v_0$, $v_1$)
+**Procedure** `LogSumExp`($v_0$: Tensor[$N \times 1$], $v_1$: Tensor[$N \times 1$]) $\to$ Tensor[$N \times 1$]
 
-- $\text{max}_v \leftarrow \max(v_0, v_1)$
+- $\text{max}_v$: Tensor[$N \times 1$] $\leftarrow \max(v_0, v_1)$
 - **Return** $\text{max}_v + \log(\exp(v_0 - \text{max}_v) + \exp(v_1 - \text{max}_v))$
 
 ---
 
-**Procedure** `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs)
+**Procedure** `UpdateNetworks`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, num_epochs: int) $\to$ (Network, Network)
 
-For `epoch` = 1 to num_epochs:
+For `epoch`: int = 1 to num_epochs:
 
-&nbsp;&nbsp;&nbsp;&nbsp;$L \leftarrow$ `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+&nbsp;&nbsp;&nbsp;&nbsp;$L$: float $\leftarrow$ `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;$\nabla_\theta L \leftarrow$ `ComputeGradients`($L$)
+&nbsp;&nbsp;&nbsp;&nbsp;$\nabla_\theta L$ $\leftarrow$ `ComputeGradients`($L$)
 
 &nbsp;&nbsp;&nbsp;&nbsp;$\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L$
 
@@ -248,16 +248,16 @@ For `epoch` = 1 to num_epochs:
 
 ---
 
-**Procedure** `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+**Procedure** `ComputeLoss`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ float
 
-- $L \leftarrow \sum_{i=1}^N \sum_{a \in \{0,1\}} (v_\theta^{(a)}(s_i) - y_i^{(a)})^2$
+- $L$: float $\leftarrow \sum_{i=1}^N \sum_{a \in \{0,1\}} (v_\theta^{(a)}(s_i) - y_i^{(a)})^2$
 - **Return** $L$
 
 ---
 
-**Procedure** `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+**Procedure** `CheckConvergence`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ float
 
-- max_error $\leftarrow \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|$
+- max_error: float $\leftarrow \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|$
 - **Return** max_error
 
 :::
