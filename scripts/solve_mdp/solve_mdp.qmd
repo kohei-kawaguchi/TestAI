@@ -219,27 +219,23 @@ For `iteration` = 1 to `max_iter`:
 - **Batch updates**: Can process all states in parallel for efficiency
 
 ```{python}
-# Value iteration implementation
-```
-
-## Policy Iteration
-
-```{python}
-# Policy iteration implementation
-```
-
-## Example: Grid World
-
-```{python}
-# Grid world example
+# Import the MDP solver from the test_ai package
+# Set parameters: beta, gamma, delta
+# Create MDPSolver instance
+# Solve the MDP using value iteration
 ```
 
 ## Results
 
+```{python}
+# Plot convergence history
+```
+
 ## Visualization
 
 ```{python}
-# Visualization code
+# Plot value functions for both actions
+# Plot optimal policy (choice probabilities)
 ```
 
 ## Conclusion
