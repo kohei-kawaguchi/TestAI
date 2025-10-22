@@ -152,35 +152,37 @@ class TestComputeMeanReward:
         assert r.shape == s.shape
 
     def test_formula(self):
-        """Should compute r = beta*s - a."""
+        """Should compute r = beta*log(1+s) - a."""
         s = torch.tensor([[4.0]])
         a = 1
         beta = 0.5
 
         r = ComputeMeanReward(s=s, a=a, beta=beta)
-        expected = beta * s - a
+        expected = beta * torch.log(1 + s) - a
 
         assert torch.allclose(r, expected)
 
     def test_action_0(self):
-        """Reward for action 0 should be beta*s."""
+        """Reward for action 0 should be beta*log(1+s)."""
         s = torch.tensor([[3.0]])
         a = 0
         beta = 0.6
 
         r = ComputeMeanReward(s=s, a=a, beta=beta)
 
-        assert torch.allclose(r, torch.tensor([[1.8]]))
+        expected = beta * torch.log(1 + s)
+        assert torch.allclose(r, expected)
 
     def test_action_1(self):
-        """Reward for action 1 should be beta*s - 1."""
+        """Reward for action 1 should be beta*log(1+s) - 1."""
         s = torch.tensor([[3.0]])
         a = 1
         beta = 0.6
 
         r = ComputeMeanReward(s=s, a=a, beta=beta)
 
-        assert torch.allclose(r, torch.tensor([[0.8]]))
+        expected = beta * torch.log(1 + s) - 1
+        assert torch.allclose(r, expected)
 
 
 class TestLogSumExp:

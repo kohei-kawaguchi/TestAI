@@ -136,7 +136,10 @@ def ComputeMeanReward(s: torch.Tensor, a: int, beta: float) -> torch.Tensor:
     """
     Procedure ComputeMeanReward(s: Tensor[N×1], a: int, beta: float) -> Tensor[N×1]
 
-    Compute mean reward function.
+    Compute mean reward function with logarithmic form.
+
+    The reward function is: r(s,a) = beta * log(1 + s) - a
+    This captures diminishing marginal returns to the state.
 
     Args:
         s: State tensor of shape (N, 1)
@@ -146,7 +149,7 @@ def ComputeMeanReward(s: torch.Tensor, a: int, beta: float) -> torch.Tensor:
     Returns:
         reward: Mean reward tensor of shape (N, 1)
     """
-    return beta * s - a
+    return beta * torch.log(1 + s) - a
 
 
 def LogSumExp(v_0: torch.Tensor, v_1: torch.Tensor) -> torch.Tensor:
