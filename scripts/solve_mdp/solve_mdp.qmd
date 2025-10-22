@@ -275,6 +275,20 @@ For `epoch`: int = 1 to num_epochs:
 - max_error: float $\leftarrow \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|$
 - **Return** max_error
 
+---
+
+**Procedure** `ComputeChoiceProbability`($s$: float, $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ (float, float)
+
+- $v_0$: float $\leftarrow v_\theta^{(0)}(s)$
+- $v_1$: float $\leftarrow v_\theta^{(1)}(s)$
+- $\text{denom}$: float $\leftarrow \exp(v_0) + \exp(v_1)$
+- $P(a=0|s)$: float $\leftarrow \exp(v_0) / \text{denom}$
+- $P(a=1|s)$: float $\leftarrow \exp(v_1) / \text{denom}$
+- **Return** $P(a=0|s)$, $P(a=1|s)$
+
+**Note**: This implements the logit formula for choice probabilities under Type-I Extreme Value distributed shocks:
+$$P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$$
+
 :::
 
 **Key Implementation Details:**
