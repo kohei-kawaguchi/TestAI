@@ -221,15 +221,25 @@ Algorithm: Value Function Iteration with Neural Networks
 </div>
 </div>
 <div class="callout-body-container callout-body">
+<p><strong>Design Principles:</strong></p>
+<p>This pseudo code is designed for direct implementation:</p>
+<ul>
+<li><strong>No placeholders</strong>: Every operation corresponds to a concrete function or method call</li>
+<li><strong>Explicit parameters</strong>: All inputs are passed as parameters, no implicit/global state</li>
+<li><strong>Framework-specific</strong>: Uses PyTorch-style operations (optimizer.zero_grad(), backward(), step())</li>
+<li><strong>No hard-coding</strong>: All values are parameterized</li>
+</ul>
 <p><strong>Input:</strong></p>
 <ul>
-<li>Parameters: <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span> (Euler-Mascheroni constant)</li>
-<li>Network hyperparameters: <code>num_layers</code>, <code>hidden_size</code>, <code>learning_rate</code></li>
-<li>Training hyperparameters: <span class="math inline">\(N\)</span> (<code>num_states</code>), <code>max_iter</code>, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, <code>num_epochs</code></li>
+<li>MDP parameters: <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float</li>
+<li>Network hyperparameters: hyperparameters: dict (containing <code>hidden_sizes</code>: list[int])</li>
+<li>State grid parameters: <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float]</li>
+<li>Training parameters: max_iter: int, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, num_epochs: int</li>
+<li>Optimization: learning_rate: float, optimizer: Optimizer</li>
 </ul>
 <p><strong>Output:</strong></p>
 <ul>
-<li>Trained networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span></li>
+<li>Trained networks <span class="math inline">\(v_\theta^{(0)}\)</span>: Network and <span class="math inline">\(v_\theta^{(1)}\)</span>: Network</li>
 </ul>
 <hr>
 <section id="main-algorithm" class="level3">
@@ -297,10 +307,10 @@ Algorithm: Value Function Iteration with Neural Networks
 <hr>
 <p><strong>Procedure</strong> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>], <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network, num_epochs: int, optimizer: Optimizer) <span class="math inline">\(\to\)</span> (Network, Network)</p>
 <p>For <code>epoch</code>: int = 1 to num_epochs:</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;optimizer.zero_grad()</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;optimizer.zero_grad() &nbsp;&nbsp;&nbsp;&nbsp;// Clear previous gradients</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(L\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeLoss</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(L\)</span>.backward()</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step()</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(L\)</span>.backward() &nbsp;&nbsp;&nbsp;&nbsp;// Compute gradients via automatic differentiation</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step() &nbsp;&nbsp;&nbsp;&nbsp;// Update parameters using computed gradients</p>
 <p><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></p>
 <hr>
 <p><strong>Procedure</strong> <code>ComputeLoss</code>(<span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>], <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network) <span class="math inline">\(\to\)</span> float</p>
@@ -325,7 +335,7 @@ Algorithm: Value Function Iteration with Neural Networks
 <li><strong>Optimizer</strong>: Use adaptive optimizers such as Adam for faster convergence</li>
 <li><strong>Batch updates</strong>: Process all states in parallel for efficiency</li>
 </ul>
-<div id="b31f5ad3" class="cell" data-execution_count="1">
+<div id="77365e2f" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the MDP solver from the test_ai package</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Set parameters: beta, gamma, delta</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create MDPSolver instance</span></span>
@@ -335,13 +345,13 @@ Algorithm: Value Function Iteration with Neural Networks
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
-<div id="6784abb4" class="cell" data-execution_count="2">
+<div id="4e46d39c" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot convergence history</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="visualization" class="level2">
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
-<div id="f9602840" class="cell" data-execution_count="3">
+<div id="3aee63d7" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot value functions for both actions</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot optimal policy (choice probabilities)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>

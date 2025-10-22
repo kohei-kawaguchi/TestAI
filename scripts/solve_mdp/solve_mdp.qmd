@@ -141,15 +141,26 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 ## Algorithm: Value Function Iteration with Neural Networks
 
+**Design Principles:**
+
+This pseudo code is designed for direct implementation:
+
+- **No placeholders**: Every operation corresponds to a concrete function or method call
+- **Explicit parameters**: All inputs are passed as parameters, no implicit/global state
+- **Framework-specific**: Uses PyTorch-style operations (optimizer.zero_grad(), backward(), step())
+- **No hard-coding**: All values are parameterized
+
 **Input:**
 
-- Parameters: $\beta$, $\gamma$, $\delta$, $\gamma_E$ (Euler-Mascheroni constant)
-- Network hyperparameters: `num_layers`, `hidden_size`, `learning_rate`
-- Training hyperparameters: $N$ (`num_states`), `max_iter`, $\epsilon_{\text{tol}}$, `num_epochs`
+- MDP parameters: $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float
+- Network hyperparameters: hyperparameters: dict (containing `hidden_sizes`: list[int])
+- State grid parameters: $N$: int, state_range: tuple[float, float]
+- Training parameters: max_iter: int, $\epsilon_{\text{tol}}$: float, num_epochs: int
+- Optimization: learning_rate: float, optimizer: Optimizer
 
 **Output:**
 
-- Trained networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$
+- Trained networks $v_\theta^{(0)}$: Network and $v_\theta^{(1)}$: Network
 
 ---
 
@@ -238,13 +249,13 @@ For each $s_i$: float $\in S$ and $a$: int $\in \{0, 1\}$:
 
 For `epoch`: int = 1 to num_epochs:
 
-&nbsp;&nbsp;&nbsp;&nbsp;optimizer.zero_grad()
+&nbsp;&nbsp;&nbsp;&nbsp;optimizer.zero_grad() &nbsp;&nbsp;&nbsp;&nbsp;// Clear previous gradients
 
 &nbsp;&nbsp;&nbsp;&nbsp;$L$: float $\leftarrow$ `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;$L$.backward()
+&nbsp;&nbsp;&nbsp;&nbsp;$L$.backward() &nbsp;&nbsp;&nbsp;&nbsp;// Compute gradients via automatic differentiation
 
-&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step()
+&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step() &nbsp;&nbsp;&nbsp;&nbsp;// Update parameters using computed gradients
 
 **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 

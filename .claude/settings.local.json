@@ -6,7 +6,8 @@
       "Bash(Rscript:*)",
       "Bash(npx -y live-server:*)",
       "Bash(export PATH=\"$HOME/.elan/bin:$PATH\")",
-      "Bash(lean:*)"
+      "Bash(lean:*)",
+      "Bash(quarto render:*)"
     ],
     "deny": [],
     "ask": []
