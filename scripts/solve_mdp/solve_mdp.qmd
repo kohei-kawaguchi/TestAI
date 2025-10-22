@@ -8,6 +8,7 @@ format:
 jupyter: python3
 execute:
   daemon: false
+  eval: false
 ---
 
 ## Introduction
@@ -21,11 +22,11 @@ We consider a Markov Decision Process with the following components:
 **Action Space**: The action variable $a \in \{0, 1\}$ is binary.
 
 **Reward Function**: The mean reward function is given by:
-$$\bar{r}(s, a) = \beta s - a$$
-where $\beta$ is a parameter that determines the weight on the state value.
+$$\bar{r}(s, a) = \beta \log(1 + s) - a$$
+where $\beta$ is a parameter that determines the weight on the state value, and the logarithmic form captures diminishing marginal returns to the state.
 
 The realized reward includes an action-specific shock:
-$$r(s, a) = \bar{r}(s, a) + \epsilon(a) = \beta s - a + \epsilon(a)$$
+$$r(s, a) = \bar{r}(s, a) + \epsilon(a) = \beta \log(1 + s) - a + \epsilon(a)$$
 where $\epsilon(a)$ represents the shock associated with action $a$.
 
 **Reward Shocks**: The shocks $\epsilon(0)$ and $\epsilon(1)$ are:
@@ -42,7 +43,8 @@ where $\gamma \in (0, 1)$ is a depreciation parameter that determines how much t
 **Interpretation**: In this model:
 - The state $s$ can be interpreted as a resource or capital stock
 - The action $a$ represents whether to invest/add to the stock ($a=1$) or not ($a=0$)
-- The reward incentivizes having a high state value (through $\beta s$) but penalizes taking action ($-a$)
+- The reward incentivizes having a high state value (through $\beta \log(1 + s)$) with diminishing marginal returns, but penalizes taking action ($-a$)
+- The logarithmic reward captures the idea that additional units of state become less valuable as the state increases
 - The state transition shows that without action, the state decays at rate $\gamma$, while action adds to the state
 
 ## Optimal Markov Decision Policy
@@ -85,11 +87,11 @@ Each network maps the continuous state $s \in \mathbb{R}$ to a scalar value.
 
 1. **Smoothness in $s$**: We use smooth activation functions (tanh or softplus) to ensure the value function is differentiable with respect to the state.
 
-2. **Monotonicity in $s$**: Since higher state values should lead to higher rewards (due to the $\beta s$ term), we enforce monotonicity by constraining the network weights to be non-negative. This is achieved by applying the softplus transformation:
+2. **Monotonicity in $s$**: Since higher state values should lead to higher rewards (due to the $\beta \log(1 + s)$ term), we enforce monotonicity by constraining the network weights to be non-negative. This is achieved by applying the softplus transformation:
    $$w = \text{softplus}(\tilde{w}) = \log(1 + \exp(\tilde{w}))$$
    where $\tilde{w}$ are unconstrained parameters. The softplus function is used instead of exponential to avoid weight explosion.
 
-3. **Shallow Architecture**: Given that the reward function is linear in $s$ and the state space is one-dimensional, we use a shallow network (2-3 hidden layers) with moderate width (e.g., 32-64 units).
+3. **Shallow Architecture**: Given that the reward function is concave and logarithmic in $s$ and the state space is one-dimensional, we use a shallow network (2-3 hidden layers) with moderate width (e.g., 32-64 units).
 
 **Network Structure:**
 $$v_\theta^{(a)}(s) = W_L^{(a)} h_{L-1} + b_L^{(a)}$$
@@ -111,7 +113,7 @@ where $\gamma_E \approx 0.5772$ is the Euler-Mascheroni constant (this formula u
 
 The Bellman update for the choice-specific value function is:
 $$v_{\text{new}}(s, a) = \bar{r}(s, a) + \delta \mathbb{E}_{\epsilon'} [V(s', \epsilon')]$$
-$$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1-\gamma)s + a))\right) + \delta \gamma_E$$
+$$= \beta \log(1 + s) - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1-\gamma)s + a))\right) + \delta \gamma_E$$
 
 **Algorithm:**
 
@@ -126,7 +128,7 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
       - Compute expected continuation value:
         $$\text{EV}_i = \log\left(\exp(v_\theta^{(0)}(s'_i)) + \exp(v_\theta^{(1)}(s'_i))\right) + \gamma_E$$
       - Compute target value:
-        $$y_i^{(a)} = \beta s_i - a + \delta \cdot \text{EV}_i$$
+        $$y_i^{(a)} = \beta \log(1 + s_i) - a + \delta \cdot \text{EV}_i$$
 
    b. Update network parameters $\theta$ by minimizing the loss:
       $$L(\theta) = \sum_{i=1}^N \sum_{a \in \{0,1\}} \left(v_\theta^{(a)}(s_i) - y_i^{(a)}\right)^2$$
@@ -227,7 +229,7 @@ For each $s_i$: float $\in S$ and $a$: int $\in \{0, 1\}$:
 
 **Procedure** `ComputeMeanReward`($s$: Tensor[$N \times 1$], $a$: int, $\beta$: float) $\to$ Tensor[$N \times 1$]
 
-- **Return** $\beta \cdot s - a$
+- **Return** $\beta \cdot \log(1 + s) - a$
 
 ---
 
