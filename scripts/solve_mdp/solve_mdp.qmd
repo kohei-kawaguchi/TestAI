@@ -163,7 +163,7 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 3. For `iteration`: int = 1 to `max_iter`: int:
 
-   a. $\{y_i^{(a)}\}$: Tensor[$N \times 2$] $\leftarrow$ `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$)
+   a. $\{y_i^{(a)}\}$: Tensor[$N \times 2$] $\leftarrow$ `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$, $\gamma_E$)
 
    b. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs: int)
 
@@ -192,13 +192,13 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 ---
 
-**Procedure** `ComputeBellmanTargets`($S$: Tensor[$N \times 1$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float) $\to$ Tensor[$N \times 2$]
+**Procedure** `ComputeBellmanTargets`($S$: Tensor[$N \times 1$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float) $\to$ Tensor[$N \times 2$]
 
 For each $s_i$: float $\in S$ and $a$: int $\in \{0, 1\}$:
 
 &nbsp;&nbsp;&nbsp;&nbsp;$s'_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeNextState`($s_i$, $a$, $\gamma$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeExpectedValue`($s'_i$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$: float)
+&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeExpectedValue`($s'_i$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$)
 
 &nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)}$: Tensor[$N \times 1$] $\leftarrow$ `ComputeMeanReward`($s_i$, $a$, $\beta$) $+ \delta \cdot \text{EV}_i$
 
