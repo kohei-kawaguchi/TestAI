@@ -92,8 +92,8 @@ def InitializeNetworks(hyperparameters: Dict) -> Tuple[MonotonicNetwork, Monoton
     """
     hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
 
-    v_theta_0 = MonotonicNetwork(hidden_sizes)
-    v_theta_1 = MonotonicNetwork(hidden_sizes)
+    v_theta_0 = MonotonicNetwork(hidden_sizes=hidden_sizes)
+    v_theta_1 = MonotonicNetwork(hidden_sizes=hidden_sizes)
 
     return v_theta_0, v_theta_1
 
@@ -189,7 +189,7 @@ def ComputeExpectedValue(
     """
     v_0 = v_theta_0(s_prime)
     v_1 = v_theta_1(s_prime)
-    EV = LogSumExp(v_0, v_1) + gamma_E
+    EV = LogSumExp(v_0=v_0, v_1=v_1) + gamma_E
     return EV
 
 
@@ -223,9 +223,9 @@ def ComputeBellmanTargets(
     targets_list = []
 
     for a in [0, 1]:
-        s_prime_i = ComputeNextState(S, a, gamma)
-        EV_i = ComputeExpectedValue(s_prime_i, v_theta_0, v_theta_1, gamma_E)
-        y_i_a = ComputeMeanReward(S, a, beta) + delta * EV_i
+        s_prime_i = ComputeNextState(s=S, a=a, gamma=gamma)
+        EV_i = ComputeExpectedValue(s_prime=s_prime_i, v_theta_0=v_theta_0, v_theta_1=v_theta_1, gamma_E=gamma_E)
+        y_i_a = ComputeMeanReward(s=S, a=a, beta=beta) + delta * EV_i
         targets_list.append(y_i_a)
 
     # Stack into (N, 2) tensor
@@ -294,7 +294,7 @@ def UpdateNetworks(
         optimizer.zero_grad()
 
         # Compute loss
-        L = ComputeLoss(S, targets, v_theta_0, v_theta_1)
+        L = ComputeLoss(S=S, targets=targets, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
 
         # Compute gradients
         L.backward()
@@ -380,14 +380,14 @@ def SolveValueIteration(
         Tuple of (v_theta_0, v_theta_1, history)
     """
     # Step 1: Initialize networks
-    v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters)
+    v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
     # Create optimizer
     params = list(v_theta_0.parameters()) + list(v_theta_1.parameters())
     optimizer = torch.optim.Adam(params, lr=learning_rate)
 
     # Step 2: Generate state grid
-    S = GenerateStateGrid(N, state_range)
+    S = GenerateStateGrid(N=N, state_range=state_range)
 
     # Track history
     history = {
@@ -399,13 +399,13 @@ def SolveValueIteration(
     for iteration in range(max_iter):
         # Step 3a: Compute Bellman targets
         with torch.no_grad():
-            targets = ComputeBellmanTargets(S, v_theta_0, v_theta_1, beta, gamma, delta, gamma_E)
+            targets = ComputeBellmanTargets(S=S, v_theta_0=v_theta_0, v_theta_1=v_theta_1, beta=beta, gamma=gamma, delta=delta, gamma_E=gamma_E)
 
         # Step 3b: Update networks
-        v_theta_0, v_theta_1 = UpdateNetworks(S, targets, v_theta_0, v_theta_1, num_epochs, optimizer)
+        v_theta_0, v_theta_1 = UpdateNetworks(S=S, targets=targets, v_theta_0=v_theta_0, v_theta_1=v_theta_1, num_epochs=num_epochs, optimizer=optimizer)
 
         # Step 3c: Check convergence
-        max_error = CheckConvergence(S, targets, v_theta_0, v_theta_1)
+        max_error = CheckConvergence(S=S, targets=targets, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
 
         # Track history
         history['iterations'].append(iteration)
@@ -465,8 +465,8 @@ def GetPolicy(v_theta_0: MonotonicNetwork, v_theta_1: MonotonicNetwork, s: float
     """
     import numpy as np
 
-    v0 = GetValue(v_theta_0, v_theta_1, s, 0)
-    v1 = GetValue(v_theta_0, v_theta_1, s, 1)
+    v0 = GetValue(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=s, a=0)
+    v1 = GetValue(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=s, a=1)
 
     exp_v0 = np.exp(v0)
     exp_v1 = np.exp(v1)

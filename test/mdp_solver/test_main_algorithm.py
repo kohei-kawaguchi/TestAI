@@ -33,8 +33,8 @@ class TestSolveValueIteration:
 
         # Create optimizer (will be created inside function, but we need params first)
         v_theta_0, v_theta_1, history = SolveValueIteration(
-            beta, gamma, delta, gamma_E, hyperparameters,
-            N, state_range, max_iter, epsilon_tol, num_epochs, learning_rate
+            beta=beta, gamma=gamma, delta=delta, gamma_E=gamma_E, hyperparameters=hyperparameters,
+            N=N, state_range=state_range, max_iter=max_iter, epsilon_tol=epsilon_tol, num_epochs=num_epochs, learning_rate=learning_rate
         )
 
         assert isinstance(v_theta_0, MonotonicNetwork)
@@ -55,8 +55,8 @@ class TestSolveValueIteration:
         learning_rate = 1e-3
 
         v_theta_0, v_theta_1, history = SolveValueIteration(
-            beta, gamma, delta, gamma_E, hyperparameters,
-            N, state_range, max_iter, epsilon_tol, num_epochs, learning_rate
+            beta=beta, gamma=gamma, delta=delta, gamma_E=gamma_E, hyperparameters=hyperparameters,
+            N=N, state_range=state_range, max_iter=max_iter, epsilon_tol=epsilon_tol, num_epochs=num_epochs, learning_rate=learning_rate
         )
 
         assert isinstance(history, dict)
@@ -78,8 +78,8 @@ class TestSolveValueIteration:
         learning_rate = 1e-3
 
         v_theta_0, v_theta_1, history = SolveValueIteration(
-            beta, gamma, delta, gamma_E, hyperparameters,
-            N, state_range, max_iter, epsilon_tol, num_epochs, learning_rate,
+            beta=beta, gamma=gamma, delta=delta, gamma_E=gamma_E, hyperparameters=hyperparameters,
+            N=N, state_range=state_range, max_iter=max_iter, epsilon_tol=epsilon_tol, num_epochs=num_epochs, learning_rate=learning_rate,
             verbose=False
         )
 
@@ -102,8 +102,8 @@ class TestSolveValueIteration:
         learning_rate = 1e-3
 
         v_theta_0, v_theta_1, history = SolveValueIteration(
-            beta, gamma, delta, gamma_E, hyperparameters,
-            N, state_range, max_iter, epsilon_tol, num_epochs, learning_rate,
+            beta=beta, gamma=gamma, delta=delta, gamma_E=gamma_E, hyperparameters=hyperparameters,
+            N=N, state_range=state_range, max_iter=max_iter, epsilon_tol=epsilon_tol, num_epochs=num_epochs, learning_rate=learning_rate,
             verbose=False
         )
 
@@ -126,8 +126,8 @@ class TestSolveValueIteration:
         learning_rate = 1e-3
 
         v_theta_0, v_theta_1, history = SolveValueIteration(
-            beta, gamma, delta, gamma_E, hyperparameters,
-            N, state_range, max_iter, epsilon_tol, num_epochs, learning_rate,
+            beta=beta, gamma=gamma, delta=delta, gamma_E=gamma_E, hyperparameters=hyperparameters,
+            N=N, state_range=state_range, max_iter=max_iter, epsilon_tol=epsilon_tol, num_epochs=num_epochs, learning_rate=learning_rate,
             verbose=False
         )
 
@@ -149,8 +149,8 @@ class TestSolveValueIteration:
         learning_rate = 1e-3
 
         v_theta_0, v_theta_1, history = SolveValueIteration(
-            beta, gamma, delta, gamma_E, hyperparameters,
-            N, state_range, max_iter, epsilon_tol, num_epochs, learning_rate,
+            beta=beta, gamma=gamma, delta=delta, gamma_E=gamma_E, hyperparameters=hyperparameters,
+            N=N, state_range=state_range, max_iter=max_iter, epsilon_tol=epsilon_tol, num_epochs=num_epochs, learning_rate=learning_rate,
             verbose=False
         )
 
@@ -171,9 +171,9 @@ class TestGetValue:
         """Should return float."""
         hyperparameters = {'hidden_sizes': [16, 16]}
         from mdp_solver import InitializeNetworks
-        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters)
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
-        value = GetValue(v_theta_0, v_theta_1, 2.0, 0)
+        value = GetValue(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=2.0, a=0)
 
         assert isinstance(value, float)
 
@@ -181,10 +181,10 @@ class TestGetValue:
         """Should accept action 0 and 1."""
         hyperparameters = {'hidden_sizes': [16, 16]}
         from mdp_solver import InitializeNetworks
-        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters)
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
-        value_0 = GetValue(v_theta_0, v_theta_1, 2.0, 0)
-        value_1 = GetValue(v_theta_0, v_theta_1, 2.0, 1)
+        value_0 = GetValue(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=2.0, a=0)
+        value_1 = GetValue(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=2.0, a=1)
 
         assert isinstance(value_0, float)
         assert isinstance(value_1, float)
@@ -197,9 +197,9 @@ class TestGetPolicy:
         """Should return tuple of (prob_a0, prob_a1)."""
         hyperparameters = {'hidden_sizes': [16, 16]}
         from mdp_solver import InitializeNetworks
-        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters)
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
-        prob_0, prob_1 = GetPolicy(v_theta_0, v_theta_1, 2.0)
+        prob_0, prob_1 = GetPolicy(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=2.0)
 
         assert isinstance(prob_0, float)
         assert isinstance(prob_1, float)
@@ -208,9 +208,9 @@ class TestGetPolicy:
         """Probabilities should sum to 1 (logit formula property)."""
         hyperparameters = {'hidden_sizes': [16, 16]}
         from mdp_solver import InitializeNetworks
-        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters)
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
-        prob_0, prob_1 = GetPolicy(v_theta_0, v_theta_1, 2.0)
+        prob_0, prob_1 = GetPolicy(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=2.0)
 
         assert abs(prob_0 + prob_1 - 1.0) < 1e-6
 
@@ -218,9 +218,9 @@ class TestGetPolicy:
         """Probabilities should be in [0, 1]."""
         hyperparameters = {'hidden_sizes': [16, 16]}
         from mdp_solver import InitializeNetworks
-        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters)
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
-        prob_0, prob_1 = GetPolicy(v_theta_0, v_theta_1, 2.0)
+        prob_0, prob_1 = GetPolicy(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=2.0)
 
         assert 0.0 <= prob_0 <= 1.0
         assert 0.0 <= prob_1 <= 1.0
