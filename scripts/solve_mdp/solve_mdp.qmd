@@ -12,6 +12,26 @@ jupyter: python3
 
 ## Problem Setup
 
+We consider a Markov Decision Process with the following components:
+
+**State Space**: The state variable $s \in \mathbb{R}$ represents a continuous real-valued state.
+
+**Action Space**: The action variable $a \in \{0, 1\}$ is binary.
+
+**Reward Function**: The immediate reward is given by:
+$$r(s, a) = \beta s - a$$
+where $\beta$ is a parameter that determines the weight on the state value.
+
+**State Transition**: The state evolves according to the deterministic transition function:
+$$s' = (1 - \gamma) s + a$$
+where $\gamma \in (0, 1)$ is a depreciation parameter that determines how much the current state decays, and the action directly contributes to the next state.
+
+**Interpretation**: In this model:
+- The state $s$ can be interpreted as a resource or capital stock
+- The action $a$ represents whether to invest/add to the stock ($a=1$) or not ($a=0$)
+- The reward incentivizes having a high state value (through $\beta s$) but penalizes taking action ($-a$)
+- The state transition shows that without action, the state decays at rate $\gamma$, while action adds to the state
+
 ## Value Iteration
 
 ```{python}
