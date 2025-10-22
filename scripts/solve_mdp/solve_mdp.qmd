@@ -413,14 +413,14 @@ print(f"v(s, a=1): min={v1_values.min():.3f}, max={v1_values.max():.3f}, mean={v
 ### Optimal Policy
 
 ```{python}
-from mdp_solver import GetPolicy
+from mdp_solver import ComputeChoiceProbability
 
 # Compute optimal policy probabilities
 prob_a0 = []
 prob_a1 = []
 
 for s_val in s_plot_np:
-    p0, p1 = GetPolicy(v_theta_0=v_theta_0, v_theta_1=v_theta_1, s=float(s_val))
+    p0, p1 = ComputeChoiceProbability(s=float(s_val), v_theta_0=v_theta_0, v_theta_1=v_theta_1)
     prob_a0.append(p0)
     prob_a1.append(p1)
 
