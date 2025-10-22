@@ -18,9 +18,20 @@ We consider a Markov Decision Process with the following components:
 
 **Action Space**: The action variable $a \in \{0, 1\}$ is binary.
 
-**Reward Function**: The immediate reward is given by:
-$$r(s, a) = \beta s - a$$
+**Reward Function**: The mean reward function is given by:
+$$\bar{r}(s, a) = \beta s - a$$
 where $\beta$ is a parameter that determines the weight on the state value.
+
+The realized reward includes an action-specific shock:
+$$r(s, a) = \bar{r}(s, a) + \epsilon(a) = \beta s - a + \epsilon(a)$$
+where $\epsilon(a)$ represents the shock associated with action $a$.
+
+**Reward Shocks**: The shocks $\epsilon(0)$ and $\epsilon(1)$ are:
+- Independent of each other
+- Independent across time periods
+- Each follows a Type-I Extreme Value distribution (Gumbel distribution)
+
+This specification leads to the discrete choice model with tractable choice probabilities.
 
 **State Transition**: The state evolves according to the deterministic transition function:
 $$s' = (1 - \gamma) s + a$$

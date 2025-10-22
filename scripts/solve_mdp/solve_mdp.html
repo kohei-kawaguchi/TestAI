@@ -149,25 +149,28 @@ window.Quarto = {
 <p>We consider a Markov Decision Process with the following components:</p>
 <p><strong>State Space</strong>: The state variable <span class="math inline">\(s \in \mathbb{R}\)</span> represents a continuous real-valued state.</p>
 <p><strong>Action Space</strong>: The action variable <span class="math inline">\(a \in \{0, 1\}\)</span> is binary.</p>
-<p><strong>Reward Function</strong>: The immediate reward is given by: <span class="math display">\[r(s, a) = \beta s - a\]</span> where <span class="math inline">\(\beta\)</span> is a parameter that determines the weight on the state value.</p>
+<p><strong>Reward Function</strong>: The mean reward function is given by: <span class="math display">\[\bar{r}(s, a) = \beta s - a\]</span> where <span class="math inline">\(\beta\)</span> is a parameter that determines the weight on the state value.</p>
+<p>The realized reward includes an action-specific shock: <span class="math display">\[r(s, a) = \bar{r}(s, a) + \epsilon(a) = \beta s - a + \epsilon(a)\]</span> where <span class="math inline">\(\epsilon(a)\)</span> represents the shock associated with action <span class="math inline">\(a\)</span>.</p>
+<p><strong>Reward Shocks</strong>: The shocks <span class="math inline">\(\epsilon(0)\)</span> and <span class="math inline">\(\epsilon(1)\)</span> are: - Independent of each other - Independent across time periods - Each follows a Type-I Extreme Value distribution (Gumbel distribution)</p>
+<p>This specification leads to the discrete choice model with tractable choice probabilities.</p>
 <p><strong>State Transition</strong>: The state evolves according to the deterministic transition function: <span class="math display">\[s' = (1 - \gamma) s + a\]</span> where <span class="math inline">\(\gamma \in (0, 1)\)</span> is a depreciation parameter that determines how much the current state decays, and the action directly contributes to the next state.</p>
 <p><strong>Interpretation</strong>: In this model: - The state <span class="math inline">\(s\)</span> can be interpreted as a resource or capital stock - The action <span class="math inline">\(a\)</span> represents whether to invest/add to the stock (<span class="math inline">\(a=1\)</span>) or not (<span class="math inline">\(a=0\)</span>) - The reward incentivizes having a high state value (through <span class="math inline">\(\beta s\)</span>) but penalizes taking action (<span class="math inline">\(-a\)</span>) - The state transition shows that without action, the state decays at rate <span class="math inline">\(\gamma\)</span>, while action adds to the state</p>
 </section>
 <section id="value-iteration" class="level2">
 <h2 class="anchored" data-anchor-id="value-iteration">Value Iteration</h2>
-<div id="d38720a3" class="cell" data-execution_count="1">
+<div id="cfb6f9f5" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Value iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="policy-iteration" class="level2">
 <h2 class="anchored" data-anchor-id="policy-iteration">Policy Iteration</h2>
-<div id="01023c5e" class="cell" data-execution_count="2">
+<div id="eaa1d51b" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Policy iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="example-grid-world" class="level2">
 <h2 class="anchored" data-anchor-id="example-grid-world">Example: Grid World</h2>
-<div id="00c4eb70" class="cell" data-execution_count="3">
+<div id="2beb9072" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid world example</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
@@ -176,7 +179,7 @@ window.Quarto = {
 </section>
 <section id="visualization" class="level2">
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
-<div id="6477c214" class="cell" data-execution_count="4">
+<div id="0a69a189" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization code</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
