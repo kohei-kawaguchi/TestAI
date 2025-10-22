@@ -8,7 +8,6 @@ format:
 jupyter: python3
 execute:
   daemon: false
-  eval: false
 ---
 
 ## Introduction
@@ -311,7 +310,7 @@ import matplotlib.pyplot as plt
 from mdp_solver import SolveValueIteration
 
 # Set parameters
-beta = 0.1
+beta = 3.0
 gamma = 0.1
 delta = 0.95
 gamma_E = 0.5772156649015329
@@ -326,7 +325,7 @@ N = 100
 state_range = (0.0, 10.0)
 
 # Training parameters
-max_iter = 10000
+max_iter = 1000
 epsilon_tol = 1e-4
 num_epochs = 50
 learning_rate = 1e-3
