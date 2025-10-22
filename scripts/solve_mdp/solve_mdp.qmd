@@ -43,6 +43,32 @@ where $\gamma \in (0, 1)$ is a depreciation parameter that determines how much t
 - The reward incentivizes having a high state value (through $\beta s$) but penalizes taking action ($-a$)
 - The state transition shows that without action, the state decays at rate $\gamma$, while action adds to the state
 
+## Optimal Markov Decision Policy
+
+**Discount Factor**: Let $\delta \in (0, 1)$ denote the discount factor that determines how much the agent values future rewards relative to current rewards.
+
+**Value Function**: The value function $V(s, \epsilon)$ represents the expected present discounted value of rewards from state $s$ with shock vector $\epsilon = (\epsilon(0), \epsilon(1))$, assuming optimal decision-making from this period onward.
+
+**Bellman Equation**: The optimal value function satisfies the recursive Bellman equation:
+$$V(s, \epsilon) = \max_{a \in \{0,1\}} \left\{ \bar{r}(s, a) + \epsilon(a) + \delta \mathbb{E}_{\epsilon'} \left[ V(s', \epsilon') \right] \right\}$$
+where:
+- $s' = (1 - \gamma) s + a$ is the next period state
+- $\epsilon' = (\epsilon'(0), \epsilon'(1))$ represents the next period shocks
+- The expectation is taken over the distribution of future shocks
+
+**Choice-Specific Value Function**: It is useful to define the choice-specific value function:
+$$v(s, a) = \bar{r}(s, a) + \delta \mathbb{E}_{\epsilon'} \left[ V(s', \epsilon') \right]$$
+which represents the expected value of choosing action $a$ in state $s$, before observing the shock $\epsilon(a)$.
+
+The Bellman equation can then be rewritten as:
+$$V(s, \epsilon) = \max_{a \in \{0,1\}} \left\{ v(s, a) + \epsilon(a) \right\}$$
+
+**Optimal Policy**: The optimal policy is the decision rule that maximizes the value function:
+$$a^*(s, \epsilon) = \arg\max_{a \in \{0,1\}} \left\{ v(s, a) + \epsilon(a) \right\}$$
+
+Given the Type-I Extreme Value distribution of the shocks, the probability of choosing action $a$ follows the logit formula:
+$$P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$$
+
 ## Value Iteration
 
 ```{python}

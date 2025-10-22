@@ -111,6 +111,7 @@ window.Quarto = {
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
   <li><a href="#problem-setup" id="toc-problem-setup" class="nav-link" data-scroll-target="#problem-setup">Problem Setup</a></li>
+  <li><a href="#optimal-markov-decision-policy" id="toc-optimal-markov-decision-policy" class="nav-link" data-scroll-target="#optimal-markov-decision-policy">Optimal Markov Decision Policy</a></li>
   <li><a href="#value-iteration" id="toc-value-iteration" class="nav-link" data-scroll-target="#value-iteration">Value Iteration</a></li>
   <li><a href="#policy-iteration" id="toc-policy-iteration" class="nav-link" data-scroll-target="#policy-iteration">Policy Iteration</a></li>
   <li><a href="#example-grid-world" id="toc-example-grid-world" class="nav-link" data-scroll-target="#example-grid-world">Example: Grid World</a></li>
@@ -156,21 +157,31 @@ window.Quarto = {
 <p><strong>State Transition</strong>: The state evolves according to the deterministic transition function: <span class="math display">\[s' = (1 - \gamma) s + a\]</span> where <span class="math inline">\(\gamma \in (0, 1)\)</span> is a depreciation parameter that determines how much the current state decays, and the action directly contributes to the next state.</p>
 <p><strong>Interpretation</strong>: In this model: - The state <span class="math inline">\(s\)</span> can be interpreted as a resource or capital stock - The action <span class="math inline">\(a\)</span> represents whether to invest/add to the stock (<span class="math inline">\(a=1\)</span>) or not (<span class="math inline">\(a=0\)</span>) - The reward incentivizes having a high state value (through <span class="math inline">\(\beta s\)</span>) but penalizes taking action (<span class="math inline">\(-a\)</span>) - The state transition shows that without action, the state decays at rate <span class="math inline">\(\gamma\)</span>, while action adds to the state</p>
 </section>
+<section id="optimal-markov-decision-policy" class="level2">
+<h2 class="anchored" data-anchor-id="optimal-markov-decision-policy">Optimal Markov Decision Policy</h2>
+<p><strong>Discount Factor</strong>: Let <span class="math inline">\(\delta \in (0, 1)\)</span> denote the discount factor that determines how much the agent values future rewards relative to current rewards.</p>
+<p><strong>Value Function</strong>: The value function <span class="math inline">\(V(s, \epsilon)\)</span> represents the expected present discounted value of rewards from state <span class="math inline">\(s\)</span> with shock vector <span class="math inline">\(\epsilon = (\epsilon(0), \epsilon(1))\)</span>, assuming optimal decision-making from this period onward.</p>
+<p><strong>Bellman Equation</strong>: The optimal value function satisfies the recursive Bellman equation: <span class="math display">\[V(s, \epsilon) = \max_{a \in \{0,1\}} \left\{ \bar{r}(s, a) + \epsilon(a) + \delta \mathbb{E}_{\epsilon'} \left[ V(s', \epsilon') \right] \right\}\]</span> where: - <span class="math inline">\(s' = (1 - \gamma) s + a\)</span> is the next period state - <span class="math inline">\(\epsilon' = (\epsilon'(0), \epsilon'(1))\)</span> represents the next period shocks - The expectation is taken over the distribution of future shocks</p>
+<p><strong>Choice-Specific Value Function</strong>: It is useful to define the choice-specific value function: <span class="math display">\[v(s, a) = \bar{r}(s, a) + \delta \mathbb{E}_{\epsilon'} \left[ V(s', \epsilon') \right]\]</span> which represents the expected value of choosing action <span class="math inline">\(a\)</span> in state <span class="math inline">\(s\)</span>, before observing the shock <span class="math inline">\(\epsilon(a)\)</span>.</p>
+<p>The Bellman equation can then be rewritten as: <span class="math display">\[V(s, \epsilon) = \max_{a \in \{0,1\}} \left\{ v(s, a) + \epsilon(a) \right\}\]</span></p>
+<p><strong>Optimal Policy</strong>: The optimal policy is the decision rule that maximizes the value function: <span class="math display">\[a^*(s, \epsilon) = \arg\max_{a \in \{0,1\}} \left\{ v(s, a) + \epsilon(a) \right\}\]</span></p>
+<p>Given the Type-I Extreme Value distribution of the shocks, the probability of choosing action <span class="math inline">\(a\)</span> follows the logit formula: <span class="math display">\[P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}\]</span></p>
+</section>
 <section id="value-iteration" class="level2">
 <h2 class="anchored" data-anchor-id="value-iteration">Value Iteration</h2>
-<div id="cfb6f9f5" class="cell" data-execution_count="1">
+<div id="2f549489" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Value iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="policy-iteration" class="level2">
 <h2 class="anchored" data-anchor-id="policy-iteration">Policy Iteration</h2>
-<div id="eaa1d51b" class="cell" data-execution_count="2">
+<div id="22f2ac34" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Policy iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="example-grid-world" class="level2">
 <h2 class="anchored" data-anchor-id="example-grid-world">Example: Grid World</h2>
-<div id="2beb9072" class="cell" data-execution_count="3">
+<div id="c1067dc5" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid world example</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
@@ -179,7 +190,7 @@ window.Quarto = {
 </section>
 <section id="visualization" class="level2">
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
-<div id="0a69a189" class="cell" data-execution_count="4">
+<div id="3e81e623" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization code</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
