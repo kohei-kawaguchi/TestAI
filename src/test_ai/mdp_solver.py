@@ -3,13 +3,15 @@ MDP Solver using Value Iteration with Neural Networks.
 
 This module implements value iteration for solving Markov Decision Processes
 with continuous state spaces and discrete action spaces using neural networks.
+
+The implementation follows the modular pseudo code structure with separate
+functions for each subroutine.
 """
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import numpy as np
-from typing import Tuple, Optional
+from typing import Tuple, Dict
 
 
 class MonotonicNetwork(nn.Module):
@@ -48,10 +50,10 @@ class MonotonicNetwork(nn.Module):
         Forward pass with monotonic constraints.
 
         Args:
-            s: State tensor of shape (batch_size, 1)
+            s: State tensor of shape (N, 1)
 
         Returns:
-            Value tensor of shape (batch_size, 1)
+            Value tensor of shape (N, 1)
         """
         x = s
 
@@ -72,241 +74,404 @@ class MonotonicNetwork(nn.Module):
         return x
 
 
-class MDPSolver:
+# ============================================================================
+# Subroutines following the pseudo code structure
+# ============================================================================
+
+def InitializeNetworks(hyperparameters: Dict) -> Tuple[MonotonicNetwork, MonotonicNetwork]:
     """
-    Value iteration solver for MDP with Type-I Extreme Value shocks.
+    Procedure InitializeNetworks(hyperparameters: dict) -> (Network, Network)
+
+    Create and initialize two neural networks with monotonic weight constraints.
+
+    Args:
+        hyperparameters: Dictionary containing 'hidden_sizes'
+
+    Returns:
+        Tuple of (v_theta_0, v_theta_1): Two initialized networks
     """
+    hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
 
-    def __init__(
-        self,
-        beta: float,
-        gamma: float,
-        delta: float,
-        hidden_sizes: list[int] = [32, 32],
-        learning_rate: float = 1e-3,
-        euler_mascheroni: float = 0.5772156649015329
-    ):
-        """
-        Initialize the MDP solver.
+    v_theta_0 = MonotonicNetwork(hidden_sizes)
+    v_theta_1 = MonotonicNetwork(hidden_sizes)
 
-        Args:
-            beta: Reward weight on state
-            gamma: State depreciation rate
-            delta: Discount factor
-            hidden_sizes: Network architecture
-            learning_rate: Learning rate for optimizer
-            euler_mascheroni: Euler-Mascheroni constant
-        """
-        self.beta = beta
-        self.gamma = gamma
-        self.delta = delta
-        self.gamma_e = euler_mascheroni
+    return v_theta_0, v_theta_1
 
-        # Create two networks for binary actions
-        self.v_net_0 = MonotonicNetwork(hidden_sizes)
-        self.v_net_1 = MonotonicNetwork(hidden_sizes)
 
-        # Optimizer
-        params = list(self.v_net_0.parameters()) + list(self.v_net_1.parameters())
-        self.optimizer = optim.Adam(params, lr=learning_rate)
+def GenerateStateGrid(N: int, state_range: Tuple[float, float]) -> torch.Tensor:
+    """
+    Procedure GenerateStateGrid(N: int, state_range: tuple[float, float]) -> Tensor[N×1]
 
-    def mean_reward(self, s: torch.Tensor, a: int) -> torch.Tensor:
-        """
-        Compute mean reward function.
+    Create uniform grid of states over the specified range.
 
-        Args:
-            s: State tensor
-            a: Action (0 or 1)
+    Args:
+        N: Number of states
+        state_range: Tuple of (min_state, max_state)
 
-        Returns:
-            Mean reward
-        """
-        return self.beta * s - a
+    Returns:
+        S: Tensor of shape (N, 1) containing state grid
+    """
+    S = torch.linspace(state_range[0], state_range[1], N).reshape(-1, 1)
+    return S
 
-    def next_state(self, s: torch.Tensor, a: int) -> torch.Tensor:
-        """
-        Compute next state.
 
-        Args:
-            s: Current state
-            a: Action (0 or 1)
+def ComputeNextState(s: torch.Tensor, a: int, gamma: float) -> torch.Tensor:
+    """
+    Procedure ComputeNextState(s: Tensor[N×1], a: int, gamma: float) -> Tensor[N×1]
 
-        Returns:
-            Next state
-        """
-        return (1 - self.gamma) * s + a
+    Compute next state from current state and action.
 
-    def expected_value(self, s_next: torch.Tensor) -> torch.Tensor:
-        """
-        Compute expected value of next state using log-sum-exp.
+    Args:
+        s: Current state tensor of shape (N, 1)
+        a: Action (0 or 1)
+        gamma: State depreciation rate
 
-        Args:
-            s_next: Next state tensor
+    Returns:
+        s_next: Next state tensor of shape (N, 1)
+    """
+    return (1 - gamma) * s + a
 
-        Returns:
-            Expected value
-        """
-        v0 = self.v_net_0(s_next)
-        v1 = self.v_net_1(s_next)
 
-        # Log-sum-exp trick for numerical stability
-        max_v = torch.max(v0, v1)
-        log_sum_exp = max_v + torch.log(torch.exp(v0 - max_v) + torch.exp(v1 - max_v))
+def ComputeMeanReward(s: torch.Tensor, a: int, beta: float) -> torch.Tensor:
+    """
+    Procedure ComputeMeanReward(s: Tensor[N×1], a: int, beta: float) -> Tensor[N×1]
 
-        return log_sum_exp + self.gamma_e
+    Compute mean reward function.
 
-    def compute_targets(self, states: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Compute Bellman target values for both actions.
+    Args:
+        s: State tensor of shape (N, 1)
+        a: Action (0 or 1)
+        beta: Reward weight on state
 
-        Args:
-            states: Batch of states
+    Returns:
+        reward: Mean reward tensor of shape (N, 1)
+    """
+    return beta * s - a
 
-        Returns:
-            Tuple of (targets_a0, targets_a1)
-        """
-        targets_0 = []
-        targets_1 = []
 
-        for a in [0, 1]:
-            s_next = self.next_state(states, a)
-            ev = self.expected_value(s_next)
-            target = self.mean_reward(states, a) + self.delta * ev
+def LogSumExp(v_0: torch.Tensor, v_1: torch.Tensor) -> torch.Tensor:
+    """
+    Procedure LogSumExp(v_0: Tensor[N×1], v_1: Tensor[N×1]) -> Tensor[N×1]
 
-            if a == 0:
-                targets_0 = target
-            else:
-                targets_1 = target
+    Numerically stable log-sum-exp computation.
 
-        return targets_0, targets_1
+    Args:
+        v_0: Value tensor for action 0, shape (N, 1)
+        v_1: Value tensor for action 1, shape (N, 1)
 
-    def fit_iteration(
-        self,
-        states: torch.Tensor,
-        num_epochs: int = 100
-    ) -> float:
-        """
-        Perform one value iteration step.
+    Returns:
+        log_sum_exp: Tensor of shape (N, 1)
+    """
+    max_v = torch.max(v_0, v_1)
+    return max_v + torch.log(torch.exp(v_0 - max_v) + torch.exp(v_1 - max_v))
 
-        Args:
-            states: Batch of sampled states
-            num_epochs: Number of gradient descent epochs
 
-        Returns:
-            Maximum error after update
-        """
-        # Compute targets
+def ComputeExpectedValue(
+    s_prime: torch.Tensor,
+    v_theta_0: MonotonicNetwork,
+    v_theta_1: MonotonicNetwork,
+    gamma_E: float
+) -> torch.Tensor:
+    """
+    Procedure ComputeExpectedValue(s': Tensor[N×1], v_theta^(0): Network,
+                                    v_theta^(1): Network, gamma_E: float) -> Tensor[N×1]
+
+    Compute expected value of next state using log-sum-exp.
+
+    Args:
+        s_prime: Next state tensor of shape (N, 1)
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+        gamma_E: Euler-Mascheroni constant
+
+    Returns:
+        EV: Expected value tensor of shape (N, 1)
+    """
+    v_0 = v_theta_0(s_prime)
+    v_1 = v_theta_1(s_prime)
+    EV = LogSumExp(v_0, v_1) + gamma_E
+    return EV
+
+
+def ComputeBellmanTargets(
+    S: torch.Tensor,
+    v_theta_0: MonotonicNetwork,
+    v_theta_1: MonotonicNetwork,
+    beta: float,
+    gamma: float,
+    delta: float,
+    gamma_E: float
+) -> torch.Tensor:
+    """
+    Procedure ComputeBellmanTargets(S: Tensor[N×1], v_theta^(0): Network, v_theta^(1): Network,
+                                     beta: float, gamma: float, delta: float) -> Tensor[N×2]
+
+    Compute Bellman target values for both actions.
+
+    Args:
+        S: State tensor of shape (N, 1)
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+        beta: Reward weight on state
+        gamma: State depreciation rate
+        delta: Discount factor
+        gamma_E: Euler-Mascheroni constant
+
+    Returns:
+        targets: Tensor of shape (N, 2) with targets for both actions
+    """
+    targets_list = []
+
+    for a in [0, 1]:
+        s_prime_i = ComputeNextState(S, a, gamma)
+        EV_i = ComputeExpectedValue(s_prime_i, v_theta_0, v_theta_1, gamma_E)
+        y_i_a = ComputeMeanReward(S, a, beta) + delta * EV_i
+        targets_list.append(y_i_a)
+
+    # Stack into (N, 2) tensor
+    targets = torch.cat(targets_list, dim=1)
+    return targets
+
+
+def ComputeLoss(
+    S: torch.Tensor,
+    targets: torch.Tensor,
+    v_theta_0: MonotonicNetwork,
+    v_theta_1: MonotonicNetwork
+) -> float:
+    """
+    Procedure ComputeLoss(S: Tensor[N×1], {y_i^(a)}: Tensor[N×2],
+                          v_theta^(0): Network, v_theta^(1): Network) -> float
+
+    Compute mean squared error loss.
+
+    Args:
+        S: State tensor of shape (N, 1)
+        targets: Target tensor of shape (N, 2)
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+
+    Returns:
+        L: Scalar loss value
+    """
+    pred_0 = v_theta_0(S)
+    pred_1 = v_theta_1(S)
+
+    # Targets: [:, 0] for action 0, [:, 1] for action 1
+    loss_0 = torch.mean((pred_0 - targets[:, 0:1]) ** 2)
+    loss_1 = torch.mean((pred_1 - targets[:, 1:2]) ** 2)
+
+    L = loss_0 + loss_1
+    return L
+
+
+def UpdateNetworks(
+    S: torch.Tensor,
+    targets: torch.Tensor,
+    v_theta_0: MonotonicNetwork,
+    v_theta_1: MonotonicNetwork,
+    num_epochs: int,
+    optimizer: torch.optim.Optimizer
+) -> Tuple[MonotonicNetwork, MonotonicNetwork]:
+    """
+    Procedure UpdateNetworks(S: Tensor[N×1], {y_i^(a)}: Tensor[N×2], v_theta^(0): Network,
+                             v_theta^(1): Network, num_epochs: int) -> (Network, Network)
+
+    Update networks via gradient descent.
+
+    Args:
+        S: State tensor of shape (N, 1)
+        targets: Target tensor of shape (N, 2)
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+        num_epochs: Number of gradient descent epochs
+        optimizer: Optimizer for network parameters
+
+    Returns:
+        Updated (v_theta_0, v_theta_1)
+    """
+    for epoch in range(num_epochs):
+        optimizer.zero_grad()
+
+        # Compute loss
+        L = ComputeLoss(S, targets, v_theta_0, v_theta_1)
+
+        # Compute gradients
+        L.backward()
+
+        # Update parameters
+        optimizer.step()
+
+    return v_theta_0, v_theta_1
+
+
+def CheckConvergence(
+    S: torch.Tensor,
+    targets: torch.Tensor,
+    v_theta_0: MonotonicNetwork,
+    v_theta_1: MonotonicNetwork
+) -> float:
+    """
+    Procedure CheckConvergence(S: Tensor[N×1], {y_i^(a)}: Tensor[N×2],
+                               v_theta^(0): Network, v_theta^(1): Network) -> float
+
+    Check convergence by computing maximum error.
+
+    Args:
+        S: State tensor of shape (N, 1)
+        targets: Target tensor of shape (N, 2)
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+
+    Returns:
+        max_error: Maximum absolute error
+    """
+    with torch.no_grad():
+        pred_0 = v_theta_0(S)
+        pred_1 = v_theta_1(S)
+
+        error_0 = torch.abs(pred_0 - targets[:, 0:1])
+        error_1 = torch.abs(pred_1 - targets[:, 1:2])
+
+        max_error = torch.max(torch.max(error_0), torch.max(error_1)).item()
+
+    return max_error
+
+
+# ============================================================================
+# Main Algorithm
+# ============================================================================
+
+def SolveValueIteration(
+    beta: float,
+    gamma: float,
+    delta: float,
+    hyperparameters: Dict,
+    N: int = 100,
+    state_range: Tuple[float, float] = (0.0, 10.0),
+    max_iter: int = 100,
+    epsilon_tol: float = 1e-4,
+    num_epochs: int = 100,
+    learning_rate: float = 1e-3,
+    gamma_E: float = 0.5772156649015329,
+    verbose: bool = True
+) -> Tuple[MonotonicNetwork, MonotonicNetwork, Dict]:
+    """
+    Procedure SolveValueIteration(beta: float, gamma: float, delta: float,
+                                   hyperparameters: dict) -> (Network, Network)
+
+    Main value iteration algorithm.
+
+    Args:
+        beta: Reward weight on state
+        gamma: State depreciation rate
+        delta: Discount factor
+        hyperparameters: Dictionary with network configuration
+        N: Number of states
+        state_range: Range of states to sample
+        max_iter: Maximum number of iterations
+        epsilon_tol: Convergence tolerance
+        num_epochs: Number of gradient descent epochs per iteration
+        learning_rate: Learning rate for optimizer
+        gamma_E: Euler-Mascheroni constant
+        verbose: Whether to print progress
+
+    Returns:
+        Tuple of (v_theta_0, v_theta_1, history)
+    """
+    # Step 1: Initialize networks
+    v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters)
+
+    # Create optimizer
+    params = list(v_theta_0.parameters()) + list(v_theta_1.parameters())
+    optimizer = torch.optim.Adam(params, lr=learning_rate)
+
+    # Step 2: Generate state grid
+    S = GenerateStateGrid(N, state_range)
+
+    # Track history
+    history = {
+        'iterations': [],
+        'max_errors': []
+    }
+
+    # Step 3: Iterate until convergence
+    for iteration in range(max_iter):
+        # Step 3a: Compute Bellman targets
         with torch.no_grad():
-            targets_0, targets_1 = self.compute_targets(states)
+            targets = ComputeBellmanTargets(S, v_theta_0, v_theta_1, beta, gamma, delta, gamma_E)
 
-        # Update networks
-        for epoch in range(num_epochs):
-            self.optimizer.zero_grad()
+        # Step 3b: Update networks
+        v_theta_0, v_theta_1 = UpdateNetworks(S, targets, v_theta_0, v_theta_1, num_epochs, optimizer)
 
-            # Forward pass
-            pred_0 = self.v_net_0(states)
-            pred_1 = self.v_net_1(states)
+        # Step 3c: Check convergence
+        max_error = CheckConvergence(S, targets, v_theta_0, v_theta_1)
 
-            # Loss
-            loss = torch.mean((pred_0 - targets_0) ** 2) + torch.mean((pred_1 - targets_1) ** 2)
+        # Track history
+        history['iterations'].append(iteration)
+        history['max_errors'].append(max_error)
 
-            # Backward pass
-            loss.backward()
-            self.optimizer.step()
+        # Print progress
+        if verbose and iteration % 10 == 0:
+            print(f"Iteration {iteration}: max_error = {max_error:.6f}")
 
-        # Compute max error
-        with torch.no_grad():
-            pred_0 = self.v_net_0(states)
-            pred_1 = self.v_net_1(states)
-            error_0 = torch.abs(pred_0 - targets_0)
-            error_1 = torch.abs(pred_1 - targets_1)
-            max_error = torch.max(torch.max(error_0), torch.max(error_1)).item()
+        # Step 3d: Check if converged
+        if max_error < epsilon_tol:
+            if verbose:
+                print(f"Converged at iteration {iteration}")
+            break
 
-        return max_error
+    # Step 4: Return
+    return v_theta_0, v_theta_1, history
 
-    def solve(
-        self,
-        state_range: Tuple[float, float] = (0.0, 10.0),
-        num_states: int = 100,
-        max_iter: int = 100,
-        tolerance: float = 1e-4,
-        num_epochs: int = 100,
-        verbose: bool = True
-    ) -> dict:
-        """
-        Solve the MDP using value iteration.
 
-        Args:
-            state_range: Range of states to sample
-            num_states: Number of states to sample
-            max_iter: Maximum number of iterations
-            tolerance: Convergence tolerance
-            num_epochs: Number of gradient descent epochs per iteration
-            verbose: Whether to print progress
+# ============================================================================
+# Helper functions for evaluation
+# ============================================================================
 
-        Returns:
-            Dictionary with convergence info
-        """
-        # Generate state samples
-        states = torch.linspace(state_range[0], state_range[1], num_states).reshape(-1, 1)
+def GetValue(v_theta_0: MonotonicNetwork, v_theta_1: MonotonicNetwork, s: float, a: int) -> float:
+    """
+    Get value function for a given state and action.
 
-        history = {
-            'iterations': [],
-            'max_errors': []
-        }
+    Args:
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+        s: State value
+        a: Action (0 or 1)
 
-        for iteration in range(max_iter):
-            max_error = self.fit_iteration(states, num_epochs)
+    Returns:
+        Value
+    """
+    s_tensor = torch.tensor([[s]], dtype=torch.float32)
 
-            history['iterations'].append(iteration)
-            history['max_errors'].append(max_error)
+    with torch.no_grad():
+        if a == 0:
+            return v_theta_0(s_tensor).item()
+        else:
+            return v_theta_1(s_tensor).item()
 
-            if verbose and iteration % 10 == 0:
-                print(f"Iteration {iteration}: max_error = {max_error:.6f}")
 
-            if max_error < tolerance:
-                if verbose:
-                    print(f"Converged at iteration {iteration}")
-                break
+def GetPolicy(v_theta_0: MonotonicNetwork, v_theta_1: MonotonicNetwork, s: float) -> Tuple[float, float]:
+    """
+    Get choice probabilities for a given state.
 
-        return history
+    Args:
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+        s: State value
 
-    def get_value(self, s: float, a: int) -> float:
-        """
-        Get value function for a given state and action.
+    Returns:
+        Tuple of (prob_a0, prob_a1)
+    """
+    import numpy as np
 
-        Args:
-            s: State value
-            a: Action (0 or 1)
+    v0 = GetValue(v_theta_0, v_theta_1, s, 0)
+    v1 = GetValue(v_theta_0, v_theta_1, s, 1)
 
-        Returns:
-            Value
-        """
-        s_tensor = torch.tensor([[s]], dtype=torch.float32)
+    exp_v0 = np.exp(v0)
+    exp_v1 = np.exp(v1)
 
-        with torch.no_grad():
-            if a == 0:
-                return self.v_net_0(s_tensor).item()
-            else:
-                return self.v_net_1(s_tensor).item()
+    prob_0 = exp_v0 / (exp_v0 + exp_v1)
+    prob_1 = exp_v1 / (exp_v0 + exp_v1)
 
-    def get_policy(self, s: float) -> Tuple[float, float]:
-        """
-        Get choice probabilities for a given state.
-
-        Args:
-            s: State value
-
-        Returns:
-            Tuple of (prob_a0, prob_a1)
-        """
-        v0 = self.get_value(s, 0)
-        v1 = self.get_value(s, 1)
-
-        exp_v0 = np.exp(v0)
-        exp_v1 = np.exp(v1)
-
-        prob_0 = exp_v0 / (exp_v0 + exp_v1)
-        prob_1 = exp_v1 / (exp_v0 + exp_v1)
-
-        return prob_0, prob_1
+    return prob_0, prob_1
