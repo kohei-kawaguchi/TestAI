@@ -135,6 +135,89 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 **Convergence**: The value iteration algorithm is guaranteed to converge to the unique fixed point by the Contraction Mapping Theorem, since the Bellman operator is a contraction with modulus $\delta < 1$.
 
+### Pseudo Code
+
+::: {.callout-note appearance="simple"}
+
+## Algorithm: Value Function Iteration with Neural Networks
+
+**Input:**
+
+- Parameters: $\beta$, $\gamma$, $\delta$, $\gamma_E$ (Euler-Mascheroni constant)
+- Network hyperparameters: `num_layers`, `hidden_size`, `learning_rate`
+- Training hyperparameters: $N$ (`num_states`), `max_iter`, $\epsilon_{\text{tol}}$, `num_epochs`
+
+**Output:**
+
+- Trained networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$
+
+---
+
+**Step 1: Initialize**
+
+- Create two neural networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$ with monotonic constraints
+- Initialize network parameters $\theta$ randomly
+
+**Step 2: Generate state samples**
+
+- $S = \{s_1, s_2, \ldots, s_N\}$ covering the relevant state space
+
+**Step 3: Iterate until convergence**
+
+For `iteration` = 1 to `max_iter`:
+
+&nbsp;&nbsp;&nbsp;&nbsp;**3a. Compute targets for all states and actions:**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each $s_i \in S$:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each action $a \in \{0, 1\}$:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$s'_i = (1 - \gamma) \cdot s_i + a$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$v_0 = v_\theta^{(0)}(s'_i)$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$v_1 = v_\theta^{(1)}(s'_i)$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i = \log(\exp(v_0) + \exp(v_1)) + \gamma_E$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)} = \beta \cdot s_i - a + \delta \cdot \text{EV}_i$
+
+&nbsp;&nbsp;&nbsp;&nbsp;**3b. Update networks (gradient descent):**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For `epoch` = 1 to `num_epochs`:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute loss: $L = \sum_i \sum_a (v_\theta^{(a)}(s_i) - y_i^{(a)})^2$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute gradients: $\nabla_\theta L$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update parameters: $\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L$
+
+&nbsp;&nbsp;&nbsp;&nbsp;**3c. Check convergence:**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute $\text{max\_error} = \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|$
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**If** $\text{max\_error} < \epsilon_{\text{tol}}$:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Break (converged)
+
+&nbsp;&nbsp;&nbsp;&nbsp;**3d. (Optional) Print progress:**
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Print iteration number and max_error
+
+**Step 4: Return**
+
+- Return $v_\theta^{(0)}$ and $v_\theta^{(1)}$
+
+:::
+
+**Key Implementation Details:**
+
+- **Monotonic network constraint**: Apply softplus transformation to weight matrices during forward pass
+- **Numerical stability**: Use log-sum-exp trick: $\log(\exp(a) + \exp(b)) = \max(a,b) + \log(1 + \exp(-|a-b|))$
+- **State sampling**: Use uniform grid or random sampling over a reasonable state range (e.g., [0, 10])
+- **Learning rate**: Use adaptive optimizers (e.g., Adam) for faster convergence
+- **Batch updates**: Can process all states in parallel for efficiency
+
 ```{python}
 # Value iteration implementation
 ```

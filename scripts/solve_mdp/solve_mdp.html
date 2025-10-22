@@ -116,6 +116,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#neural-network-architecture-for-choice-specific-value-functions" id="toc-neural-network-architecture-for-choice-specific-value-functions" class="nav-link" data-scroll-target="#neural-network-architecture-for-choice-specific-value-functions">Neural Network Architecture for Choice-Specific Value Functions</a></li>
   <li><a href="#value-function-iteration-algorithm" id="toc-value-function-iteration-algorithm" class="nav-link" data-scroll-target="#value-function-iteration-algorithm">Value Function Iteration Algorithm</a></li>
+  <li><a href="#pseudo-code" id="toc-pseudo-code" class="nav-link" data-scroll-target="#pseudo-code">Pseudo Code</a></li>
   </ul></li>
   <li><a href="#policy-iteration" id="toc-policy-iteration" class="nav-link" data-scroll-target="#policy-iteration">Policy Iteration</a></li>
   <li><a href="#example-grid-world" id="toc-example-grid-world" class="nav-link" data-scroll-target="#example-grid-world">Example: Grid World</a></li>
@@ -209,20 +210,88 @@ window.Quarto = {
 <li><p><strong>Output</strong>: The converged networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span> approximate the optimal choice-specific value functions</p></li>
 </ol>
 <p><strong>Convergence</strong>: The value iteration algorithm is guaranteed to converge to the unique fixed point by the Contraction Mapping Theorem, since the Bellman operator is a contraction with modulus <span class="math inline">\(\delta &lt; 1\)</span>.</p>
-<div id="04a3272c" class="cell" data-execution_count="1">
+</section>
+<section id="pseudo-code" class="level3">
+<h3 class="anchored" data-anchor-id="pseudo-code">Pseudo Code</h3>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Algorithm: Value Function Iteration with Neural Networks
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Input:</strong></p>
+<ul>
+<li>Parameters: <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span> (Euler-Mascheroni constant)</li>
+<li>Network hyperparameters: <code>num_layers</code>, <code>hidden_size</code>, <code>learning_rate</code></li>
+<li>Training hyperparameters: <span class="math inline">\(N\)</span> (<code>num_states</code>), <code>max_iter</code>, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, <code>num_epochs</code></li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul>
+<li>Trained networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span></li>
+</ul>
+<hr>
+<p><strong>Step 1: Initialize</strong></p>
+<ul>
+<li>Create two neural networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span> with monotonic constraints</li>
+<li>Initialize network parameters <span class="math inline">\(\theta\)</span> randomly</li>
+</ul>
+<p><strong>Step 2: Generate state samples</strong></p>
+<ul>
+<li><span class="math inline">\(S = \{s_1, s_2, \ldots, s_N\}\)</span> covering the relevant state space</li>
+</ul>
+<p><strong>Step 3: Iterate until convergence</strong></p>
+<p>For <code>iteration</code> = 1 to <code>max_iter</code>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3a. Compute targets for all states and actions:</strong></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each <span class="math inline">\(s_i \in S\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each action <span class="math inline">\(a \in \{0, 1\}\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s'_i = (1 - \gamma) \cdot s_i + a\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(v_0 = v_\theta^{(0)}(s'_i)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(v_1 = v_\theta^{(1)}(s'_i)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\text{EV}_i = \log(\exp(v_0) + \exp(v_1)) + \gamma_E\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(y_i^{(a)} = \beta \cdot s_i - a + \delta \cdot \text{EV}_i\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3b. Update networks (gradient descent):</strong></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For <code>epoch</code> = 1 to <code>num_epochs</code>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute loss: <span class="math inline">\(L = \sum_i \sum_a (v_\theta^{(a)}(s_i) - y_i^{(a)})^2\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute gradients: <span class="math inline">\(\nabla_\theta L\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update parameters: <span class="math inline">\(\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3c. Check convergence:</strong></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute <span class="math inline">\(\text{max\_error} = \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>If</strong> <span class="math inline">\(\text{max\_error} &lt; \epsilon_{\text{tol}}\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Break (converged)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3d. (Optional) Print progress:</strong></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Print iteration number and max_error</p>
+<p><strong>Step 4: Return</strong></p>
+<ul>
+<li>Return <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span></li>
+</ul>
+</div>
+</div>
+<p><strong>Key Implementation Details:</strong></p>
+<ul>
+<li><strong>Monotonic network constraint</strong>: Apply softplus transformation to weight matrices during forward pass</li>
+<li><strong>Numerical stability</strong>: Use log-sum-exp trick: <span class="math inline">\(\log(\exp(a) + \exp(b)) = \max(a,b) + \log(1 + \exp(-|a-b|))\)</span></li>
+<li><strong>State sampling</strong>: Use uniform grid or random sampling over a reasonable state range (e.g., [0, 10])</li>
+<li><strong>Learning rate</strong>: Use adaptive optimizers (e.g., Adam) for faster convergence</li>
+<li><strong>Batch updates</strong>: Can process all states in parallel for efficiency</li>
+</ul>
+<div id="2f2eac15" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Value iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
 <section id="policy-iteration" class="level2">
 <h2 class="anchored" data-anchor-id="policy-iteration">Policy Iteration</h2>
-<div id="cfb2883d" class="cell" data-execution_count="2">
+<div id="2ee04ce8" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Policy iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="example-grid-world" class="level2">
 <h2 class="anchored" data-anchor-id="example-grid-world">Example: Grid World</h2>
-<div id="65e0c665" class="cell" data-execution_count="3">
+<div id="f917ce20" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid world example</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
@@ -231,7 +300,7 @@ window.Quarto = {
 </section>
 <section id="visualization" class="level2">
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
-<div id="d3c0d87e" class="cell" data-execution_count="4">
+<div id="03c9f9d0" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization code</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
