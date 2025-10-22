@@ -153,60 +153,112 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 ---
 
-**Step 1: Initialize**
+### Main Algorithm
 
-- Create two neural networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$ with monotonic constraints
-- Initialize network parameters $\theta$ randomly
+**Procedure** `SolveValueIteration`($\beta$, $\gamma$, $\delta$, hyperparameters)
 
-**Step 2: Generate state samples**
+1. $v_\theta^{(0)}, v_\theta^{(1)} \leftarrow$ `InitializeNetworks`(hyperparameters)
 
-- $S = \{s_1, s_2, \ldots, s_N\}$ covering the relevant state space
+2. $S \leftarrow$ `GenerateStateGrid`($N$, state_range)
 
-**Step 3: Iterate until convergence**
+3. For `iteration` = 1 to `max_iter`:
 
-For `iteration` = 1 to `max_iter`:
+   a. $\{y_i^{(a)}\} \leftarrow$ `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;**3a. Compute targets for all states and actions:**
+   b. $v_\theta^{(0)}, v_\theta^{(1)} \leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each $s_i \in S$:
+   c. max_error $\leftarrow$ `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each action $a \in \{0, 1\}$:
+   d. **If** max_error $< \epsilon_{\text{tol}}$: **Break**
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$s'_i = (1 - \gamma) \cdot s_i + a$
+4. **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$v_0 = v_\theta^{(0)}(s'_i)$
+---
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$v_1 = v_\theta^{(1)}(s'_i)$
+### Subroutines
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i = \log(\exp(v_0) + \exp(v_1)) + \gamma_E$
+**Procedure** `InitializeNetworks`(hyperparameters)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)} = \beta \cdot s_i - a + \delta \cdot \text{EV}_i$
+- Create networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$ with monotonic weight constraints
+- Initialize parameters $\theta$ randomly
+- **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 
-&nbsp;&nbsp;&nbsp;&nbsp;**3b. Update networks (gradient descent):**
+---
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For `epoch` = 1 to `num_epochs`:
+**Procedure** `GenerateStateGrid`($N$, state_range)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute loss: $L = \sum_i \sum_a (v_\theta^{(a)}(s_i) - y_i^{(a)})^2$
+- Create uniform grid: $S = \{s_1, \ldots, s_N\}$ over state_range
+- **Return** $S$
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute gradients: $\nabla_\theta L$
+---
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update parameters: $\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L$
+**Procedure** `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;**3c. Check convergence:**
+For each $s_i \in S$ and $a \in \{0, 1\}$:
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute $\text{max\_error} = \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|$
+&nbsp;&nbsp;&nbsp;&nbsp;$s'_i \leftarrow$ `ComputeNextState`($s_i$, $a$, $\gamma$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**If** $\text{max\_error} < \epsilon_{\text{tol}}$:
+&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i \leftarrow$ `ComputeExpectedValue`($s'_i$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Break (converged)
+&nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)} \leftarrow$ `ComputeMeanReward`($s_i$, $a$, $\beta$) $+ \delta \cdot \text{EV}_i$
 
-&nbsp;&nbsp;&nbsp;&nbsp;**3d. (Optional) Print progress:**
+**Return** $\{y_i^{(a)}\}$ for all $i$, $a$
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Print iteration number and max_error
+---
 
-**Step 4: Return**
+**Procedure** `ComputeNextState`($s$, $a$, $\gamma$)
 
-- Return $v_\theta^{(0)}$ and $v_\theta^{(1)}$
+- **Return** $(1 - \gamma) \cdot s + a$
+
+---
+
+**Procedure** `ComputeMeanReward`($s$, $a$, $\beta$)
+
+- **Return** $\beta \cdot s - a$
+
+---
+
+**Procedure** `ComputeExpectedValue`($s'$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$)
+
+- $v_0 \leftarrow v_\theta^{(0)}(s')$
+- $v_1 \leftarrow v_\theta^{(1)}(s')$
+- $\text{EV} \leftarrow$ `LogSumExp`($v_0$, $v_1$) $+ \gamma_E$
+- **Return** EV
+
+---
+
+**Procedure** `LogSumExp`($v_0$, $v_1$)
+
+- $\text{max}_v \leftarrow \max(v_0, v_1)$
+- **Return** $\text{max}_v + \log(\exp(v_0 - \text{max}_v) + \exp(v_1 - \text{max}_v))$
+
+---
+
+**Procedure** `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs)
+
+For `epoch` = 1 to num_epochs:
+
+&nbsp;&nbsp;&nbsp;&nbsp;$L \leftarrow$ `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+&nbsp;&nbsp;&nbsp;&nbsp;$\nabla_\theta L \leftarrow$ `ComputeGradients`($L$)
+
+&nbsp;&nbsp;&nbsp;&nbsp;$\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L$
+
+**Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
+
+---
+
+**Procedure** `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+- $L \leftarrow \sum_{i=1}^N \sum_{a \in \{0,1\}} (v_\theta^{(a)}(s_i) - y_i^{(a)})^2$
+- **Return** $L$
+
+---
+
+**Procedure** `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+- max_error $\leftarrow \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|$
+- **Return** max_error
 
 :::
 

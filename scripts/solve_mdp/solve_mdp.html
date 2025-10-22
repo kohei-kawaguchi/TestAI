@@ -118,7 +118,6 @@ window.Quarto = {
   <li><a href="#value-function-iteration-algorithm" id="toc-value-function-iteration-algorithm" class="nav-link" data-scroll-target="#value-function-iteration-algorithm">Value Function Iteration Algorithm</a></li>
   <li><a href="#pseudo-code" id="toc-pseudo-code" class="nav-link" data-scroll-target="#pseudo-code">Pseudo Code</a></li>
   </ul></li>
-  <li><a href="#example-grid-world" id="toc-example-grid-world" class="nav-link" data-scroll-target="#example-grid-world">Example: Grid World</a></li>
   <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
   <li><a href="#visualization" id="toc-visualization" class="nav-link" data-scroll-target="#visualization">Visualization</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
@@ -233,40 +232,88 @@ Algorithm: Value Function Iteration with Neural Networks
 <li>Trained networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span></li>
 </ul>
 <hr>
-<p><strong>Step 1: Initialize</strong></p>
+<section id="main-algorithm" class="level3">
+<h3 class="anchored" data-anchor-id="main-algorithm">Main Algorithm</h3>
+<p><strong>Procedure</strong> <code>SolveValueIteration</code>(<span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, hyperparameters)</p>
+<ol type="1">
+<li><p><span class="math inline">\(v_\theta^{(0)}, v_\theta^{(1)} \leftarrow\)</span> <code>InitializeNetworks</code>(hyperparameters)</p></li>
+<li><p><span class="math inline">\(S \leftarrow\)</span> <code>GenerateStateGrid</code>(<span class="math inline">\(N\)</span>, state_range)</p></li>
+<li><p>For <code>iteration</code> = 1 to <code>max_iter</code>:</p>
+<ol type="a">
+<li><p><span class="math inline">\(\{y_i^{(a)}\} \leftarrow\)</span> <code>ComputeBellmanTargets</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>)</p></li>
+<li><p><span class="math inline">\(v_\theta^{(0)}, v_\theta^{(1)} \leftarrow\)</span> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, num_epochs)</p></li>
+<li><p>max_error <span class="math inline">\(\leftarrow\)</span> <code>CheckConvergence</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p></li>
+<li><p><strong>If</strong> max_error <span class="math inline">\(&lt; \epsilon_{\text{tol}}\)</span>: <strong>Break</strong></p></li>
+</ol></li>
+<li><p><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></p></li>
+</ol>
+<hr>
+</section>
+<section id="subroutines" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines">Subroutines</h3>
+<p><strong>Procedure</strong> <code>InitializeNetworks</code>(hyperparameters)</p>
 <ul>
-<li>Create two neural networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span> with monotonic constraints</li>
-<li>Initialize network parameters <span class="math inline">\(\theta\)</span> randomly</li>
+<li>Create networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span> with monotonic weight constraints</li>
+<li>Initialize parameters <span class="math inline">\(\theta\)</span> randomly</li>
+<li><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></li>
 </ul>
-<p><strong>Step 2: Generate state samples</strong></p>
+<hr>
+<p><strong>Procedure</strong> <code>GenerateStateGrid</code>(<span class="math inline">\(N\)</span>, state_range)</p>
 <ul>
-<li><span class="math inline">\(S = \{s_1, s_2, \ldots, s_N\}\)</span> covering the relevant state space</li>
+<li>Create uniform grid: <span class="math inline">\(S = \{s_1, \ldots, s_N\}\)</span> over state_range</li>
+<li><strong>Return</strong> <span class="math inline">\(S\)</span></li>
 </ul>
-<p><strong>Step 3: Iterate until convergence</strong></p>
-<p>For <code>iteration</code> = 1 to <code>max_iter</code>:</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3a. Compute targets for all states and actions:</strong></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each <span class="math inline">\(s_i \in S\)</span>:</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For each action <span class="math inline">\(a \in \{0, 1\}\)</span>:</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s'_i = (1 - \gamma) \cdot s_i + a\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(v_0 = v_\theta^{(0)}(s'_i)\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(v_1 = v_\theta^{(1)}(s'_i)\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\text{EV}_i = \log(\exp(v_0) + \exp(v_1)) + \gamma_E\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(y_i^{(a)} = \beta \cdot s_i - a + \delta \cdot \text{EV}_i\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3b. Update networks (gradient descent):</strong></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For <code>epoch</code> = 1 to <code>num_epochs</code>:</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute loss: <span class="math inline">\(L = \sum_i \sum_a (v_\theta^{(a)}(s_i) - y_i^{(a)})^2\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute gradients: <span class="math inline">\(\nabla_\theta L\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Update parameters: <span class="math inline">\(\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3c. Check convergence:</strong></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Compute <span class="math inline">\(\text{max\_error} = \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>If</strong> <span class="math inline">\(\text{max\_error} &lt; \epsilon_{\text{tol}}\)</span>:</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Break (converged)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;<strong>3d. (Optional) Print progress:</strong></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Print iteration number and max_error</p>
-<p><strong>Step 4: Return</strong></p>
+<hr>
+<p><strong>Procedure</strong> <code>ComputeBellmanTargets</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>)</p>
+<p>For each <span class="math inline">\(s_i \in S\)</span> and <span class="math inline">\(a \in \{0, 1\}\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s'_i \leftarrow\)</span> <code>ComputeNextState</code>(<span class="math inline">\(s_i\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\gamma\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\text{EV}_i \leftarrow\)</span> <code>ComputeExpectedValue</code>(<span class="math inline">\(s'_i\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, <span class="math inline">\(\gamma_E\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(y_i^{(a)} \leftarrow\)</span> <code>ComputeMeanReward</code>(<span class="math inline">\(s_i\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\beta\)</span>) <span class="math inline">\(+ \delta \cdot \text{EV}_i\)</span></p>
+<p><strong>Return</strong> <span class="math inline">\(\{y_i^{(a)}\}\)</span> for all <span class="math inline">\(i\)</span>, <span class="math inline">\(a\)</span></p>
+<hr>
+<p><strong>Procedure</strong> <code>ComputeNextState</code>(<span class="math inline">\(s\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\gamma\)</span>)</p>
 <ul>
-<li>Return <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span></li>
+<li><strong>Return</strong> <span class="math inline">\((1 - \gamma) \cdot s + a\)</span></li>
 </ul>
+<hr>
+<p><strong>Procedure</strong> <code>ComputeMeanReward</code>(<span class="math inline">\(s\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\beta\)</span>)</p>
+<ul>
+<li><strong>Return</strong> <span class="math inline">\(\beta \cdot s - a\)</span></li>
+</ul>
+<hr>
+<p><strong>Procedure</strong> <code>ComputeExpectedValue</code>(<span class="math inline">\(s'\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, <span class="math inline">\(\gamma_E\)</span>)</p>
+<ul>
+<li><span class="math inline">\(v_0 \leftarrow v_\theta^{(0)}(s')\)</span></li>
+<li><span class="math inline">\(v_1 \leftarrow v_\theta^{(1)}(s')\)</span></li>
+<li><span class="math inline">\(\text{EV} \leftarrow\)</span> <code>LogSumExp</code>(<span class="math inline">\(v_0\)</span>, <span class="math inline">\(v_1\)</span>) <span class="math inline">\(+ \gamma_E\)</span></li>
+<li><strong>Return</strong> EV</li>
+</ul>
+<hr>
+<p><strong>Procedure</strong> <code>LogSumExp</code>(<span class="math inline">\(v_0\)</span>, <span class="math inline">\(v_1\)</span>)</p>
+<ul>
+<li><span class="math inline">\(\text{max}_v \leftarrow \max(v_0, v_1)\)</span></li>
+<li><strong>Return</strong> <span class="math inline">\(\text{max}_v + \log(\exp(v_0 - \text{max}_v) + \exp(v_1 - \text{max}_v))\)</span></li>
+</ul>
+<hr>
+<p><strong>Procedure</strong> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, num_epochs)</p>
+<p>For <code>epoch</code> = 1 to num_epochs:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(L \leftarrow\)</span> <code>ComputeLoss</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\nabla_\theta L \leftarrow\)</span> <code>ComputeGradients</code>(<span class="math inline">\(L\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L\)</span></p>
+<p><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></p>
+<hr>
+<p><strong>Procedure</strong> <code>ComputeLoss</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
+<ul>
+<li><span class="math inline">\(L \leftarrow \sum_{i=1}^N \sum_{a \in \{0,1\}} (v_\theta^{(a)}(s_i) - y_i^{(a)})^2\)</span></li>
+<li><strong>Return</strong> <span class="math inline">\(L\)</span></li>
+</ul>
+<hr>
+<p><strong>Procedure</strong> <code>CheckConvergence</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
+<ul>
+<li>max_error <span class="math inline">\(\leftarrow \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|\)</span></li>
+<li><strong>Return</strong> max_error</li>
+</ul>
+</section>
 </div>
 </div>
 <p><strong>Key Implementation Details:</strong></p>
@@ -277,24 +324,25 @@ Algorithm: Value Function Iteration with Neural Networks
 <li><strong>Learning rate</strong>: Use adaptive optimizers (e.g., Adam) for faster convergence</li>
 <li><strong>Batch updates</strong>: Can process all states in parallel for efficiency</li>
 </ul>
-<div id="7f21a456" class="cell" data-execution_count="1">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Value iteration implementation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="6a696ac4" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the MDP solver from the test_ai package</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Set parameters: beta, gamma, delta</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create MDPSolver instance</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve the MDP using value iteration</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-</section>
-<section id="example-grid-world" class="level2">
-<h2 class="anchored" data-anchor-id="example-grid-world">Example: Grid World</h2>
-<div id="c9373d5d" class="cell" data-execution_count="2">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid world example</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
+<div id="aa795820" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot convergence history</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
 </section>
 <section id="visualization" class="level2">
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
-<div id="0985b191" class="cell" data-execution_count="3">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization code</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="9f1a086a" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot value functions for both actions</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot optimal policy (choice probabilities)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="conclusion" class="level2">
