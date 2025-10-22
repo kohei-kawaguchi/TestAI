@@ -1,0 +1,41 @@
+---
+title: "Solving Markov Decision Processes"
+author: ""
+format:
+  html:
+    code-fold: false
+    toc: true
+jupyter: python3
+---
+
+## Introduction
+
+## Problem Setup
+
+## Value Iteration
+
+```{python}
+# Value iteration implementation
+```
+
+## Policy Iteration
+
+```{python}
+# Policy iteration implementation
+```
+
+## Example: Grid World
+
+```{python}
+# Grid world example
+```
+
+## Results
+
+## Visualization
+
+```{python}
+# Visualization code
+```
+
+## Conclusion
