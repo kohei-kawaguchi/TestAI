@@ -346,6 +346,7 @@ def SolveValueIteration(
     beta: float,
     gamma: float,
     delta: float,
+    gamma_E: float,
     hyperparameters: Dict,
     N: int = 100,
     state_range: Tuple[float, float] = (0.0, 10.0),
@@ -353,12 +354,11 @@ def SolveValueIteration(
     epsilon_tol: float = 1e-4,
     num_epochs: int = 100,
     learning_rate: float = 1e-3,
-    gamma_E: float = 0.5772156649015329,
     verbose: bool = True
 ) -> Tuple[MonotonicNetwork, MonotonicNetwork, Dict]:
     """
     Procedure SolveValueIteration(beta: float, gamma: float, delta: float,
-                                   hyperparameters: dict) -> (Network, Network)
+                                   gamma_E: float, hyperparameters: dict) -> (Network, Network)
 
     Main value iteration algorithm.
 
@@ -366,6 +366,7 @@ def SolveValueIteration(
         beta: Reward weight on state
         gamma: State depreciation rate
         delta: Discount factor
+        gamma_E: Euler-Mascheroni constant
         hyperparameters: Dictionary with network configuration
         N: Number of states
         state_range: Range of states to sample
@@ -373,7 +374,6 @@ def SolveValueIteration(
         epsilon_tol: Convergence tolerance
         num_epochs: Number of gradient descent epochs per iteration
         learning_rate: Learning rate for optimizer
-        gamma_E: Euler-Mascheroni constant
         verbose: Whether to print progress
 
     Returns:
