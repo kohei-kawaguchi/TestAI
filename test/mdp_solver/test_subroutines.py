@@ -21,6 +21,7 @@ from mdp_solver import (
     ComputeBellmanTargets,
     ComputeLoss,
     CheckConvergence,
+    ComputeChoiceProbability,
     MonotonicNetwork,
 )
 
@@ -382,3 +383,87 @@ class TestCheckConvergence:
         max_error = CheckConvergence(S=S, targets=targets, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
 
         assert max_error < 1e-5
+
+
+class TestComputeChoiceProbability:
+    """Test ComputeChoiceProbability procedure based on pseudo code."""
+
+    def test_returns_two_probabilities(self):
+        """Should return tuple of (float, float)."""
+        hyperparameters = {'hidden_sizes': [16, 16]}
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
+        s = 2.5
+
+        prob_a0, prob_a1 = ComputeChoiceProbability(s=s, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+
+        assert isinstance(prob_a0, float)
+        assert isinstance(prob_a1, float)
+
+    def test_probabilities_sum_to_one(self):
+        """Probabilities should sum to 1 (logit formula property)."""
+        hyperparameters = {'hidden_sizes': [16, 16]}
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
+        s = 3.0
+
+        prob_a0, prob_a1 = ComputeChoiceProbability(s=s, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+
+        assert abs(prob_a0 + prob_a1 - 1.0) < 1e-6
+
+    def test_probabilities_in_valid_range(self):
+        """Probabilities should be in [0, 1]."""
+        hyperparameters = {'hidden_sizes': [16, 16]}
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
+        s = 5.0
+
+        prob_a0, prob_a1 = ComputeChoiceProbability(s=s, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+
+        assert 0.0 <= prob_a0 <= 1.0
+        assert 0.0 <= prob_a1 <= 1.0
+
+    def test_implements_logit_formula(self):
+        """Should implement P(a|s) = exp(v(s,a)) / sum(exp(v(s,a')))."""
+        import numpy as np
+
+        hyperparameters = {'hidden_sizes': [16, 16]}
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
+        s = 4.0
+
+        # Get probabilities from function
+        prob_a0, prob_a1 = ComputeChoiceProbability(s=s, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+
+        # Compute expected probabilities using logit formula
+        s_tensor = torch.tensor([[s]], dtype=torch.float32)
+        with torch.no_grad():
+            v_0 = v_theta_0(s_tensor).item()
+            v_1 = v_theta_1(s_tensor).item()
+
+        denom = np.exp(v_0) + np.exp(v_1)
+        expected_prob_a0 = np.exp(v_0) / denom
+        expected_prob_a1 = np.exp(v_1) / denom
+
+        assert abs(prob_a0 - expected_prob_a0) < 1e-6
+        assert abs(prob_a1 - expected_prob_a1) < 1e-6
+
+    def test_higher_value_gives_higher_probability(self):
+        """Action with higher value should have higher probability."""
+        hyperparameters = {'hidden_sizes': [16, 16]}
+        v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
+
+        # Test multiple states
+        for s in [1.0, 3.0, 5.0, 7.0]:
+            prob_a0, prob_a1 = ComputeChoiceProbability(s=s, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+
+            # Get values
+            s_tensor = torch.tensor([[s]], dtype=torch.float32)
+            with torch.no_grad():
+                v_0 = v_theta_0(s_tensor).item()
+                v_1 = v_theta_1(s_tensor).item()
+
+            # Check that higher value corresponds to higher probability
+            if v_0 > v_1:
+                assert prob_a0 > prob_a1
+            elif v_1 > v_0:
+                assert prob_a1 > prob_a0
+            else:  # v_0 == v_1
+                assert abs(prob_a0 - 0.5) < 1e-6
+                assert abs(prob_a1 - 0.5) < 1e-6

@@ -429,6 +429,39 @@ def SolveValueIteration(
 # Helper functions for evaluation
 # ============================================================================
 
+def ComputeChoiceProbability(s: float, v_theta_0: MonotonicNetwork, v_theta_1: MonotonicNetwork) -> Tuple[float, float]:
+    """
+    Procedure ComputeChoiceProbability(s: float, v_theta^(0): Network, v_theta^(1): Network) -> (float, float)
+
+    Compute optimal choice probabilities using the logit formula.
+
+    This implements the logit formula for choice probabilities under Type-I Extreme Value
+    distributed shocks:
+        P(a | s) = exp(v(s, a)) / sum_{a'} exp(v(s, a'))
+
+    Args:
+        s: State value
+        v_theta_0: Network for action 0
+        v_theta_1: Network for action 1
+
+    Returns:
+        Tuple of (P(a=0|s), P(a=1|s))
+    """
+    import numpy as np
+
+    s_tensor = torch.tensor([[s]], dtype=torch.float32)
+
+    with torch.no_grad():
+        v_0 = v_theta_0(s_tensor).item()
+        v_1 = v_theta_1(s_tensor).item()
+
+    denom = np.exp(v_0) + np.exp(v_1)
+    prob_a0 = np.exp(v_0) / denom
+    prob_a1 = np.exp(v_1) / denom
+
+    return prob_a0, prob_a1
+
+
 def GetValue(v_theta_0: MonotonicNetwork, v_theta_1: MonotonicNetwork, s: float, a: int) -> float:
     """
     Get value function for a given state and action.

@@ -13,6 +13,7 @@ from .mdp_solver import (
     ComputeLoss,
     UpdateNetworks,
     CheckConvergence,
+    ComputeChoiceProbability,
     GetValue,
     GetPolicy,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "ComputeLoss",
     "UpdateNetworks",
     "CheckConvergence",
+    "ComputeChoiceProbability",
     "GetValue",
     "GetPolicy",
 ]
