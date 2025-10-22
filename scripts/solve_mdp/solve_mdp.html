@@ -234,16 +234,16 @@ Algorithm: Value Function Iteration with Neural Networks
 <hr>
 <section id="main-algorithm" class="level3">
 <h3 class="anchored" data-anchor-id="main-algorithm">Main Algorithm</h3>
-<p><strong>Procedure</strong> <code>SolveValueIteration</code>(<span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, hyperparameters: dict) <span class="math inline">\(\to\)</span> (Network, Network)</p>
+<p><strong>Procedure</strong> <code>SolveValueIteration</code>(<span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, hyperparameters: dict, <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float], max_iter: int, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, num_epochs: int, learning_rate: float, optimizer: Optimizer) <span class="math inline">\(\to\)</span> (Network, Network)</p>
 <ol type="1">
 <li><p><span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeNetworks</code>(hyperparameters)</p></li>
-<li><p><span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>GenerateStateGrid</code>(<span class="math inline">\(N\)</span>: int, state_range: tuple)</p></li>
-<li><p>For <code>iteration</code>: int = 1 to <code>max_iter</code>: int:</p>
+<li><p><span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>GenerateStateGrid</code>(<span class="math inline">\(N\)</span>, state_range)</p></li>
+<li><p>For <code>iteration</code>: int = 1 to max_iter:</p>
 <ol type="a">
 <li><p><span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>ComputeBellmanTargets</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>)</p></li>
-<li><p><span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span> <span class="math inline">\(\leftarrow\)</span> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, num_epochs: int)</p></li>
+<li><p><span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span> <span class="math inline">\(\leftarrow\)</span> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, num_epochs, optimizer)</p></li>
 <li><p>max_error: float <span class="math inline">\(\leftarrow\)</span> <code>CheckConvergence</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p></li>
-<li><p><strong>If</strong> max_error <span class="math inline">\(&lt; \epsilon_{\text{tol}}\)</span>: float: <strong>Break</strong></p></li>
+<li><p><strong>If</strong> max_error <span class="math inline">\(&lt; \epsilon_{\text{tol}}\)</span>: <strong>Break</strong></p></li>
 </ol></li>
 <li><p><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></p></li>
 </ol>
@@ -295,11 +295,12 @@ Algorithm: Value Function Iteration with Neural Networks
 <li><strong>Return</strong> <span class="math inline">\(\text{max}_v + \log(\exp(v_0 - \text{max}_v) + \exp(v_1 - \text{max}_v))\)</span></li>
 </ul>
 <hr>
-<p><strong>Procedure</strong> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>], <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network, num_epochs: int) <span class="math inline">\(\to\)</span> (Network, Network)</p>
+<p><strong>Procedure</strong> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>], <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network, num_epochs: int, optimizer: Optimizer) <span class="math inline">\(\to\)</span> (Network, Network)</p>
 <p>For <code>epoch</code>: int = 1 to num_epochs:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;optimizer.zero_grad()</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(L\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeLoss</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\nabla_\theta L\)</span> <span class="math inline">\(\leftarrow\)</span> <code>ComputeGradients</code>(<span class="math inline">\(L\)</span>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(L\)</span>.backward()</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step()</p>
 <p><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></p>
 <hr>
 <p><strong>Procedure</strong> <code>ComputeLoss</code>(<span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>], <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network) <span class="math inline">\(\to\)</span> float</p>
@@ -320,11 +321,11 @@ Algorithm: Value Function Iteration with Neural Networks
 <ul>
 <li><strong>Monotonic network constraint</strong>: Apply softplus transformation to weight matrices during forward pass</li>
 <li><strong>Numerical stability</strong>: Use log-sum-exp trick: <span class="math inline">\(\log(\exp(a) + \exp(b)) = \max(a,b) + \log(1 + \exp(-|a-b|))\)</span></li>
-<li><strong>State sampling</strong>: Use uniform grid or random sampling over a reasonable state range (e.g., [0, 10])</li>
-<li><strong>Learning rate</strong>: Use adaptive optimizers (e.g., Adam) for faster convergence</li>
-<li><strong>Batch updates</strong>: Can process all states in parallel for efficiency</li>
+<li><strong>State sampling</strong>: Use uniform grid over state_range parameter</li>
+<li><strong>Optimizer</strong>: Use adaptive optimizers such as Adam for faster convergence</li>
+<li><strong>Batch updates</strong>: Process all states in parallel for efficiency</li>
 </ul>
-<div id="90f97155" class="cell" data-execution_count="1">
+<div id="b31f5ad3" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Import the MDP solver from the test_ai package</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Set parameters: beta, gamma, delta</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create MDPSolver instance</span></span>
@@ -334,13 +335,13 @@ Algorithm: Value Function Iteration with Neural Networks
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
-<div id="730a7109" class="cell" data-execution_count="2">
+<div id="6784abb4" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot convergence history</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="visualization" class="level2">
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
-<div id="529a61b7" class="cell" data-execution_count="3">
+<div id="f9602840" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot value functions for both actions</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot optimal policy (choice probabilities)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>

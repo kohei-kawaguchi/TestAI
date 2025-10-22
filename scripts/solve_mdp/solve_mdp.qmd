@@ -155,21 +155,21 @@ $$= \beta s - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1
 
 ### Main Algorithm
 
-**Procedure** `SolveValueIteration`($\beta$: float, $\gamma$: float, $\delta$: float, hyperparameters: dict) $\to$ (Network, Network)
+**Procedure** `SolveValueIteration`($\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float, hyperparameters: dict, $N$: int, state_range: tuple[float, float], max_iter: int, $\epsilon_{\text{tol}}$: float, num_epochs: int, learning_rate: float, optimizer: Optimizer) $\to$ (Network, Network)
 
 1. $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network $\leftarrow$ `InitializeNetworks`(hyperparameters)
 
-2. $S$: Tensor[$N \times 1$] $\leftarrow$ `GenerateStateGrid`($N$: int, state_range: tuple)
+2. $S$: Tensor[$N \times 1$] $\leftarrow$ `GenerateStateGrid`($N$, state_range)
 
-3. For `iteration`: int = 1 to `max_iter`: int:
+3. For `iteration`: int = 1 to max_iter:
 
    a. $\{y_i^{(a)}\}$: Tensor[$N \times 2$] $\leftarrow$ `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$, $\gamma_E$)
 
-   b. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs: int)
+   b. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs, optimizer)
 
    c. max_error: float $\leftarrow$ `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
 
-   d. **If** max_error $< \epsilon_{\text{tol}}$: float: **Break**
+   d. **If** max_error $< \epsilon_{\text{tol}}$: **Break**
 
 4. **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 
@@ -234,15 +234,17 @@ For each $s_i$: float $\in S$ and $a$: int $\in \{0, 1\}$:
 
 ---
 
-**Procedure** `UpdateNetworks`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, num_epochs: int) $\to$ (Network, Network)
+**Procedure** `UpdateNetworks`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, num_epochs: int, optimizer: Optimizer) $\to$ (Network, Network)
 
 For `epoch`: int = 1 to num_epochs:
 
+&nbsp;&nbsp;&nbsp;&nbsp;optimizer.zero_grad()
+
 &nbsp;&nbsp;&nbsp;&nbsp;$L$: float $\leftarrow$ `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
 
-&nbsp;&nbsp;&nbsp;&nbsp;$\nabla_\theta L$ $\leftarrow$ `ComputeGradients`($L$)
+&nbsp;&nbsp;&nbsp;&nbsp;$L$.backward()
 
-&nbsp;&nbsp;&nbsp;&nbsp;$\theta \leftarrow \theta - \text{learning\_rate} \cdot \nabla_\theta L$
+&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step()
 
 **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 
@@ -266,9 +268,9 @@ For `epoch`: int = 1 to num_epochs:
 
 - **Monotonic network constraint**: Apply softplus transformation to weight matrices during forward pass
 - **Numerical stability**: Use log-sum-exp trick: $\log(\exp(a) + \exp(b)) = \max(a,b) + \log(1 + \exp(-|a-b|))$
-- **State sampling**: Use uniform grid or random sampling over a reasonable state range (e.g., [0, 10])
-- **Learning rate**: Use adaptive optimizers (e.g., Adam) for faster convergence
-- **Batch updates**: Can process all states in parallel for efficiency
+- **State sampling**: Use uniform grid over state_range parameter
+- **Optimizer**: Use adaptive optimizers such as Adam for faster convergence
+- **Batch updates**: Process all states in parallel for efficiency
 
 ```{python}
 # Import the MDP solver from the test_ai package
