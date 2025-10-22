@@ -284,7 +284,7 @@ For `epoch`: int = 1 to num_epochs:
 - **Batch updates**: Process all states in parallel for efficiency
 
 ```{python}
-# Import the MDP solver from the test_ai package
+# Import the MDP solver from the mdp_solver package
 # Set parameters: beta, gamma, delta
 # Create MDPSolver instance
 # Solve the MDP using value iteration

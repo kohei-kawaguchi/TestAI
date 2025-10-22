@@ -1,7 +1,7 @@
 [project]
-name = "test-ai"
+name = "mdp-solver"
 version = "0.1.0"
-description = "Add your description here"
+description = "MDP Solver using Value Iteration with Neural Networks"
 readme = "README.md"
 authors = [
     { name = "Kohei Kawaguchi", email = "kohei.kawagucci@gmail.com" }
