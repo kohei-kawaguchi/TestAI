@@ -1,5 +1,5 @@
 [project]
-name = "mdp-solver"
+name = "mdp_solver"
 version = "0.1.0"
 description = "MDP Solver using Value Iteration with Neural Networks"
 readme = "README.md"
