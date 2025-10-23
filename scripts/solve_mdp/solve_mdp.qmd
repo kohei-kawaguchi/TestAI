@@ -1,0 +1,809 @@
+---
+title: "Solving Markov Decision Processes"
+author: ""
+format:
+  html:
+    code-fold: false
+    toc: true
+jupyter: python3
+execute:
+  daemon: false
+---
+
+## Introduction
+
+This document demonstrates solving a Markov Decision Process using neural network function approximation and value iteration.
+
+## Problem Setup
+
+We consider a Markov Decision Process with the following components:
+
+**State Space**: The state variable $s \in \mathbb{R}$ represents a continuous real-valued state.
+
+**Action Space**: The action variable $a \in \{0, 1\}$ is binary.
+
+**Reward Function**: The mean reward function is given by:
+$$\bar{r}(s, a) = \beta \log(1 + s) - a$$
+where $\beta$ is a parameter that determines the weight on the state value, and the logarithmic form captures diminishing marginal returns to the state.
+
+The realized reward includes an action-specific shock:
+$$r(s, a) = \bar{r}(s, a) + \epsilon(a) = \beta \log(1 + s) - a + \epsilon(a)$$
+where $\epsilon(a)$ represents the shock associated with action $a$.
+
+**Reward Shocks**: The shocks $\epsilon(0)$ and $\epsilon(1)$ are:
+- Independent of each other
+- Independent across time periods
+- Each follows a Type-I Extreme Value distribution (Gumbel distribution)
+
+This specification leads to the discrete choice model with tractable choice probabilities.
+
+**State Transition**: The state evolves according to the deterministic transition function:
+$$s' = (1 - \gamma) s + a$$
+where $\gamma \in (0, 1)$ is a depreciation parameter that determines how much the current state decays, and the action directly contributes to the next state.
+
+**Interpretation**: In this model:
+- The state $s$ can be interpreted as a resource or capital stock
+- The action $a$ represents whether to invest/add to the stock ($a=1$) or not ($a=0$)
+- The reward incentivizes having a high state value (through $\beta \log(1 + s)$) with diminishing marginal returns, but penalizes taking action ($-a$)
+- The logarithmic reward captures the idea that additional units of state become less valuable as the state increases
+- The state transition shows that without action, the state decays at rate $\gamma$, while action adds to the state
+
+## Optimal Markov Decision Policy
+
+**Discount Factor**: Let $\delta \in (0, 1)$ denote the discount factor that determines how much the agent values future rewards relative to current rewards.
+
+**Value Function**: The value function $V(s, \epsilon)$ represents the expected present discounted value of rewards from state $s$ with shock vector $\epsilon = (\epsilon(0), \epsilon(1))$, assuming optimal decision-making from this period onward.
+
+**Bellman Equation**: The optimal value function satisfies the recursive Bellman equation:
+$$V(s, \epsilon) = \max_{a \in \{0,1\}} \left\{ \bar{r}(s, a) + \epsilon(a) + \delta \mathbb{E}_{\epsilon'} \left[ V(s', \epsilon') \right] \right\}$$
+where:
+- $s' = (1 - \gamma) s + a$ is the next period state
+- $\epsilon' = (\epsilon'(0), \epsilon'(1))$ represents the next period shocks
+- The expectation is taken over the distribution of future shocks
+
+**Choice-Specific Value Function**: It is useful to define the choice-specific value function:
+$$v(s, a) = \bar{r}(s, a) + \delta \mathbb{E}_{\epsilon'} \left[ V(s', \epsilon') \right]$$
+which represents the expected value of choosing action $a$ in state $s$, before observing the shock $\epsilon(a)$.
+
+The Bellman equation can then be rewritten as:
+$$V(s, \epsilon) = \max_{a \in \{0,1\}} \left\{ v(s, a) + \epsilon(a) \right\}$$
+
+**Optimal Policy**: The optimal policy is the decision rule that maximizes the value function:
+$$a^*(s, \epsilon) = \arg\max_{a \in \{0,1\}} \left\{ v(s, a) + \epsilon(a) \right\}$$
+
+Given the Type-I Extreme Value distribution of the shocks, the probability of choosing action $a$ follows the logit formula:
+$$P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$$
+
+## Value Iteration
+
+### Neural Network Architecture for Choice-Specific Value Functions
+
+Since the action space is binary, we represent the choice-specific value function using **two separate neural networks**:
+- $v_\theta^{(0)}(s)$ for action $a=0$
+- $v_\theta^{(1)}(s)$ for action $a=1$
+
+Each network maps the continuous state $s \in \mathbb{R}$ to a scalar value.
+
+**Network Design Requirements:**
+
+1. **Smoothness in $s$**: We use smooth activation functions (tanh or softplus) to ensure the value function is differentiable with respect to the state.
+
+2. **Monotonicity in $s$**: Since higher state values should lead to higher rewards (due to the $\beta \log(1 + s)$ term), we enforce monotonicity by constraining the network weights to be non-negative. This is achieved by applying the softplus transformation:
+   $$w = \text{softplus}(\tilde{w}) = \log(1 + \exp(\tilde{w}))$$
+   where $\tilde{w}$ are unconstrained parameters. The softplus function is used instead of exponential to avoid weight explosion.
+
+3. **Shallow Architecture**: Given that the reward function is concave and logarithmic in $s$ and the state space is one-dimensional, we use a shallow network (2-3 hidden layers) with moderate width (e.g., 32-64 units).
+
+**Network Structure:**
+$$v_\theta^{(a)}(s) = W_L^{(a)} h_{L-1} + b_L^{(a)}$$
+where:
+- $h_0 = s$ (input)
+- $h_\ell = \sigma(W_\ell^{(a)} h_{\ell-1} + b_\ell^{(a)})$ for $\ell = 1, \ldots, L-1$
+- $W_\ell^{(a)} = \text{softplus}(\tilde{W}_\ell^{(a)})$ (non-negative weights)
+- $\sigma$ is a smooth activation function (e.g., tanh)
+
+### Value Function Iteration Algorithm
+
+The value iteration algorithm solves for the optimal choice-specific value functions by iteratively applying the Bellman operator.
+
+**Bellman Update for Choice-Specific Value Function:**
+
+Given the current value function approximations $v_\theta^{(0)}$ and $v_\theta^{(1)}$, we can compute the expected value of the next state:
+$$\mathbb{E}_{\epsilon'} [V(s', \epsilon')] = \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}(s'))\right) + \gamma_E$$
+where $\gamma_E \approx 0.5772$ is the Euler-Mascheroni constant (this formula uses the property of the Type-I Extreme Value distribution).
+
+The Bellman update for the choice-specific value function is:
+$$v_{\text{new}}(s, a) = \bar{r}(s, a) + \delta \mathbb{E}_{\epsilon'} [V(s', \epsilon')]$$
+$$= \beta \log(1 + s) - a + \delta \log\left(\sum_{a' \in \{0,1\}} \exp(v_\theta^{(a')}((1-\gamma)s + a))\right) + \delta \gamma_E$$
+
+**Algorithm:**
+
+1. **Initialize**: Set $v_\theta^{(0)}$ and $v_\theta^{(1)}$ to initial values (e.g., zeros or small random values)
+
+2. **Sample states**: Generate a set of state values $\{s_i\}_{i=1}^N$ covering the relevant state space
+
+3. **Iterate** until convergence:
+
+   a. For each sampled state $s_i$ and action $a \in \{0,1\}$:
+      - Compute next state: $s'_i = (1-\gamma)s_i + a$
+      - Compute expected continuation value:
+        $$\text{EV}_i = \log\left(\exp(v_\theta^{(0)}(s'_i)) + \exp(v_\theta^{(1)}(s'_i))\right) + \gamma_E$$
+      - Compute target value:
+        $$y_i^{(a)} = \beta \log(1 + s_i) - a + \delta \cdot \text{EV}_i$$
+
+   b. Update network parameters $\theta$ by minimizing the loss:
+      $$L(\theta) = \sum_{i=1}^N \sum_{a \in \{0,1\}} \left(v_\theta^{(a)}(s_i) - y_i^{(a)}\right)^2$$
+
+   c. Check convergence: If $\max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}| < \epsilon_{\text{tol}}$, stop
+
+4. **Output**: The converged networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$ approximate the optimal choice-specific value functions
+
+**Convergence**: The value iteration algorithm is guaranteed to converge to the unique fixed point by the Contraction Mapping Theorem, since the Bellman operator is a contraction with modulus $\delta < 1$.
+
+### Pseudo Code
+
+::: {.callout-note appearance="simple"}
+
+## Algorithm: Value Function Iteration with Neural Networks
+
+**Design Principles:**
+
+This pseudo code is designed for direct implementation:
+
+- **No placeholders**: Every operation corresponds to a concrete function or method call
+- **Explicit parameters**: All inputs are passed as parameters, no implicit/global state
+- **Framework-specific**: Uses PyTorch-style operations (optimizer.zero_grad(), backward(), step())
+- **No hard-coding**: All values are parameterized
+
+**Input:**
+
+- MDP parameters: $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float
+- Network hyperparameters: hyperparameters: dict (containing `hidden_sizes`: list[int])
+- State grid parameters: $N$: int, state_range: tuple[float, float]
+- Training parameters: max_iter: int, $\epsilon_{\text{tol}}$: float, num_epochs: int
+- Optimization: learning_rate: float, optimizer: Optimizer
+
+**Output:**
+
+- Trained networks $v_\theta^{(0)}$: Network and $v_\theta^{(1)}$: Network
+
+---
+
+### Main Algorithm
+
+**Procedure** `SolveValueIteration`($\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float, hyperparameters: dict, $N$: int, state_range: tuple[float, float], max_iter: int, $\epsilon_{\text{tol}}$: float, num_epochs: int, learning_rate: float, optimizer: Optimizer) $\to$ (Network, Network)
+
+1. $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network $\leftarrow$ `InitializeNetworks`(hyperparameters)
+
+2. $S$: Tensor[$N \times 1$] $\leftarrow$ `GenerateStateGrid`($N$, state_range)
+
+3. For `iteration`: int = 1 to max_iter:
+
+   a. $\{y_i^{(a)}\}$: Tensor[$N \times 2$] $\leftarrow$ `ComputeBellmanTargets`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$, $\gamma_E$)
+
+   b. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs, optimizer)
+
+   c. max_error: float $\leftarrow$ `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+   d. **If** max_error $< \epsilon_{\text{tol}}$: **Break**
+
+4. **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
+
+---
+
+### Subroutines
+
+**Procedure** `InitializeNetworks`(hyperparameters: dict) $\to$ (Network, Network)
+
+- Create networks $v_\theta^{(0)}$: Network and $v_\theta^{(1)}$: Network with monotonic weight constraints
+- Initialize parameters $\theta$ randomly
+- **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
+
+---
+
+**Procedure** `GenerateStateGrid`($N$: int, state_range: tuple[float, float]) $\to$ Tensor[$N \times 1$]
+
+- Create uniform grid: $S$: Tensor[$N \times 1$] = $\{s_1, \ldots, s_N\}$ over state_range
+- **Return** $S$
+
+---
+
+**Procedure** `ComputeBellmanTargets`($S$: Tensor[$N \times 1$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float) $\to$ Tensor[$N \times 2$]
+
+For each $s_i$: float $\in S$ and $a$: int $\in \{0, 1\}$:
+
+&nbsp;&nbsp;&nbsp;&nbsp;$s'_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeNextState`($s_i$, $a$, $\gamma$)
+
+&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeExpectedValue`($s'_i$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\gamma_E$)
+
+&nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)}$: Tensor[$N \times 1$] $\leftarrow$ `ComputeMeanReward`($s_i$, $a$, $\beta$) $+ \delta \cdot \text{EV}_i$
+
+**Return** $\{y_i^{(a)}\}$: Tensor[$N \times 2$] for all $i$, $a$
+
+---
+
+**Procedure** `ComputeNextState`($s$: Tensor[$N \times 1$], $a$: int, $\gamma$: float) $\to$ Tensor[$N \times 1$]
+
+- **Return** $(1 - \gamma) \cdot s + a$
+
+---
+
+**Procedure** `ComputeMeanReward`($s$: Tensor[$N \times 1$], $a$: int, $\beta$: float) $\to$ Tensor[$N \times 1$]
+
+- **Return** $\beta \cdot \log(1 + s) - a$
+
+---
+
+**Procedure** `ComputeExpectedValue`($s'$: Tensor[$N \times 1$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\gamma_E$: float) $\to$ Tensor[$N \times 1$]
+
+- $v_0$: Tensor[$N \times 1$] $\leftarrow v_\theta^{(0)}(s')$
+- $v_1$: Tensor[$N \times 1$] $\leftarrow v_\theta^{(1)}(s')$
+- $\text{EV}$: Tensor[$N \times 1$] $\leftarrow$ `LogSumExp`($v_0$, $v_1$) $+ \gamma_E$
+- **Return** EV
+
+---
+
+**Procedure** `LogSumExp`($v_0$: Tensor[$N \times 1$], $v_1$: Tensor[$N \times 1$]) $\to$ Tensor[$N \times 1$]
+
+- $\text{max}_v$: Tensor[$N \times 1$] $\leftarrow \max(v_0, v_1)$
+- **Return** $\text{max}_v + \log(\exp(v_0 - \text{max}_v) + \exp(v_1 - \text{max}_v))$
+
+---
+
+**Procedure** `UpdateNetworks`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, num_epochs: int, optimizer: Optimizer) $\to$ (Network, Network)
+
+For `epoch`: int = 1 to num_epochs:
+
+&nbsp;&nbsp;&nbsp;&nbsp;optimizer.zero_grad() &nbsp;&nbsp;&nbsp;&nbsp;// Clear previous gradients
+
+&nbsp;&nbsp;&nbsp;&nbsp;$L$: float $\leftarrow$ `ComputeLoss`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+&nbsp;&nbsp;&nbsp;&nbsp;$L$.backward() &nbsp;&nbsp;&nbsp;&nbsp;// Compute gradients via automatic differentiation
+
+&nbsp;&nbsp;&nbsp;&nbsp;optimizer.step() &nbsp;&nbsp;&nbsp;&nbsp;// Update parameters using computed gradients
+
+**Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
+
+---
+
+**Procedure** `ComputeLoss`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ float
+
+- $L$: float $\leftarrow \sum_{i=1}^N \sum_{a \in \{0,1\}} (v_\theta^{(a)}(s_i) - y_i^{(a)})^2$
+- **Return** $L$
+
+---
+
+**Procedure** `CheckConvergence`($S$: Tensor[$N \times 1$], $\{y_i^{(a)}\}$: Tensor[$N \times 2$], $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ float
+
+- max_error: float $\leftarrow \max_{i,a} |v_\theta^{(a)}(s_i) - y_i^{(a)}|$
+- **Return** max_error
+
+---
+
+**Procedure** `ComputeChoiceProbability`($s$: float, $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ (float, float)
+
+- $v_0$: float $\leftarrow v_\theta^{(0)}(s)$
+- $v_1$: float $\leftarrow v_\theta^{(1)}(s)$
+- $\text{denom}$: float $\leftarrow \exp(v_0) + \exp(v_1)$
+- $P(a=0|s)$: float $\leftarrow \exp(v_0) / \text{denom}$
+- $P(a=1|s)$: float $\leftarrow \exp(v_1) / \text{denom}$
+- **Return** $P(a=0|s)$, $P(a=1|s)$
+
+**Note**: This implements the logit formula for choice probabilities under Type-I Extreme Value distributed shocks:
+$$P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$$
+
+:::
+
+**Key Implementation Details:**
+
+- **Monotonic network constraint**: Apply softplus transformation to weight matrices during forward pass
+- **Numerical stability**: Use log-sum-exp trick: $\log(\exp(a) + \exp(b)) = \max(a,b) + \log(1 + \exp(-|a-b|))$
+- **State sampling**: Use uniform grid over state_range parameter
+- **Optimizer**: Use adaptive optimizers such as Adam for faster convergence
+- **Batch updates**: Process all states in parallel for efficiency
+
+```{python}
+import sys
+sys.path.insert(0, '../../src')
+
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from concurrent.futures import ThreadPoolExecutor
+import os
+
+from mdp_solver import SolveValueIteration, ComputeChoiceProbability
+```
+
+```{python}
+#| cache: true
+
+# Set parameters
+beta = 1.0
+gamma = 0.1
+delta = 0.95
+gamma_E = 0.5772156649015329
+
+# Network hyperparameters
+hyperparameters = {
+    'hidden_sizes': [32, 32]
+}
+
+# State grid parameters
+N = 100
+state_range = (0.0, 10.0)
+
+# Training parameters
+max_iter = 1000
+epsilon_tol = 1e-4
+num_epochs = 50
+learning_rate = 1e-3
+
+# Solve the MDP using value iteration
+print("Solving MDP with value iteration...")
+v_theta_0, v_theta_1, history = SolveValueIteration(
+    beta=beta,
+    gamma=gamma,
+    delta=delta,
+    gamma_E=gamma_E,
+    hyperparameters=hyperparameters,
+    N=N,
+    state_range=state_range,
+    max_iter=max_iter,
+    epsilon_tol=epsilon_tol,
+    num_epochs=num_epochs,
+    learning_rate=learning_rate,
+    verbose=True
+)
+
+print(f"\nConverged after {len(history['iterations'])} iterations")
+print(f"Final max error: {history['max_errors'][-1]:.6f}")
+```
+
+## Results
+
+### Convergence Plot
+
+```{python}
+#| cache: true
+
+# Plot convergence history
+fig, ax = plt.subplots(figsize=(10, 6))
+
+ax.plot(history['iterations'], history['max_errors'], 'b-', linewidth=2, label='Max Error')
+ax.axhline(y=epsilon_tol, color='r', linestyle='--', linewidth=1.5, label=f'Tolerance (ε={epsilon_tol})')
+
+ax.set_xlabel('Iteration', fontsize=12)
+ax.set_ylabel('Maximum Error', fontsize=12)
+ax.set_title('Convergence of Value Function Iteration', fontsize=14, fontweight='bold')
+ax.set_yscale('log')
+ax.grid(True, alpha=0.3)
+ax.legend(fontsize=11)
+
+plt.tight_layout()
+plt.show()
+
+print(f"Converged in {len(history['iterations'])} iterations")
+```
+
+## Visualization
+
+### Choice-Specific Value Functions
+
+```{python}
+#| cache: true
+
+# Generate dense grid for visualization
+s_plot = torch.linspace(state_range[0], state_range[1], 200).reshape(-1, 1)
+
+# Compute value functions for both actions
+with torch.no_grad():
+    v0_values = v_theta_0(s_plot).numpy().flatten()
+    v1_values = v_theta_1(s_plot).numpy().flatten()
+
+s_plot_np = s_plot.numpy().flatten()
+
+# Plot value functions
+fig, ax = plt.subplots(figsize=(10, 6))
+
+ax.plot(s_plot_np, v0_values, 'b-', linewidth=2.5, label='v(s, a=0)', alpha=0.8)
+ax.plot(s_plot_np, v1_values, 'r-', linewidth=2.5, label='v(s, a=1)', alpha=0.8)
+
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Value Function v(s, a)', fontsize=12)
+ax.set_title('Choice-Specific Value Functions', fontsize=14, fontweight='bold')
+ax.grid(True, alpha=0.3)
+ax.legend(fontsize=11, loc='best')
+
+plt.tight_layout()
+plt.show()
+
+# Print some statistics
+print(f"\nValue Function Statistics:")
+print(f"v(s, a=0): min={v0_values.min():.3f}, max={v0_values.max():.3f}, mean={v0_values.mean():.3f}")
+print(f"v(s, a=1): min={v1_values.min():.3f}, max={v1_values.max():.3f}, mean={v1_values.mean():.3f}")
+```
+
+### Optimal Policy
+
+```{python}
+#| cache: true
+
+# Compute optimal policy probabilities
+prob_a0 = []
+prob_a1 = []
+
+for s_val in s_plot_np:
+    p0, p1 = ComputeChoiceProbability(s=float(s_val), v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+    prob_a0.append(p0)
+    prob_a1.append(p1)
+
+prob_a0 = np.array(prob_a0)
+prob_a1 = np.array(prob_a1)
+
+# Plot optimal policy
+fig, ax = plt.subplots(figsize=(10, 6))
+
+ax.plot(s_plot_np, prob_a0, 'b-', linewidth=2.5, label='P(a=0|s)', alpha=0.8)
+ax.plot(s_plot_np, prob_a1, 'r-', linewidth=2.5, label='P(a=1|s)', alpha=0.8)
+ax.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Choice Probability', fontsize=12)
+ax.set_title('Optimal Policy (Choice Probabilities)', fontsize=14, fontweight='bold')
+ax.set_ylim([0, 1])
+ax.grid(True, alpha=0.3)
+ax.legend(fontsize=11, loc='best')
+
+plt.tight_layout()
+plt.show()
+
+# Find approximate threshold where policy switches
+diff = np.abs(prob_a0 - 0.5)
+threshold_idx = np.argmin(diff)
+threshold_s = s_plot_np[threshold_idx]
+
+print(f"\nPolicy switches near s ≈ {threshold_s:.3f}")
+print(f"At this state: P(a=0) = {prob_a0[threshold_idx]:.3f}, P(a=1) = {prob_a1[threshold_idx]:.3f}")
+```
+
+## Comparative Statics
+
+We examine how the optimal policy and value functions change with the reward parameter $\beta$, which controls the weight on the logarithmic state value.
+
+```{python}
+#| cache: true
+
+# Define beta values to test
+beta_values = np.arange(0, 2.25, 0.25)
+
+def solve_for_beta(beta_val):
+    """Solve MDP for a given beta value."""
+    v0, v1, hist = SolveValueIteration(
+        beta=beta_val,
+        gamma=gamma,
+        delta=delta,
+        gamma_E=gamma_E,
+        hyperparameters=hyperparameters,
+        N=N,
+        state_range=state_range,
+        max_iter=max_iter,
+        epsilon_tol=epsilon_tol,
+        num_epochs=num_epochs,
+        learning_rate=learning_rate,
+        verbose=False
+    )
+
+    # Compute value functions on plot grid
+    with torch.no_grad():
+        v0_vals = v0(s_plot).numpy().flatten()
+        v1_vals = v1(s_plot).numpy().flatten()
+
+    # Compute policy probabilities
+    policy_probs = []
+    for s_val in s_plot_np:
+        p0, p1 = ComputeChoiceProbability(s=float(s_val), v_theta_0=v0, v_theta_1=v1)
+        policy_probs.append((p0, p1))
+
+    policy_probs = np.array(policy_probs)
+
+    return {
+        'beta': beta_val,
+        'v0': v0_vals,
+        'v1': v1_vals,
+        'prob_a0': policy_probs[:, 0],
+        'prob_a1': policy_probs[:, 1],
+        'iterations': len(hist['iterations'])
+    }
+
+# Solve in parallel using threads
+print(f"Solving MDP for {len(beta_values)} different beta values in parallel...")
+with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    results = list(executor.map(solve_for_beta, beta_values))
+
+print(f"Completed all {len(results)} solutions")
+for r in results:
+    print(f"  β = {r['beta']:.2f}: converged in {r['iterations']} iterations")
+```
+
+### Value Functions Across β
+
+```{python}
+#| cache: true
+
+# Create color maps: black to blue for a=0, black to red for a=1
+def get_color(beta_val, beta_min, beta_max, colormap_name):
+    """Get color based on beta value."""
+    if beta_max == beta_min:
+        norm_val = 0.5
+    else:
+        norm_val = (beta_val - beta_min) / (beta_max - beta_min)
+    cmap = cm.get_cmap(colormap_name)
+    return cmap(norm_val)
+
+beta_min = beta_values.min()
+beta_max = beta_values.max()
+
+# Plot value functions
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Action 0 value functions (black to blue)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    # Mix with blue
+    blue_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['v0'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('Value Function v(s, a=0)', fontsize=12)
+ax1.set_title('Value Functions for a=0 (Black→Blue as β increases)', fontsize=14, fontweight='bold')
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Action 1 value functions (black to red)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    # Mix with red
+    red_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['v1'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('Value Function v(s, a=1)', fontsize=12)
+ax2.set_title('Value Functions for a=1 (Black→Red as β increases)', fontsize=14, fontweight='bold')
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
+
+### Optimal Policy Across β
+
+```{python}
+#| cache: true
+
+# Plot policies
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Probability of action 0 (black to blue)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    blue_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['prob_a0'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax1.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('P(a=0|s)', fontsize=12)
+ax1.set_title('Policy for a=0 (Black→Blue as β increases)', fontsize=14, fontweight='bold')
+ax1.set_ylim([0, 1])
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Probability of action 1 (black to red)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    red_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['prob_a1'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax2.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('P(a=1|s)', fontsize=12)
+ax2.set_title('Policy for a=1 (Black→Red as β increases)', fontsize=14, fontweight='bold')
+ax2.set_ylim([0, 1])
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
+
+### Comparative Statics for γ
+
+We examine how the optimal policy and value functions change with the persistence parameter $\gamma$, which controls the state transition dynamics.
+
+```{python}
+#| cache: true
+
+# Define gamma values to test
+gamma_values = np.arange(0, 1.25, 0.25)
+
+def solve_for_gamma(gamma_val):
+    """Solve MDP for a given gamma value."""
+    v0, v1, hist = SolveValueIteration(
+        beta=beta,
+        gamma=gamma_val,
+        delta=delta,
+        gamma_E=gamma_E,
+        hyperparameters=hyperparameters,
+        N=N,
+        state_range=state_range,
+        max_iter=max_iter,
+        epsilon_tol=epsilon_tol,
+        num_epochs=num_epochs,
+        learning_rate=learning_rate,
+        verbose=False
+    )
+
+    # Compute value functions on plot grid
+    with torch.no_grad():
+        v0_vals = v0(s_plot).numpy().flatten()
+        v1_vals = v1(s_plot).numpy().flatten()
+
+    # Compute policy probabilities
+    policy_probs = []
+    for s_val in s_plot_np:
+        p0, p1 = ComputeChoiceProbability(s=float(s_val), v_theta_0=v0, v_theta_1=v1)
+        policy_probs.append((p0, p1))
+
+    policy_probs = np.array(policy_probs)
+
+    return {
+        'gamma': gamma_val,
+        'v0': v0_vals,
+        'v1': v1_vals,
+        'prob_a0': policy_probs[:, 0],
+        'prob_a1': policy_probs[:, 1],
+        'iterations': len(hist['iterations'])
+    }
+
+# Solve in parallel using threads
+print(f"Solving MDP for {len(gamma_values)} different gamma values in parallel...")
+with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    gamma_results = list(executor.map(solve_for_gamma, gamma_values))
+
+print(f"Completed all {len(gamma_results)} solutions")
+for r in gamma_results:
+    print(f"  γ = {r['gamma']:.2f}: converged in {r['iterations']} iterations")
+```
+
+### Value Functions Across γ
+
+```{python}
+#| cache: true
+
+gamma_min = gamma_values.min()
+gamma_max = gamma_values.max()
+
+# Plot value functions
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Action 0 value functions (black to blue)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    # Mix with blue
+    blue_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['v0'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('Value Function v(s, a=0)', fontsize=12)
+ax1.set_title('Value Functions for a=0 (Black→Blue as γ increases)', fontsize=14, fontweight='bold')
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Action 1 value functions (black to red)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    # Mix with red
+    red_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['v1'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('Value Function v(s, a=1)', fontsize=12)
+ax2.set_title('Value Functions for a=1 (Black→Red as γ increases)', fontsize=14, fontweight='bold')
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
+
+### Optimal Policy Across γ
+
+```{python}
+#| cache: true
+
+# Plot policies
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Probability of action 0 (black to blue)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    blue_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['prob_a0'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('P(a=0|s)', fontsize=12)
+ax1.set_title('Policy for a=0 (Black→Blue as γ increases)', fontsize=14, fontweight='bold')
+ax1.set_ylim([0, 1])
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Probability of action 1 (black to red)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    red_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['prob_a1'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('P(a=1|s)', fontsize=12)
+ax2.set_title('Policy for a=1 (Black→Red as γ increases)', fontsize=14, fontweight='bold')
+ax2.set_ylim([0, 1])
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
+
+## Conclusion
+
+### Interpretation of Comparative Statics
+
+#### Effect of β (Reward Weight on State)
+
+The parameter $\beta$ controls the weight on the logarithmic state value in the mean reward function $r(s,a) = \beta \log(1+s) - a$. Our comparative statics reveal:
+
+**Value Functions**: As $\beta$ increases from 0 to 2, both value functions $v(s, a=0)$ and $v(s, a=1)$ increase substantially. This is intuitive - higher $\beta$ means greater returns from accumulating state, making both the patient action ($a=0$, which preserves more state) and the active action ($a=1$, which depletes state but provides immediate consumption) more valuable in present value terms.
+
+**Optimal Policy**: The policy exhibits a clear state-dependent threshold structure. For low values of $\beta$ (close to 0), the agent is nearly indifferent between actions across all states since state accumulation provides little reward. As $\beta$ increases:
+- At low states, $P(a=1|s)$ increases (agent becomes more willing to take the costly action)
+- At high states, $P(a=0|s)$ increases (agent preserves the valuable state)
+- The threshold state where the policy switches shifts rightward
+
+This pattern reflects that when investment is more valuable ($\beta$ high), it becomes worthwhile to take the costly action $a=1$ to reach valuable states, but once state improves, the agent optimally preserves that state by choosing $a=0$ because the martinal return of invenstment mitigates.
+
+#### Effect of γ (State Persistence)
+
+The parameter $\gamma$ controls state persistence in the transition equation $s' = (1-\gamma)s + a$. Our comparative statics show:
+
+**Value Functions**: As $\gamma$ increases from 0 to 1, the value functions decrease significantly. This occurs because higher $\gamma$ means faster state decay - the state depreciates more quickly, making it harder to maintain high state values over time. With faster depreciation, the future returns from state accumulation diminish, reducing the present value of both action choices.
+
+**Optimal Policy**: The effect of $\gamma$ on policy is nuanced:
+- For $\gamma = 0$ (no depreciation), states persist indefinitely, so the agent can afford to be patient and primarily chooses $a=0$ to preserve state
+- As $\gamma$ increases (faster depreciation), the relative value of taking action $a=1$ increases at low and medium states, since preserving state becomes less valuable when it depreciates quickly
+- At very high $\gamma$ (close to 1), state depreciation is so rapid that the agent must constantly choose $a=1$ to replenish the state, fundamentally changing the nature of the optimal policy
