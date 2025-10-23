@@ -308,6 +308,10 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from mdp_solver import SolveValueIteration
+```
+
+```{python}
+#| cache: true
 
 # Set parameters
 beta = 1.0
@@ -356,6 +360,8 @@ print(f"Final max error: {history['max_errors'][-1]:.6f}")
 ### Convergence Plot
 
 ```{python}
+#| cache: true
+
 # Plot convergence history
 fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -380,6 +386,8 @@ print(f"Converged in {len(history['iterations'])} iterations")
 ### Choice-Specific Value Functions
 
 ```{python}
+#| cache: true
+
 # Generate dense grid for visualization
 s_plot = torch.linspace(state_range[0], state_range[1], 200).reshape(-1, 1)
 
@@ -414,6 +422,8 @@ print(f"v(s, a=1): min={v1_values.min():.3f}, max={v1_values.max():.3f}, mean={v
 ### Optimal Policy
 
 ```{python}
+#| cache: true
+
 from mdp_solver import ComputeChoiceProbability
 
 # Compute optimal policy probabilities
@@ -453,5 +463,7 @@ threshold_s = s_plot_np[threshold_idx]
 print(f"\nPolicy switches near s ≈ {threshold_s:.3f}")
 print(f"At this state: P(a=0) = {prob_a0[threshold_idx]:.3f}, P(a=1) = {prob_a1[threshold_idx]:.3f}")
 ```
+
+## Comparative Statics
 
 ## Conclusion
