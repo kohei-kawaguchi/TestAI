@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestAI - Analysis Reports</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            border-bottom: 3px solid #0366d6;
+            padding-bottom: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .report-list {
+            list-style: none;
+            padding: 0;
+        }
+        .report-item {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            background: #f6f8fa;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .report-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .report-item a {
+            color: #0366d6;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .report-item a:hover {
+            text-decoration: underline;
+        }
+        .report-description {
+            margin-top: 0.5rem;
+            color: #586069;
+            font-size: 0.95rem;
+        }
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e1e4e8;
+            text-align: center;
+            color: #586069;
+            font-size: 0.9rem;
+        }
+        .footer a {
+            color: #0366d6;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>TestAI - Analysis Reports</h1>
+    <p>This repository implements statistical analysis and dynamic optimization methods, including causal inference methods in R and Markov Decision Process solvers in Python.</p>
+
+    <ul class="report-list">
+        <li class="report-item">
+            <a href="solve_mdp.html">Markov Decision Process Solver</a>
+            <div class="report-description">
+                Neural network-based value function approximation using PyTorch. Implements value iteration algorithm with Bellman operator, continuous state space, and comparative statics analysis.
+            </div>
+        </li>
+
+        <li class="report-item">
+            <a href="analyze_did_multiperiods.html">Difference-in-Differences Analysis (Multi-Period)</a>
+            <div class="report-description">
+                Implementation of Callaway-Sant'Anna estimator for multi-period difference-in-differences with support for covariates and multiple treatment periods.
+            </div>
+        </li>
+
+        <li class="report-item">
+            <a href="randomization_fisher_pvalue.html">Randomization Inference - Fisher's Exact Test</a>
+            <div class="report-description">
+                Fisher's exact p-value computation for randomization-based hypothesis testing with support for various test statistics.
+            </div>
+        </li>
+    </ul>
+
+    <div class="footer">
+        <p>View the source code on <a href="https://github.com/kohei-kawaguchi/TestAI">GitHub</a></p>
+    </div>
+</body>
+</html>
