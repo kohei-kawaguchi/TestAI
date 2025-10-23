@@ -8,9 +8,12 @@ format:
 jupyter: python3
 execute:
   daemon: false
+  freeze: auto
 ---
 
 ## Introduction
+
+This document demonstrates solving a Markov Decision Process using neural network function approximation and value iteration.
 
 ## Problem Setup
 
@@ -779,3 +782,31 @@ plt.show()
 ```
 
 ## Conclusion
+
+### Interpretation of Comparative Statics
+
+#### Effect of β (Reward Weight on State)
+
+The parameter $\beta$ controls the weight on the logarithmic state value in the mean reward function $r(s,a) = \beta \log(1+s) - a$. Our comparative statics reveal:
+
+**Value Functions**: As $\beta$ increases from 0 to 2, both value functions $v(s, a=0)$ and $v(s, a=1)$ increase substantially. This is intuitive - higher $\beta$ means greater returns from accumulating state, making both the patient action ($a=0$, which preserves more state) and the active action ($a=1$, which depletes state but provides immediate consumption) more valuable in present value terms.
+
+**Optimal Policy**: The policy exhibits a clear state-dependent threshold structure. For low values of $\beta$ (close to 0), the agent is nearly indifferent between actions across all states since state accumulation provides little reward. As $\beta$ increases:
+- At low states, $P(a=1|s)$ increases (agent becomes more willing to take the costly action)
+- At high states, $P(a=0|s)$ increases (agent preserves the valuable state)
+- The threshold state where the policy switches shifts rightward
+
+This pattern reflects that when state is more valuable ($\beta$ high), it becomes worthwhile to take the costly action $a=1$ to reach valuable states, but once there, the agent optimally preserves that state by choosing $a=0$.
+
+#### Effect of γ (State Persistence)
+
+The parameter $\gamma$ controls state persistence in the transition equation $s' = (1-\gamma)s + a$. Our comparative statics show:
+
+**Value Functions**: As $\gamma$ increases from 0 to 1, the value functions decrease significantly. This occurs because higher $\gamma$ means faster state decay - the state depreciates more quickly, making it harder to maintain high state values over time. With faster depreciation, the future returns from state accumulation diminish, reducing the present value of both action choices.
+
+**Optimal Policy**: The effect of $\gamma$ on policy is nuanced:
+- For $\gamma = 0$ (no depreciation), states persist indefinitely, so the agent can afford to be patient and primarily chooses $a=0$ to preserve state
+- As $\gamma$ increases (faster depreciation), the relative value of taking action $a=1$ increases at low and medium states, since preserving state becomes less valuable when it depreciates quickly
+- At very high $\gamma$ (close to 1), state depreciation is so rapid that the agent must constantly choose $a=1$ to replenish the state, fundamentally changing the nature of the optimal policy
+
+The interaction between $\beta$ and $\gamma$ determines the trade-off: $\beta$ governs how valuable state is, while $\gamma$ governs how difficult it is to maintain. Together, they shape whether the optimal policy emphasizes state accumulation and preservation versus active state replenishment.
