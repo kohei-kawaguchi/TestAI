@@ -1,6 +1,6 @@
 # TestAI
 
-A statistical analysis project implementing causal inference methods in R, including difference-in-differences, randomization inference, and related econometric techniques.
+A research project implementing statistical analysis and dynamic optimization methods, including causal inference methods in R and Markov Decision Process solvers in Python.
 
 ## Project Structure
 
@@ -10,14 +10,25 @@ TestAI/
 │   ├── functions_did.R         # Difference-in-differences functions
 │   ├── functions_randomization.R  # Randomization inference functions
 │   └── ...                     # Other statistical methods
+├── src/                        # Python package source code
+│   └── mdp_solver/             # Markov Decision Process solver
+│       ├── __init__.py
+│       └── mdp_solver.py       # Neural network-based value iteration
+├── test/                       # Python unit tests
+│   └── mdp_solver/             # MDP solver tests
+│       ├── test_subroutines.py
+│       └── test_value_iteration.py
 ├── scripts/
 │   ├── analyze_data/           # AI-generated analysis implementations
 │   │   ├── analyze_did_multiperiods.Rmd
 │   │   └── randomization_fisher_pvalue.Rmd
-│   └── analyze_data_true/      # Ground truth reference implementations
-│       ├── difference_in_differences_multiperiods.Rmd
-│       ├── randomization_fisher_pvalue.Rmd
-│       └── compare_results.R   # Validation script
+│   ├── analyze_data_true/      # Ground truth reference implementations
+│   │   ├── difference_in_differences_multiperiods.Rmd
+│   │   ├── randomization_fisher_pvalue.Rmd
+│   │   └── compare_results.R   # Validation script
+│   └── solve_mdp/              # MDP solver documentation
+│       ├── solve_mdp.qmd       # Quarto document with implementation
+│       └── solve_mdp.html      # Rendered HTML report
 ├── output/                     # Generated datasets and results
 │   ├── difference_in_differences_multiperiods/
 │   └── randomization_fisher_pvalue/
@@ -32,9 +43,26 @@ TestAI/
 
 ### Implemented Methods
 
-1. **Difference-in-Differences (DiD)**
+1. **Difference-in-Differences (DiD)** (R)
+   - Callaway-Sant'Anna estimator for multi-period DiD
+   - Support for covariates and multiple treatment periods
+   - Robust standard errors with clustered structure
 
-2. **Randomization Inference**
+2. **Randomization Inference** (R)
+   - Fisher's exact p-value computation
+   - Randomization-based hypothesis testing
+   - Support for various test statistics
+
+3. **Markov Decision Process Solver** (Python)
+   - Neural network-based value function approximation using PyTorch
+   - Value iteration algorithm with Bellman operator
+   - Type-I extreme value distributed action shocks
+   - Continuous state space with discrete binary actions
+   - Logarithmic reward function: r(s,a) = β·log(1+s) - a
+   - State transition: s' = (1-γ)s + a
+   - Monotonic neural network architecture with softplus constraints
+   - Comprehensive unit tests covering all subroutines
+   - Comparative statics analysis for key parameters (β, γ)
 
 ### Datasets
 
@@ -52,6 +80,7 @@ The project includes simulated datasets with:
 
 ### Installation
 
+#### R Package
 ```r
 # Install required packages
 install.packages(c("devtools", "did", "dplyr", "ggplot2", "kableExtra",
@@ -61,8 +90,18 @@ install.packages(c("devtools", "did", "dplyr", "ggplot2", "kableExtra",
 devtools::load_all()
 ```
 
+#### Python Package
+```bash
+# Using uv (recommended)
+uv sync
+
+# Or using pip
+pip install torch numpy matplotlib pytest
+```
+
 ### Running Analyses
 
+#### R Analyses
 ```r
 # Run DiD multi-period analysis
 rmarkdown::render('scripts/analyze_data/analyze_did_multiperiods.Rmd')
@@ -74,7 +113,22 @@ rmarkdown::render('scripts/analyze_data/randomization_fisher_pvalue.Rmd')
 source('scripts/analyze_data_true/compare_results.R')
 ```
 
+#### MDP Solver
+```bash
+# Run unit tests
+uv run pytest test/
+
+# Render Quarto documentation with results
+cd scripts/solve_mdp
+uv run quarto render solve_mdp.qmd
+
+# View the rendered HTML report
+# Open scripts/solve_mdp/solve_mdp.html in your browser
+```
+
 ## Validation Results
+
+### DiD Implementation Validation
 
 Comparison of AI-generated implementations against manual ground truth:
 
@@ -85,6 +139,22 @@ Comparison of AI-generated implementations against manual ground truth:
 | Dataset 3 (not-yet-treated) | 0.034936 | 0.036461 | 0.001526 | ✓ Correct (AI includes covariates) |
 
 See [docs/conversation/ground_truth_comparison_conversation_transcript.md](docs/conversation/ground_truth_comparison_conversation_transcript.md) for details.
+
+### MDP Solver Test Results
+
+All 45 unit tests pass, covering:
+- Mean reward computation with logarithmic form
+- State transition dynamics
+- Bellman operator application
+- Choice probability calculation with logit structure
+- Neural network monotonicity constraints
+- Value iteration convergence
+- End-to-end value function optimization
+
+The solver successfully produces:
+- Converged value functions for both actions (a=0, a=1)
+- Optimal state-dependent policies exhibiting threshold structure
+- Comparative statics showing intuitive parameter effects on value and policy
 
 ## Documentation
 
