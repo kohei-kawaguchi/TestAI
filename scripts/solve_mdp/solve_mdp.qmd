@@ -307,7 +307,11 @@ sys.path.insert(0, '../../src')
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from mdp_solver import SolveValueIteration
+import matplotlib.cm as cm
+from concurrent.futures import ThreadPoolExecutor
+import os
+
+from mdp_solver import SolveValueIteration, ComputeChoiceProbability
 ```
 
 ```{python}
@@ -424,8 +428,6 @@ print(f"v(s, a=1): min={v1_values.min():.3f}, max={v1_values.max():.3f}, mean={v
 ```{python}
 #| cache: true
 
-from mdp_solver import ComputeChoiceProbability
-
 # Compute optimal policy probabilities
 prob_a0 = []
 prob_a1 = []
@@ -465,5 +467,165 @@ print(f"At this state: P(a=0) = {prob_a0[threshold_idx]:.3f}, P(a=1) = {prob_a1[
 ```
 
 ## Comparative Statics
+
+We examine how the optimal policy and value functions change with the reward parameter $\beta$, which controls the weight on the logarithmic state value.
+
+```{python}
+#| cache: true
+
+# Define beta values to test
+beta_values = np.arange(0, 2.25, 0.25)
+
+def solve_for_beta(beta_val):
+    """Solve MDP for a given beta value."""
+    v0, v1, hist = SolveValueIteration(
+        beta=beta_val,
+        gamma=gamma,
+        delta=delta,
+        gamma_E=gamma_E,
+        hyperparameters=hyperparameters,
+        N=N,
+        state_range=state_range,
+        max_iter=max_iter,
+        epsilon_tol=epsilon_tol,
+        num_epochs=num_epochs,
+        learning_rate=learning_rate,
+        verbose=False
+    )
+
+    # Compute value functions on plot grid
+    with torch.no_grad():
+        v0_vals = v0(s_plot).numpy().flatten()
+        v1_vals = v1(s_plot).numpy().flatten()
+
+    # Compute policy probabilities
+    policy_probs = []
+    for s_val in s_plot_np:
+        p0, p1 = ComputeChoiceProbability(s=float(s_val), v_theta_0=v0, v_theta_1=v1)
+        policy_probs.append((p0, p1))
+
+    policy_probs = np.array(policy_probs)
+
+    return {
+        'beta': beta_val,
+        'v0': v0_vals,
+        'v1': v1_vals,
+        'prob_a0': policy_probs[:, 0],
+        'prob_a1': policy_probs[:, 1],
+        'iterations': len(hist['iterations'])
+    }
+
+# Solve in parallel using threads
+print(f"Solving MDP for {len(beta_values)} different beta values in parallel...")
+with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    results = list(executor.map(solve_for_beta, beta_values))
+
+print(f"Completed all {len(results)} solutions")
+for r in results:
+    print(f"  β = {r['beta']:.2f}: converged in {r['iterations']} iterations")
+```
+
+### Value Functions Across β
+
+```{python}
+#| cache: true
+
+# Create color maps: black to blue for a=0, black to red for a=1
+def get_color(beta_val, beta_min, beta_max, colormap_name):
+    """Get color based on beta value."""
+    if beta_max == beta_min:
+        norm_val = 0.5
+    else:
+        norm_val = (beta_val - beta_min) / (beta_max - beta_min)
+    cmap = cm.get_cmap(colormap_name)
+    return cmap(norm_val)
+
+beta_min = beta_values.min()
+beta_max = beta_values.max()
+
+# Plot value functions
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Action 0 value functions (black to blue)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    # Mix with blue
+    blue_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['v0'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('Value Function v(s, a=0)', fontsize=12)
+ax1.set_title('Value Functions for a=0 (Black→Blue as β increases)', fontsize=14, fontweight='bold')
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Action 1 value functions (black to red)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    # Mix with red
+    red_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['v1'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('Value Function v(s, a=1)', fontsize=12)
+ax2.set_title('Value Functions for a=1 (Black→Red as β increases)', fontsize=14, fontweight='bold')
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
+
+### Optimal Policy Across β
+
+```{python}
+#| cache: true
+
+# Plot policies
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Probability of action 0 (black to blue)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    blue_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['prob_a0'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax1.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('P(a=0|s)', fontsize=12)
+ax1.set_title('Policy for a=0 (Black→Blue as β increases)', fontsize=14, fontweight='bold')
+ax1.set_ylim([0, 1])
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Probability of action 1 (black to red)
+for r in results:
+    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
+    red_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['prob_a1'], linewidth=2, alpha=0.7, color=color,
+             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
+
+ax2.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('P(a=1|s)', fontsize=12)
+ax2.set_title('Policy for a=1 (Black→Red as β increases)', fontsize=14, fontweight='bold')
+ax2.set_ylim([0, 1])
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
 
 ## Conclusion
