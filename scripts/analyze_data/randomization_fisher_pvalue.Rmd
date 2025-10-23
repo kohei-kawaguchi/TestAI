@@ -1,5 +1,5 @@
 ---
-title: "Randomization Inference and Fisher's Exact P-value"
+title: "Neyman's Average Treatment Effect"
 output: html_document
 ---
 
