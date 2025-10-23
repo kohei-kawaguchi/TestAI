@@ -8,7 +8,6 @@ format:
 jupyter: python3
 execute:
   daemon: false
-  freeze: auto
 ---
 
 ## Introduction
@@ -796,7 +795,7 @@ The parameter $\beta$ controls the weight on the logarithmic state value in the 
 - At high states, $P(a=0|s)$ increases (agent preserves the valuable state)
 - The threshold state where the policy switches shifts rightward
 
-This pattern reflects that when state is more valuable ($\beta$ high), it becomes worthwhile to take the costly action $a=1$ to reach valuable states, but once there, the agent optimally preserves that state by choosing $a=0$.
+This pattern reflects that when investment is more valuable ($\beta$ high), it becomes worthwhile to take the costly action $a=1$ to reach valuable states, but once state improves, the agent optimally preserves that state by choosing $a=0$ because the martinal return of invenstment mitigates.
 
 #### Effect of γ (State Persistence)
 
@@ -808,5 +807,3 @@ The parameter $\gamma$ controls state persistence in the transition equation $s'
 - For $\gamma = 0$ (no depreciation), states persist indefinitely, so the agent can afford to be patient and primarily chooses $a=0$ to preserve state
 - As $\gamma$ increases (faster depreciation), the relative value of taking action $a=1$ increases at low and medium states, since preserving state becomes less valuable when it depreciates quickly
 - At very high $\gamma$ (close to 1), state depreciation is so rapid that the agent must constantly choose $a=1$ to replenish the state, fundamentally changing the nature of the optimal policy
-
-The interaction between $\beta$ and $\gamma$ determines the trade-off: $\beta$ governs how valuable state is, while $\gamma$ governs how difficult it is to maintain. Together, they shape whether the optimal policy emphasizes state accumulation and preservation versus active state replenishment.
