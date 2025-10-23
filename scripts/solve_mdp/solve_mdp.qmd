@@ -628,4 +628,154 @@ plt.tight_layout()
 plt.show()
 ```
 
+### Comparative Statics for γ
+
+We examine how the optimal policy and value functions change with the persistence parameter $\gamma$, which controls the state transition dynamics.
+
+```{python}
+#| cache: true
+
+# Define gamma values to test
+gamma_values = np.arange(0, 1.25, 0.25)
+
+def solve_for_gamma(gamma_val):
+    """Solve MDP for a given gamma value."""
+    v0, v1, hist = SolveValueIteration(
+        beta=beta,
+        gamma=gamma_val,
+        delta=delta,
+        gamma_E=gamma_E,
+        hyperparameters=hyperparameters,
+        N=N,
+        state_range=state_range,
+        max_iter=max_iter,
+        epsilon_tol=epsilon_tol,
+        num_epochs=num_epochs,
+        learning_rate=learning_rate,
+        verbose=False
+    )
+
+    # Compute value functions on plot grid
+    with torch.no_grad():
+        v0_vals = v0(s_plot).numpy().flatten()
+        v1_vals = v1(s_plot).numpy().flatten()
+
+    # Compute policy probabilities
+    policy_probs = []
+    for s_val in s_plot_np:
+        p0, p1 = ComputeChoiceProbability(s=float(s_val), v_theta_0=v0, v_theta_1=v1)
+        policy_probs.append((p0, p1))
+
+    policy_probs = np.array(policy_probs)
+
+    return {
+        'gamma': gamma_val,
+        'v0': v0_vals,
+        'v1': v1_vals,
+        'prob_a0': policy_probs[:, 0],
+        'prob_a1': policy_probs[:, 1],
+        'iterations': len(hist['iterations'])
+    }
+
+# Solve in parallel using threads
+print(f"Solving MDP for {len(gamma_values)} different gamma values in parallel...")
+with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    gamma_results = list(executor.map(solve_for_gamma, gamma_values))
+
+print(f"Completed all {len(gamma_results)} solutions")
+for r in gamma_results:
+    print(f"  γ = {r['gamma']:.2f}: converged in {r['iterations']} iterations")
+```
+
+### Value Functions Across γ
+
+```{python}
+#| cache: true
+
+gamma_min = gamma_values.min()
+gamma_max = gamma_values.max()
+
+# Plot value functions
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Action 0 value functions (black to blue)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    # Mix with blue
+    blue_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['v0'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('Value Function v(s, a=0)', fontsize=12)
+ax1.set_title('Value Functions for a=0 (Black→Blue as γ increases)', fontsize=14, fontweight='bold')
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Action 1 value functions (black to red)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    # Mix with red
+    red_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['v1'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('Value Function v(s, a=1)', fontsize=12)
+ax2.set_title('Value Functions for a=1 (Black→Red as γ increases)', fontsize=14, fontweight='bold')
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
+
+### Optimal Policy Across γ
+
+```{python}
+#| cache: true
+
+# Plot policies
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+# Probability of action 0 (black to blue)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    blue_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
+             color[2] * (1 - blue_weight) + blue_weight, 1)
+    ax1.plot(s_plot_np, r['prob_a0'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax1.set_xlabel('State (s)', fontsize=12)
+ax1.set_ylabel('P(a=0|s)', fontsize=12)
+ax1.set_title('Policy for a=0 (Black→Blue as γ increases)', fontsize=14, fontweight='bold')
+ax1.set_ylim([0, 1])
+ax1.grid(True, alpha=0.3)
+ax1.legend(fontsize=10)
+
+# Probability of action 1 (black to red)
+for r in gamma_results:
+    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
+    red_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
+    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
+             color[2] * (1 - red_weight), 1)
+    ax2.plot(s_plot_np, r['prob_a1'], linewidth=2, alpha=0.7, color=color,
+             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
+
+ax2.set_xlabel('State (s)', fontsize=12)
+ax2.set_ylabel('P(a=1|s)', fontsize=12)
+ax2.set_title('Policy for a=1 (Black→Red as γ increases)', fontsize=14, fontweight='bold')
+ax2.set_ylim([0, 1])
+ax2.grid(True, alpha=0.3)
+ax2.legend(fontsize=10)
+
+plt.tight_layout()
+plt.show()
+```
+
 ## Conclusion
