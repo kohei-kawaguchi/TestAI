@@ -1,0 +1,21 @@
+[project]
+name = "mdp_solver"
+version = "0.1.0"
+description = "MDP Solver using Value Iteration with Neural Networks"
+readme = "README.md"
+authors = [
+    { name = "Kohei Kawaguchi", email = "kohei.kawagucci@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "ipykernel>=7.0.1",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.7",
+    "nbformat>=5.10.4",
+    "numpy>=2.3.4",
+    "torch>=2.9.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.17,<0.9.0"]
+build-backend = "uv_build"

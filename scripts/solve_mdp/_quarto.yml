@@ -1,0 +1,6 @@
+project:
+  type: default
+  output-dir: .
+
+execute:
+  freeze: auto
