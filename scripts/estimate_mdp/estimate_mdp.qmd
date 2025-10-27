@@ -1,0 +1,51 @@
+---
+title: "Estimating Markov Decision Process Parameters"
+format:
+  html:
+    toc: true
+    code-fold: false
+jupyter: python3
+execute:
+  daemon: false
+---
+
+## Load Configuration and Simulation Results
+
+```{python}
+import sys
+sys.path.insert(0, '..')
+sys.path.insert(0, '../../src')
+
+import json
+from pathlib import Path
+import numpy as np
+
+from config_mdp import get_solver_config
+
+# Load simulation results
+sim_dir = Path('../../output/simulate_mdp')
+if not sim_dir.exists():
+    raise FileNotFoundError(
+        f"Expected simulation results in {sim_dir}. Run simulate_mdp.qmd first."
+    )
+
+# Load configuration
+with open(sim_dir / 'simulation_config.json', 'r', encoding='utf-8') as f:
+    sim_config = json.load(f)
+
+# Load simulated data
+sim_data = np.load(sim_dir / 'simulation_results.npz')
+states = sim_data['states']
+actions = sim_data['actions']
+rewards = sim_data['rewards']
+
+M = sim_config['M']
+T = sim_config['T']
+delta = sim_config['delta']
+state_range = tuple(sim_config['state_range'])
+beta_true = sim_config['beta']
+gamma_true = sim_config['gamma']
+
+print(f"Loaded simulation data: M={M}, T={T}, delta={delta}")
+print(f"True parameters: beta={beta_true}, gamma={gamma_true}")
+```

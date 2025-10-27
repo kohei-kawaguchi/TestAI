@@ -1,0 +1,51 @@
+[
+  {
+    "objectID": "estimate_mdp.html",
+    "href": "estimate_mdp.html",
+    "title": "Estimating Markov Decision Process Parameters",
+    "section": "",
+    "text": "import sys\nsys.path.insert(0, '..')\nsys.path.insert(0, '../../src')\n\nimport json\nfrom pathlib import Path\nimport numpy as np\n\nfrom config_mdp import get_solver_config\n\n# Load simulation results\nsim_dir = Path('../../output/simulate_mdp')\nif not sim_dir.exists():\n    raise FileNotFoundError(\n        f\"Expected simulation results in {sim_dir}. Run simulate_mdp.qmd first.\"\n    )\n\n# Load configuration\nwith open(sim_dir / 'simulation_config.json', 'r', encoding='utf-8') as f:\n    sim_config = json.load(f)\n\n# Load simulated data\nsim_data = np.load(sim_dir / 'simulation_results.npz')\nstates = sim_data['states']\nactions = sim_data['actions']\nrewards = sim_data['rewards']\n\nM = sim_config['M']\nT = sim_config['T']\ndelta = sim_config['delta']\nstate_range = tuple(sim_config['state_range'])\nbeta_true = sim_config['beta']\ngamma_true = sim_config['gamma']\n\nprint(f\"Loaded simulation data: M={M}, T={T}, delta={delta}\")\nprint(f\"True parameters: beta={beta_true}, gamma={gamma_true}\")\n\nLoaded simulation data: M=100, T=100, delta=0.95\nTrue parameters: beta=1.0, gamma=0.1"
+  },
+  {
+    "objectID": "estimate_mdp.html#overview",
+    "href": "estimate_mdp.html#overview",
+    "title": "Estimating Markov Decision Process Parameters",
+    "section": "",
+    "text": "This document estimates the structural parameters of the Markov Decision Process from simulated data. We observe state-action pairs \\((s_t^{(m)}, a_t^{(m)})\\) for \\(m = 1, \\ldots, M\\) paths over \\(t = 1, \\ldots, T\\) periods, and estimate the parameters \\(\\beta\\) and \\(\\gamma\\) while treating the discount factor \\(\\delta\\) as known."
+  },
+  {
+    "objectID": "estimate_mdp.html#model-specification",
+    "href": "estimate_mdp.html#model-specification",
+    "title": "Estimating Markov Decision Process Parameters",
+    "section": "Model Specification",
+    "text": "Model Specification\nThe MDP model has the following structure (from solve_mdp.qmd):\nMean Reward Function: \\[\\bar{r}(s, a) = \\beta \\log(1 + s) - a\\]\nState Transition: \\[s_{t+1} = (1 - \\gamma) s_t + a_t\\]\nParameters to Estimate:\n\n\\(\\beta\\): Weight on state value in the reward function\n\\(\\gamma\\): State depreciation rate in the transition function\n\nKnown Parameter:\n\n\\(\\delta\\): Discount factor (assumed known)"
+  },
+  {
+    "objectID": "estimate_mdp.html#load-simulation-data",
+    "href": "estimate_mdp.html#load-simulation-data",
+    "title": "Estimating Markov Decision Process Parameters",
+    "section": "Load Simulation Data",
+    "text": "Load Simulation Data\n\nimport sys\nsys.path.insert(0, '..')\nsys.path.insert(0, '../../src')\n\nimport json\nfrom pathlib import Path\n\nimport numpy as np\nimport matplotlib.pyplot as plt\n\nfrom config_mdp import get_solver_config\n\n# Load simulation results\nsim_dir = Path('../../output/simulate_mdp')\nif not sim_dir.exists():\n    raise FileNotFoundError(\n        f\"Expected simulation results in {sim_dir}. Run simulate_mdp.qmd first.\"\n    )\n\n# Load configuration\nwith open(sim_dir / 'simulation_config.json', 'r', encoding='utf-8') as f:\n    sim_config = json.load(f)\n\n# Load simulated data\nsim_data = np.load(sim_dir / 'simulation_results.npz')\nstates = sim_data['states']  # Shape: (M, T)\nactions = sim_data['actions']  # Shape: (M, T)\nrewards = sim_data['rewards']  # Shape: (M, T)\n\nM = sim_config['M']\nT = sim_config['T']\ndelta = sim_config['delta']  # Known discount factor\nstate_range = tuple(sim_config['state_range'])\n\n# True parameter values (for comparison)\nbeta_true = sim_config['beta']\ngamma_true = sim_config['gamma']\n\nprint(f\"Loaded simulation data:\")\nprint(f\"  Number of paths (M): {M}\")\nprint(f\"  Time periods (T): {T}\")\nprint(f\"  Total observations: {M * T:,}\")\nprint(f\"  State range: {state_range}\")\nprint(f\"\\nKnown parameter:\")\nprint(f\"  delta (discount factor): {delta}\")\nprint(f\"\\nTrue parameter values (for comparison):\")\nprint(f\"  beta: {beta_true}\")\nprint(f\"  gamma: {gamma_true}\")\n\nLoaded simulation data:\n  Number of paths (M): 100\n  Time periods (T): 100\n  Total observations: 10,000\n  State range: (0.0, 10.0)\n\nKnown parameter:\n  delta (discount factor): 0.95\n\nTrue parameter values (for comparison):\n  beta: 1.0\n  gamma: 0.1"
+  },
+  {
+    "objectID": "estimate_mdp.html#data-summary",
+    "href": "estimate_mdp.html#data-summary",
+    "title": "Estimating Markov Decision Process Parameters",
+    "section": "Data Summary",
+    "text": "Data Summary\n\n# Summary statistics for states and actions\nprint(\"\\nState Statistics:\")\nprint(f\"  Min: {states.min():.3f}\")\nprint(f\"  Max: {states.max():.3f}\")\nprint(f\"  Mean: {states.mean():.3f}\")\nprint(f\"  Std: {states.std():.3f}\")\n\nprint(\"\\nAction Statistics:\")\nprint(f\"  Fraction a=0: {(actions == 0).mean():.3f}\")\nprint(f\"  Fraction a=1: {(actions == 1).mean():.3f}\")\n\nprint(\"\\nReward Statistics:\")\nprint(f\"  Min: {rewards.min():.3f}\")\nprint(f\"  Max: {rewards.max():.3f}\")\nprint(f\"  Mean: {rewards.mean():.3f}\")\nprint(f\"  Std: {rewards.std():.3f}\")\n\n# Visualize data distribution\nfig, axes = plt.subplots(1, 3, figsize=(15, 4))\n\n# State distribution\nax = axes[0]\nax.hist(states.flatten(), bins=50, alpha=0.7, edgecolor='black')\nax.set_xlabel('State (s)')\nax.set_ylabel('Frequency')\nax.set_title('Distribution of States')\nax.grid(True, alpha=0.3)\n\n# Action distribution\nax = axes[1]\naction_counts = [(actions == 0).sum(), (actions == 1).sum()]\nax.bar([0, 1], action_counts, alpha=0.7, edgecolor='black')\nax.set_xlabel('Action (a)')\nax.set_ylabel('Frequency')\nax.set_title('Distribution of Actions')\nax.set_xticks([0, 1])\nax.grid(True, alpha=0.3, axis='y')\n\n# Reward distribution\nax = axes[2]\nax.hist(rewards.flatten(), bins=50, alpha=0.7, edgecolor='black')\nax.set_xlabel('Reward (r)')\nax.set_ylabel('Frequency')\nax.set_title('Distribution of Rewards')\nax.grid(True, alpha=0.3)\n\nfig.tight_layout()\nplt.show()\n\n\nState Statistics:\n  Min: 0.076\n  Max: 9.957\n  Mean: 5.136\n  Std: 1.097\n\nAction Statistics:\n  Fraction a=0: 0.484\n  Fraction a=1: 0.516\n\nReward Statistics:\n  Min: -0.927\n  Max: 2.394\n  Mean: 1.281\n  Std: 0.549"
+  },
+  {
+    "objectID": "estimate_mdp.html#estimation-setup",
+    "href": "estimate_mdp.html#estimation-setup",
+    "title": "Estimating Markov Decision Process Parameters",
+    "section": "Estimation Setup",
+    "text": "Estimation Setup\nThe goal is to estimate \\(\\theta = (\\beta, \\gamma)\\) from the observed data \\(\\{(s_t^{(m)}, a_t^{(m)}, s_{t+1}^{(m)})\\}_{m=1,t=1}^{M,T-1}\\).\nKey observations:\n\nState transition provides direct information about \\(\\gamma\\): From \\(s_{t+1} = (1 - \\gamma) s_t + a_t\\), we can write: \\[\\gamma = 1 - \\frac{s_{t+1} - a_t}{s_t}\\]\nReward function provides information about \\(\\beta\\): From \\(\\bar{r}(s, a) = \\beta \\log(1 + s) - a\\), the expected reward conditional on state and action depends on \\(\\beta\\).\nJoint estimation via likelihood: The choice probabilities depend on the value functions, which depend on both \\(\\beta\\) and \\(\\gamma\\), allowing joint estimation through the likelihood of observed actions.\n\nEstimation approach: We will use the structure of the model to estimate the parameters. Details of the estimation procedure will be added in subsequent sections."
+  },
+  {
+    "objectID": "estimate_mdp.html#load-configuration-and-simulation-results",
+    "href": "estimate_mdp.html#load-configuration-and-simulation-results",
+    "title": "Estimating Markov Decision Process Parameters",
+    "section": "",
+    "text": "import sys\nsys.path.insert(0, '..')\nsys.path.insert(0, '../../src')\n\nimport json\nfrom pathlib import Path\nimport numpy as np\n\nfrom config_mdp import get_solver_config\n\n# Load simulation results\nsim_dir = Path('../../output/simulate_mdp')\nif not sim_dir.exists():\n    raise FileNotFoundError(\n        f\"Expected simulation results in {sim_dir}. Run simulate_mdp.qmd first.\"\n    )\n\n# Load configuration\nwith open(sim_dir / 'simulation_config.json', 'r', encoding='utf-8') as f:\n    sim_config = json.load(f)\n\n# Load simulated data\nsim_data = np.load(sim_dir / 'simulation_results.npz')\nstates = sim_data['states']\nactions = sim_data['actions']\nrewards = sim_data['rewards']\n\nM = sim_config['M']\nT = sim_config['T']\ndelta = sim_config['delta']\nstate_range = tuple(sim_config['state_range'])\nbeta_true = sim_config['beta']\ngamma_true = sim_config['gamma']\n\nprint(f\"Loaded simulation data: M={M}, T={T}, delta={delta}\")\nprint(f\"True parameters: beta={beta_true}, gamma={gamma_true}\")\n\nLoaded simulation data: M=100, T=100, delta=0.95\nTrue parameters: beta=1.0, gamma=0.1"
+  }
+]
