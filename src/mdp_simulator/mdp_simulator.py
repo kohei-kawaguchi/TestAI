@@ -53,18 +53,20 @@ def SimulateMDP(
     delta: float,
     M: int,
     T: int,
-    s_0: float,
+    state_range: Tuple[float, float],
     seed: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Procedure SimulateMDP(v_theta^(0): Network, v_theta^(1): Network, beta: float,
-                          gamma: float, delta: float, M: int, T: int, s_0: float,
-                          seed: int) -> (Array[M×T], Array[M×T], Array[M×T])
+                          gamma: float, delta: float, M: int, T: int,
+                          state_range: tuple[float, float], seed: int)
+                          -> (Array[M×T], Array[M×T], Array[M×T])
 
     Simulate MDP under the optimal policy learned by neural networks.
 
     This function generates M paths of length T, where actions are drawn from
-    choice probabilities computed by the trained value functions.
+    choice probabilities computed by the trained value functions. Initial states
+    are drawn uniformly from state_range for better state space coverage.
 
     Args:
         v_theta_0: Trained network for action 0
@@ -74,7 +76,7 @@ def SimulateMDP(
         delta: Discount factor (not used in mean rewards, but part of config)
         M: Number of simulation paths
         T: Number of time periods per path
-        s_0: Initial state value
+        state_range: Tuple (s_min, s_max) for uniform initial state distribution
         seed: Random seed for reproducibility
 
     Returns:
@@ -97,8 +99,9 @@ def SimulateMDP(
 
     # For each path m = 1 to M
     for m in range(M):
-        # Initialize first state
-        states[m, 0] = s_0
+        # Draw initial state from uniform distribution
+        s_0_m = np.random.uniform(state_range[0], state_range[1])
+        states[m, 0] = s_0_m
 
         # Simulate forward for t = 0 to T-1
         for t in range(T):

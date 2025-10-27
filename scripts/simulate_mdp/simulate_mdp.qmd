@@ -29,13 +29,13 @@ We simulate the Markov Decision Process under the optimal policy learned by the 
 
 - Number of paths: $M = 100$
 - Time periods per path: $T = 100$
-- Initial state: $s_0$ (to be specified)
+- Initial state distribution: $s_0^{(m)} \sim \text{Uniform}(\text{state\_range})$ for better state space coverage
 
 **Algorithm**:
 
 For each path $m = 1, \ldots, M$:
 
-1. **Initialize**: Set $s_0^{(m)}$ to the initial state value
+1. **Initialize**: Draw initial state $s_0^{(m)} \sim \text{Uniform}(s_{\min}, s_{\max})$ from the state range
 
 2. **Simulate forward** for $t = 0, \ldots, T-1$:
 
@@ -80,7 +80,7 @@ This pseudo code is designed for direct implementation:
 
 - Trained networks: $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network (from solve_mdp)
 - MDP parameters: $\beta$: float, $\gamma$: float, $\delta$: float (from shared config)
-- Simulation parameters: $M$: int (number of paths), $T$: int (time periods), $s_0$: float (initial state)
+- Simulation parameters: $M$: int (number of paths), $T$: int (time periods), state_range: tuple[float, float] (initial state range)
 - Random seed: seed: int (for reproducibility)
 
 **Output:**
@@ -91,7 +91,7 @@ This pseudo code is designed for direct implementation:
 
 ### Main Algorithm
 
-**Procedure** `SimulateMDP`($v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $M$: int, $T$: int, $s_0$: float, seed: int) $\to$ (Array[$M \times T$], Array[$M \times T$], Array[$M \times T$])
+**Procedure** `SimulateMDP`($v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $M$: int, $T$: int, state_range: tuple[float, float], seed: int) $\to$ (Array[$M \times T$], Array[$M \times T$], Array[$M \times T$])
 
 1. Set random seed to seed
 
@@ -99,9 +99,11 @@ This pseudo code is designed for direct implementation:
 
 3. For $m$: int = 1 to $M$:
 
-   a. states[$m$, 1] $\leftarrow s_0$ &nbsp;&nbsp;&nbsp;&nbsp;// Initialize first state
+   a. $s_0^{(m)}$: float $\leftarrow$ `DrawUniform`(state_range[0], state_range[1]) &nbsp;&nbsp;&nbsp;&nbsp;// Draw initial state from uniform distribution
 
-   b. For $t$: int = 1 to $T$:
+   b. states[$m$, 1] $\leftarrow s_0^{(m)}$ &nbsp;&nbsp;&nbsp;&nbsp;// Initialize first state
+
+   c. For $t$: int = 1 to $T$:
 
    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i. $s_t$: float $\leftarrow$ states[$m$, $t$]
 
@@ -286,13 +288,12 @@ from config_mdp import get_simulator_config
 sim_config = get_simulator_config()
 M = sim_config['M']
 T = sim_config['T']
-s_0 = sim_config['s_0']
 seed = sim_config['seed']
 
 print(f"Running Monte Carlo simulation with M={M} paths, T={T} periods")
-print(f"Initial state: s_0={s_0}, Random seed: {seed}")
+print(f"Initial state range: {state_range}, Random seed: {seed}")
 
-# Run simulation
+# Run simulation with uniform initial state distribution
 states, actions, rewards = SimulateMDP(
     v_theta_0=v_theta_0,
     v_theta_1=v_theta_1,
@@ -301,7 +302,7 @@ states, actions, rewards = SimulateMDP(
     delta=delta,
     M=M,
     T=T,
-    s_0=s_0,
+    state_range=state_range,
     seed=seed
 )
 
@@ -321,7 +322,7 @@ np.savez(
     rewards=rewards,
     M=M,
     T=T,
-    s_0=s_0,
+    state_range=state_range,
     seed=seed
 )
 
@@ -331,6 +332,7 @@ sim_config_with_mdp = {
     'beta': beta,
     'gamma': gamma,
     'delta': delta,
+    'state_range': list(state_range),
 }
 
 with open(output_dir / 'simulation_config.json', 'w', encoding='utf-8') as f:
@@ -453,7 +455,8 @@ discounted_rewards = rewards * discount_factors[np.newaxis, :]
 cumulative_discounted_rewards = discounted_rewards.sum(axis=1)
 
 print(f"\nState Evolution:")
-print(f"  Initial state (all paths): {s_0:.3f}")
+print(f"  Initial state range: {state_range}")
+print(f"  Initial state - mean: {state_mean[0]:.3f}, std: {state_std[0]:.3f}")
 print(f"  Final state - mean: {state_mean[-1]:.3f}, std: {state_std[-1]:.3f}")
 print(f"  Final state - median: {state_q50[-1]:.3f}")
 
