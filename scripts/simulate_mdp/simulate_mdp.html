@@ -109,7 +109,10 @@ window.Quarto = {
    
   <ul>
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
-  <li><a href="#monte-carlo-simulation-algorithm" id="toc-monte-carlo-simulation-algorithm" class="nav-link" data-scroll-target="#monte-carlo-simulation-algorithm">Monte Carlo Simulation Algorithm</a></li>
+  <li><a href="#monte-carlo-simulation-algorithm" id="toc-monte-carlo-simulation-algorithm" class="nav-link" data-scroll-target="#monte-carlo-simulation-algorithm">Monte Carlo Simulation Algorithm</a>
+  <ul class="collapse">
+  <li><a href="#pseudo-code" id="toc-pseudo-code" class="nav-link" data-scroll-target="#pseudo-code">Pseudo Code</a></li>
+  </ul></li>
   <li><a href="#load-trained-policy" id="toc-load-trained-policy" class="nav-link" data-scroll-target="#load-trained-policy">Load Trained Policy</a></li>
   <li><a href="#stored-policy-diagnostics" id="toc-stored-policy-diagnostics" class="nav-link" data-scroll-target="#stored-policy-diagnostics">Stored Policy Diagnostics</a></li>
   </ul>
@@ -175,10 +178,105 @@ window.Quarto = {
 <li>Cumulative rewards: Mean discounted rewards <span class="math inline">\(\sum_{t=0}^{T-1} \delta^t r_t^{(m)}\)</span> across paths</li>
 <li>Policy behavior: State-dependent action choices and convergence to steady state</li>
 </ul>
+<section id="pseudo-code" class="level3">
+<h3 class="anchored" data-anchor-id="pseudo-code">Pseudo Code</h3>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Algorithm: Monte Carlo Simulation of MDP Policy
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Design Principles:</strong></p>
+<p>This pseudo code is designed for direct implementation:</p>
+<ul>
+<li><strong>No placeholders</strong>: Every operation corresponds to a concrete function or method call</li>
+<li><strong>Explicit parameters</strong>: All inputs are passed as parameters, no implicit/global state</li>
+<li><strong>Reuses shared functions</strong>: Uses <code>ComputeChoiceProbability</code>, <code>ComputeNextState</code>, <code>ComputeMeanReward</code> from solve_mdp</li>
+<li><strong>No hard-coding</strong>: All values are parameterized</li>
+</ul>
+<p><strong>Input:</strong></p>
+<ul>
+<li>Trained networks: <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network (from solve_mdp)</li>
+<li>MDP parameters: <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float (from shared config)</li>
+<li>Simulation parameters: <span class="math inline">\(M\)</span>: int (number of paths), <span class="math inline">\(T\)</span>: int (time periods), <span class="math inline">\(s_0\)</span>: float (initial state)</li>
+<li>Random seed: seed: int (for reproducibility)</li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul>
+<li>Simulated paths: states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], rewards: Array[<span class="math inline">\(M \times T\)</span>]</li>
+</ul>
+<hr>
+<section id="main-algorithm" class="level3">
+<h3 class="anchored" data-anchor-id="main-algorithm">Main Algorithm</h3>
+<p><strong>Procedure</strong> <code>SimulateMDP</code>(<span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(M\)</span>: int, <span class="math inline">\(T\)</span>: int, <span class="math inline">\(s_0\)</span>: float, seed: int) <span class="math inline">\(\to\)</span> (Array[<span class="math inline">\(M \times T\)</span>], Array[<span class="math inline">\(M \times T\)</span>], Array[<span class="math inline">\(M \times T\)</span>])</p>
+<ol type="1">
+<li><p>Set random seed to seed</p></li>
+<li><p>states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], rewards: Array[<span class="math inline">\(M \times T\)</span>] <span class="math inline">\(\leftarrow\)</span> Empty arrays</p></li>
+<li><p>For <span class="math inline">\(m\)</span>: int = 1 to <span class="math inline">\(M\)</span>:</p>
+<ol type="a">
+<li><p>states[<span class="math inline">\(m\)</span>, 1] <span class="math inline">\(\leftarrow s_0\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Initialize first state</p></li>
+<li><p>For <span class="math inline">\(t\)</span>: int = 1 to <span class="math inline">\(T\)</span>:</p></li>
+</ol>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i. <span class="math inline">\(s_t\)</span>: float <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ii. <span class="math inline">\(P(a=0|s_t)\)</span>: float, <span class="math inline">\(P(a=1|s_t)\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeChoiceProbability</code>(<span class="math inline">\(s_t\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iii. <span class="math inline">\(a_t\)</span>: int <span class="math inline">\(\leftarrow\)</span> <code>DrawAction</code>(<span class="math inline">\(P(a=0|s_t)\)</span>, <span class="math inline">\(P(a=1|s_t)\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iv. actions[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>] <span class="math inline">\(\leftarrow a_t\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v. <span class="math inline">\(r_t\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeMeanReward</code>(<span class="math inline">\(s_t\)</span>, <span class="math inline">\(a_t\)</span>, <span class="math inline">\(\beta\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vi. rewards[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>] <span class="math inline">\(\leftarrow r_t\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vii. <strong>If</strong> <span class="math inline">\(t &lt; T\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s_{t+1}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeNextState</code>(<span class="math inline">\(s_t\)</span>, <span class="math inline">\(a_t\)</span>, <span class="math inline">\(\gamma\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t+1\)</span>] <span class="math inline">\(\leftarrow s_{t+1}\)</span></p></li>
+<li><p><strong>Return</strong> states, actions, rewards</p></li>
+</ol>
+<hr>
+</section>
+<section id="subroutines" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines">Subroutines</h3>
+<p><strong>Procedure</strong> <code>DrawAction</code>(<span class="math inline">\(P_0\)</span>: float, <span class="math inline">\(P_1\)</span>: float) <span class="math inline">\(\to\)</span> int</p>
+<ul>
+<li>Draw <span class="math inline">\(u\)</span>: float <span class="math inline">\(\sim\)</span> Uniform(0, 1)</li>
+<li><strong>If</strong> <span class="math inline">\(u &lt; P_0\)</span>: <strong>Return</strong> 0</li>
+<li><strong>Else</strong>: <strong>Return</strong> 1</li>
+</ul>
+<hr>
+</section>
+<section id="shared-functions-from-solve_mdp" class="level3">
+<h3 class="anchored" data-anchor-id="shared-functions-from-solve_mdp">Shared Functions from solve_mdp</h3>
+<p>The following functions are imported from solve_mdp and reused directly:</p>
+<p><strong>Procedure</strong> <code>ComputeChoiceProbability</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network) <span class="math inline">\(\to\)</span> (float, float)</p>
+<ul>
+<li>Computes <span class="math inline">\(P(a=0|s)\)</span> and <span class="math inline">\(P(a=1|s)\)</span> using logit formula</li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeNextState</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\gamma\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
+<ul>
+<li>Returns <span class="math inline">\((1 - \gamma) \cdot s + a\)</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeMeanReward</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\beta\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
+<ul>
+<li>Returns <span class="math inline">\(\beta \cdot \log(1 + s) - a\)</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+</section>
+</div>
+</div>
+<p><strong>Key Implementation Details:</strong></p>
+<ul>
+<li><strong>Shared configuration</strong>: Load <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span> from the same config used in solve_mdp</li>
+<li><strong>Reproducibility</strong>: Set random seed before simulation for reproducible results</li>
+<li><strong>Categorical sampling</strong>: Use inverse CDF method to draw actions from choice probabilities</li>
+<li><strong>Storage efficiency</strong>: Pre-allocate arrays for states, actions, and rewards before loop</li>
+</ul>
+</section>
 </section>
 <section id="load-trained-policy" class="level2">
 <h2 class="anchored" data-anchor-id="load-trained-policy">Load Trained Policy</h2>
-<div id="e549ffbd" class="cell" data-execution_count="1">
+<div id="5a354a3f" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -269,7 +367,7 @@ window.Quarto = {
 </section>
 <section id="stored-policy-diagnostics" class="level2">
 <h2 class="anchored" data-anchor-id="stored-policy-diagnostics">Stored Policy Diagnostics</h2>
-<div id="0b617e4f" class="cell" data-execution_count="2">
+<div id="dc21400d" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>))</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>plot_choice_value_functions(</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
@@ -295,7 +393,7 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="88cb420a" class="cell" data-execution_count="3">
+<div id="bdda8bee" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_policy_probabilities(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0_grid,</span>

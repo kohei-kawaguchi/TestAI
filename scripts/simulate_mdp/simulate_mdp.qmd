@@ -61,6 +61,108 @@ For each path $m = 1, \ldots, M$:
 - Cumulative rewards: Mean discounted rewards $\sum_{t=0}^{T-1} \delta^t r_t^{(m)}$ across paths
 - Policy behavior: State-dependent action choices and convergence to steady state
 
+### Pseudo Code
+
+::: {.callout-note appearance="simple"}
+
+## Algorithm: Monte Carlo Simulation of MDP Policy
+
+**Design Principles:**
+
+This pseudo code is designed for direct implementation:
+
+- **No placeholders**: Every operation corresponds to a concrete function or method call
+- **Explicit parameters**: All inputs are passed as parameters, no implicit/global state
+- **Reuses shared functions**: Uses `ComputeChoiceProbability`, `ComputeNextState`, `ComputeMeanReward` from solve_mdp
+- **No hard-coding**: All values are parameterized
+
+**Input:**
+
+- Trained networks: $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network (from solve_mdp)
+- MDP parameters: $\beta$: float, $\gamma$: float, $\delta$: float (from shared config)
+- Simulation parameters: $M$: int (number of paths), $T$: int (time periods), $s_0$: float (initial state)
+- Random seed: seed: int (for reproducibility)
+
+**Output:**
+
+- Simulated paths: states: Array[$M \times T$], actions: Array[$M \times T$], rewards: Array[$M \times T$]
+
+---
+
+### Main Algorithm
+
+**Procedure** `SimulateMDP`($v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $M$: int, $T$: int, $s_0$: float, seed: int) $\to$ (Array[$M \times T$], Array[$M \times T$], Array[$M \times T$])
+
+1. Set random seed to seed
+
+2. states: Array[$M \times T$], actions: Array[$M \times T$], rewards: Array[$M \times T$] $\leftarrow$ Empty arrays
+
+3. For $m$: int = 1 to $M$:
+
+   a. states[$m$, 1] $\leftarrow s_0$ &nbsp;&nbsp;&nbsp;&nbsp;// Initialize first state
+
+   b. For $t$: int = 1 to $T$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i. $s_t$: float $\leftarrow$ states[$m$, $t$]
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ii. $P(a=0|s_t)$: float, $P(a=1|s_t)$: float $\leftarrow$ `ComputeChoiceProbability`($s_t$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iii. $a_t$: int $\leftarrow$ `DrawAction`($P(a=0|s_t)$, $P(a=1|s_t)$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iv. actions[$m$, $t$] $\leftarrow a_t$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v. $r_t$: float $\leftarrow$ `ComputeMeanReward`($s_t$, $a_t$, $\beta$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vi. rewards[$m$, $t$] $\leftarrow r_t$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vii. **If** $t < T$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$s_{t+1}$: float $\leftarrow$ `ComputeNextState`($s_t$, $a_t$, $\gamma$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;states[$m$, $t+1$] $\leftarrow s_{t+1}$
+
+4. **Return** states, actions, rewards
+
+---
+
+### Subroutines
+
+**Procedure** `DrawAction`($P_0$: float, $P_1$: float) $\to$ int
+
+- Draw $u$: float $\sim$ Uniform(0, 1)
+- **If** $u < P_0$: **Return** 0
+- **Else**: **Return** 1
+
+---
+
+### Shared Functions from solve_mdp
+
+The following functions are imported from solve_mdp and reused directly:
+
+**Procedure** `ComputeChoiceProbability`($s$: float, $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ (float, float)
+
+- Computes $P(a=0|s)$ and $P(a=1|s)$ using logit formula
+- See solve_mdp documentation for implementation details
+
+**Procedure** `ComputeNextState`($s$: float, $a$: int, $\gamma$: float) $\to$ float
+
+- Returns $(1 - \gamma) \cdot s + a$
+- See solve_mdp documentation for implementation details
+
+**Procedure** `ComputeMeanReward`($s$: float, $a$: int, $\beta$: float) $\to$ float
+
+- Returns $\beta \cdot \log(1 + s) - a$
+- See solve_mdp documentation for implementation details
+
+:::
+
+**Key Implementation Details:**
+
+- **Shared configuration**: Load $\beta$, $\gamma$, $\delta$ from the same config used in solve_mdp
+- **Reproducibility**: Set random seed before simulation for reproducible results
+- **Categorical sampling**: Use inverse CDF method to draw actions from choice probabilities
+- **Storage efficiency**: Pre-allocate arrays for states, actions, and rewards before loop
+
 ## Load Trained Policy
 
 ```{python}
