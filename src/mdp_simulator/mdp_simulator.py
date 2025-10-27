@@ -10,6 +10,7 @@ value functions, rather than drawing preference shocks.
 """
 
 import numpy as np
+import torch
 from typing import Tuple
 
 # Import shared functions from mdp_solver
@@ -117,8 +118,7 @@ def SimulateMDP(
 
             # Compute mean reward using shared function from mdp_solver
             # Note: ComputeMeanReward expects tensor input, so convert
-            import torch
-            s_t_tensor = torch.tensor([[s_t]], dtype=torch.float32)
+            s_t_tensor = torch.tensor(s_t).reshape(-1, 1).float()
             r_t_tensor = ComputeMeanReward(s=s_t_tensor, a=a_t, beta=beta)
             r_t = r_t_tensor.item()
             rewards[m, t] = r_t

@@ -32,6 +32,13 @@ _COMPARATIVE_STATICS: Dict[str, List[float]] = {
     "gamma_values": [0.25 * i for i in range(0, 5)],  # 0.00 to 1.00 inclusive
 }
 
+_SIMULATOR_CONFIG: Dict[str, Any] = {
+    "M": 100,           # Number of simulation paths
+    "T": 100,           # Time periods per path
+    "s_0": 1.0,         # Initial state value
+    "seed": 42,         # Random seed for reproducibility
+}
+
 
 def get_solver_config() -> Dict[str, Any]:
     """
@@ -47,4 +54,11 @@ def get_comparative_statics() -> Dict[str, List[float]]:
     return {key: list(values) for key, values in _COMPARATIVE_STATICS.items()}
 
 
-__all__ = ["get_solver_config", "get_comparative_statics"]
+def get_simulator_config() -> Dict[str, Any]:
+    """
+    Return a deep copy of the base simulator configuration.
+    """
+    return deepcopy(_SIMULATOR_CONFIG)
+
+
+__all__ = ["get_solver_config", "get_comparative_statics", "get_simulator_config"]
