@@ -127,6 +127,11 @@ uv run quarto render solve_mdp.qmd
 
 # View the rendered HTML report
 # Open scripts/solve_mdp/solve_mdp.html in your browser
+
+# Or serve with a live server for interactive viewing
+cd scripts/solve_mdp
+python -m http.server 9000
+# Then open http://127.0.0.1:9000/solve_mdp.html in your browser
 ```
 
 When working inside a container (e.g., VS Code Dev Containers), forward port `4200` and open `http://127.0.0.1:4200` in the VS Code Simple Browser or your local browser. The live server command above reuses cached computations (`_freeze/`) unless you edit the document code, so previewing is lightweight.
