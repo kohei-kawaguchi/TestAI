@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.550">
+<meta name="generator" content="quarto-1.5.45">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -20,6 +20,40 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -34,6 +68,35 @@ ul.task-list li input[type="checkbox"] {
 <link href="simulate_mdp_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="simulate_mdp_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -41,7 +104,16 @@ ul.task-list li input[type="checkbox"] {
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-  
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#monte-carlo-simulation-algorithm" id="toc-monte-carlo-simulation-algorithm" class="nav-link" data-scroll-target="#monte-carlo-simulation-algorithm">Monte Carlo Simulation Algorithm</a></li>
+  <li><a href="#load-trained-policy" id="toc-load-trained-policy" class="nav-link" data-scroll-target="#load-trained-policy">Load Trained Policy</a></li>
+  <li><a href="#stored-policy-diagnostics" id="toc-stored-policy-diagnostics" class="nav-link" data-scroll-target="#stored-policy-diagnostics">Stored Policy Diagnostics</a></li>
+  </ul>
+</nav>
 </div>
 <main class="content" id="quarto-document-content">
 
@@ -64,7 +136,182 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<p>This document loads the policy learned in <code>solve_mdp.qmd</code>, reconstructs the trained neural networks, and runs Monte Carlo simulations to analyze the dynamic behavior of the optimal policy.</p>
+</section>
+<section id="monte-carlo-simulation-algorithm" class="level2">
+<h2 class="anchored" data-anchor-id="monte-carlo-simulation-algorithm">Monte Carlo Simulation Algorithm</h2>
+<p>We simulate the Markov Decision Process under the optimal policy learned by the neural networks. The simulation generates multiple paths of state evolution and action choices to analyze the long-run behavior of the system.</p>
+<p><strong>Model Specification</strong> (from <a href="../solve_mdp/solve_mdp.qmd">solve_mdp.qmd</a>):</p>
+<ul>
+<li><strong>State transition</strong>: <span class="math inline">\(s_{t+1} = (1 - \gamma) s_t + a_t\)</span></li>
+<li><strong>Mean reward</strong>: <span class="math inline">\(\bar{r}(s, a) = \beta \log(1 + s) - a\)</span></li>
+<li><strong>Choice probabilities</strong>: <span class="math inline">\(P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}\)</span> where <span class="math inline">\(v(s, a)\)</span> is the choice-specific value function learned by the neural networks</li>
+</ul>
+<p><strong>Simulation Parameters</strong>:</p>
+<ul>
+<li>Number of paths: <span class="math inline">\(M = 100\)</span></li>
+<li>Time periods per path: <span class="math inline">\(T = 100\)</span></li>
+<li>Initial state: <span class="math inline">\(s_0\)</span> (to be specified)</li>
+</ul>
+<p><strong>Algorithm</strong>:</p>
+<p>For each path <span class="math inline">\(m = 1, \ldots, M\)</span>:</p>
+<ol type="1">
+<li><p><strong>Initialize</strong>: Set <span class="math inline">\(s_0^{(m)}\)</span> to the initial state value</p></li>
+<li><p><strong>Simulate forward</strong> for <span class="math inline">\(t = 0, \ldots, T-1\)</span>:</p>
+<ol type="a">
+<li><p><strong>Compute choice probabilities</strong>: Evaluate the trained neural networks at current state <span class="math inline">\(s_t^{(m)}\)</span>: <span class="math display">\[P(a=0 | s_t^{(m)}) = \frac{\exp(v_\theta^{(0)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}\]</span> <span class="math display">\[P(a=1 | s_t^{(m)}) = \frac{\exp(v_\theta^{(1)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}\]</span></p></li>
+<li><p><strong>Draw action</strong>: Sample action from the choice probabilities: <span class="math display">\[a_t^{(m)} \sim \text{Categorical}(P(a=0 | s_t^{(m)}), P(a=1 | s_t^{(m)}))\]</span></p></li>
+<li><p><strong>Compute mean reward</strong>: <span class="math display">\[r_t^{(m)} = \beta \log(1 + s_t^{(m)}) - a_t^{(m)}\]</span></p></li>
+<li><p><strong>Update state</strong>: <span class="math display">\[s_{t+1}^{(m)} = (1 - \gamma) s_t^{(m)} + a_t^{(m)}\]</span></p></li>
+</ol></li>
+<li><p><strong>Store path</strong>: Save <span class="math inline">\((s_t^{(m)}, a_t^{(m)}, r_t^{(m)})_{t=0}^{T-1}\)</span> for analysis</p></li>
+</ol>
+<p><strong>Output Statistics</strong>:</p>
+<ul>
+<li>State evolution: Mean, median, and quantiles of <span class="math inline">\(s_t\)</span> across paths</li>
+<li>Action frequency: Fraction of times each action is chosen at each period</li>
+<li>Cumulative rewards: Mean discounted rewards <span class="math inline">\(\sum_{t=0}^{T-1} \delta^t r_t^{(m)}\)</span> across paths</li>
+<li>Policy behavior: State-dependent action choices and convergence to steady state</li>
+</ul>
+</section>
+<section id="load-trained-policy" class="level2">
+<h2 class="anchored" data-anchor-id="load-trained-policy">Load Trained Policy</h2>
+<div id="e549ffbd" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> MonotonicNetwork</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> config_mdp <span class="im">import</span> get_solver_config, get_comparative_statics</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_utils <span class="im">import</span> (</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    plot_choice_value_functions,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    plot_convergence_history,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    plot_policy_probabilities,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>artifact_dir <span class="op">=</span> Path(<span class="st">'../../output/sovle_mdp'</span>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> artifact_dir.exists():</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">FileNotFoundError</span>(</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"Expected trained artifacts in </span><span class="sc">{</span>artifact_dir<span class="sc">}</span><span class="ss">. Run solve_mdp.qmd first."</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>module_config <span class="op">=</span> get_solver_config()</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>module_statics <span class="op">=</span> get_comparative_statics()</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Load configuration written alongside the trained policy</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(artifact_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> config_file:</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    config <span class="op">=</span> json.load(config_file)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Load precomputed grids for diagnostics</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>policy_store <span class="op">=</span> np.load(artifact_dir <span class="op">/</span> <span class="st">'policy_data.npz'</span>)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>state_grid <span class="op">=</span> policy_store[<span class="st">'state_grid'</span>]</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>v0_grid <span class="op">=</span> policy_store[<span class="st">'v0'</span>]</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>v1_grid <span class="op">=</span> policy_store[<span class="st">'v1'</span>]</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>prob_a0_grid <span class="op">=</span> policy_store[<span class="st">'prob_a0'</span>]</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>prob_a1_grid <span class="op">=</span> policy_store[<span class="st">'prob_a1'</span>]</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>history_store <span class="op">=</span> np.load(artifact_dir <span class="op">/</span> <span class="st">'convergence_history.npz'</span>)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>history_iterations <span class="op">=</span> history_store[<span class="st">'iterations'</span>]</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>history_max_errors <span class="op">=</span> history_store[<span class="st">'max_errors'</span>]</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>module_config_for_compare <span class="op">=</span> module_config.copy()</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>module_config_for_compare[<span class="st">'state_range'</span>] <span class="op">=</span> <span class="bu">list</span>(module_config_for_compare[<span class="st">'state_range'</span>])</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>stored_subset <span class="op">=</span> {k: config[k] <span class="cf">for</span> k <span class="kw">in</span> module_config}</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> module_config_for_compare <span class="op">!=</span> stored_subset:</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Module configuration and stored configuration are inconsistent."</span>)</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> module_statics <span class="op">!=</span> config.get(<span class="st">'comparative_statics'</span>, {}):</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Comparative statics configuration mismatch."</span>)</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>beta <span class="op">=</span> module_config[<span class="st">'beta'</span>]</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>gamma <span class="op">=</span> module_config[<span class="st">'gamma'</span>]</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>delta <span class="op">=</span> module_config[<span class="st">'delta'</span>]</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>gamma_E <span class="op">=</span> module_config[<span class="st">'gamma_E'</span>]</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>hyperparameters <span class="op">=</span> module_config[<span class="st">'hyperparameters'</span>]</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>state_range <span class="op">=</span> <span class="bu">tuple</span>(module_config[<span class="st">'state_range'</span>])</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>hidden_sizes <span class="op">=</span> hyperparameters.get(<span class="st">'hidden_sizes'</span>, [<span class="dv">32</span>, <span class="dv">32</span>])</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>epsilon_tol <span class="op">=</span> module_config[<span class="st">'epsilon_tol'</span>]</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Loaded trained networks with hidden sizes </span><span class="sc">{</span>hidden_sizes<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a><span class="co"># Rebuild networks and load weights</span></span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>v_theta_0 <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hidden_sizes)</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>v_theta_1 <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hidden_sizes)</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>v_theta_0.load_state_dict(torch.load(artifact_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>v_theta_1.load_state_dict(torch.load(artifact_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>v_theta_0.<span class="bu">eval</span>()</span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>v_theta_1.<span class="bu">eval</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded trained networks with hidden sizes [32, 32]</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>MonotonicNetwork(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=32, bias=True)
+    (1): Linear(in_features=32, out_features=32, bias=True)
+    (2): Linear(in_features=32, out_features=1, bias=True)
+  )
+)</code></pre>
+</div>
+</div>
+</section>
+<section id="stored-policy-diagnostics" class="level2">
+<h2 class="anchored" data-anchor-id="stored-policy-diagnostics">Stored Policy Diagnostics</h2>
+<div id="0b617e4f" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>plot_choice_value_functions(</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    v0_values<span class="op">=</span>v0_grid,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    v1_values<span class="op">=</span>v1_grid,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax1,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">'Choice-Specific Value Functions'</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>plot_convergence_history(</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    iterations<span class="op">=</span>history_iterations,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    max_errors<span class="op">=</span>history_max_errors,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax2,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">'Convergence History'</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="simulate_mdp_files/figure-html/cell-3-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="88cb420a" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_policy_probabilities(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0_grid,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    prob_a1<span class="op">=</span>prob_a1_grid,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="simulate_mdp_files/figure-html/cell-4-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 
 </main>
 <!-- /main column -->
@@ -103,18 +350,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -146,7 +382,47 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
   function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
@@ -181,7 +457,11 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
     });
   }
   const xrefs = window.document.querySelectorAll('a.quarto-xref');

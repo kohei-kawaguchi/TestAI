@@ -12,7 +12,54 @@ execute:
 ## Overview
 
 This document loads the policy learned in `solve_mdp.qmd`, reconstructs the trained neural
-networks, and inspects the stored artifacts for verification.
+networks, and runs Monte Carlo simulations to analyze the dynamic behavior of the optimal policy.
+
+## Monte Carlo Simulation Algorithm
+
+We simulate the Markov Decision Process under the optimal policy learned by the neural networks. The simulation generates multiple paths of state evolution and action choices to analyze the long-run behavior of the system.
+
+**Model Specification** (from [solve_mdp.qmd](../solve_mdp/solve_mdp.qmd)):
+
+- **State transition**: $s_{t+1} = (1 - \gamma) s_t + a_t$
+- **Mean reward**: $\bar{r}(s, a) = \beta \log(1 + s) - a$
+- **Choice probabilities**: $P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$
+  where $v(s, a)$ is the choice-specific value function learned by the neural networks
+
+**Simulation Parameters**:
+
+- Number of paths: $M = 100$
+- Time periods per path: $T = 100$
+- Initial state: $s_0$ (to be specified)
+
+**Algorithm**:
+
+For each path $m = 1, \ldots, M$:
+
+1. **Initialize**: Set $s_0^{(m)}$ to the initial state value
+
+2. **Simulate forward** for $t = 0, \ldots, T-1$:
+
+   a. **Compute choice probabilities**: Evaluate the trained neural networks at current state $s_t^{(m)}$:
+      $$P(a=0 | s_t^{(m)}) = \frac{\exp(v_\theta^{(0)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}$$
+      $$P(a=1 | s_t^{(m)}) = \frac{\exp(v_\theta^{(1)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}$$
+
+   b. **Draw action**: Sample action from the choice probabilities:
+      $$a_t^{(m)} \sim \text{Categorical}(P(a=0 | s_t^{(m)}), P(a=1 | s_t^{(m)}))$$
+
+   c. **Compute mean reward**:
+      $$r_t^{(m)} = \beta \log(1 + s_t^{(m)}) - a_t^{(m)}$$
+
+   d. **Update state**:
+      $$s_{t+1}^{(m)} = (1 - \gamma) s_t^{(m)} + a_t^{(m)}$$
+
+3. **Store path**: Save $(s_t^{(m)}, a_t^{(m)}, r_t^{(m)})_{t=0}^{T-1}$ for analysis
+
+**Output Statistics**:
+
+- State evolution: Mean, median, and quantiles of $s_t$ across paths
+- Action frequency: Fraction of times each action is chosen at each period
+- Cumulative rewards: Mean discounted rewards $\sum_{t=0}^{T-1} \delta^t r_t^{(m)}$ across paths
+- Policy behavior: State-dependent action choices and convergence to steady state
 
 ## Load Trained Policy
 
@@ -61,8 +108,6 @@ history_store = np.load(artifact_dir / 'convergence_history.npz')
 history_iterations = history_store['iterations']
 history_max_errors = history_store['max_errors']
 
-print(f"Loaded trained networks with hidden sizes {hidden_sizes}")
-
 module_config_for_compare = module_config.copy()
 module_config_for_compare['state_range'] = list(module_config_for_compare['state_range'])
 
@@ -81,6 +126,8 @@ hyperparameters = module_config['hyperparameters']
 state_range = tuple(module_config['state_range'])
 hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
 epsilon_tol = module_config['epsilon_tol']
+
+print(f"Loaded trained networks with hidden sizes {hidden_sizes}")
 
 # Rebuild networks and load weights
 v_theta_0 = MonotonicNetwork(hidden_sizes=hidden_sizes)
