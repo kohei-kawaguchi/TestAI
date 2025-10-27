@@ -273,3 +273,245 @@ ax = plot_policy_probabilities(
 ax.figure.tight_layout()
 plt.show()
 ```
+
+## Run Monte Carlo Simulation
+
+Now we use the trained policy to simulate the MDP dynamics and analyze the behavior of the optimal policy.
+
+```{python}
+from mdp_simulator import SimulateMDP
+from config_mdp import get_simulator_config
+
+# Load simulator configuration
+sim_config = get_simulator_config()
+M = sim_config['M']
+T = sim_config['T']
+s_0 = sim_config['s_0']
+seed = sim_config['seed']
+
+print(f"Running Monte Carlo simulation with M={M} paths, T={T} periods")
+print(f"Initial state: s_0={s_0}, Random seed: {seed}")
+
+# Run simulation
+states, actions, rewards = SimulateMDP(
+    v_theta_0=v_theta_0,
+    v_theta_1=v_theta_1,
+    beta=beta,
+    gamma=gamma,
+    delta=delta,
+    M=M,
+    T=T,
+    s_0=s_0,
+    seed=seed
+)
+
+print(f"\nSimulation complete!")
+print(f"States shape: {states.shape}")
+print(f"Actions shape: {actions.shape}")
+print(f"Rewards shape: {rewards.shape}")
+
+# Save simulation results
+output_dir = Path('../../output/simulate_mdp')
+output_dir.mkdir(parents=True, exist_ok=True)
+
+np.savez(
+    output_dir / 'simulation_results.npz',
+    states=states,
+    actions=actions,
+    rewards=rewards,
+    M=M,
+    T=T,
+    s_0=s_0,
+    seed=seed
+)
+
+# Save configuration used
+sim_config_with_mdp = {
+    **sim_config,
+    'beta': beta,
+    'gamma': gamma,
+    'delta': delta,
+}
+
+with open(output_dir / 'simulation_config.json', 'w', encoding='utf-8') as f:
+    json.dump(sim_config_with_mdp, f, indent=2)
+
+print(f"Saved simulation results to {output_dir.resolve()}")
+```
+
+## Empirical vs Theoretical Choice Probabilities
+
+We compare the empirical choice probabilities from the simulation with the theoretical probabilities from the trained value functions.
+
+```{python}
+from mdp_solver import ComputeChoiceProbability
+
+# Compute empirical choice probabilities from simulation
+# For each unique state, compute the fraction of times action 1 was chosen
+
+# Discretize states into bins for empirical probability calculation
+n_bins = 50
+state_min = min(states.min(), state_grid.min())
+state_max = max(states.max(), state_grid.max())
+state_bins = np.linspace(state_min, state_max, n_bins + 1)
+bin_centers = (state_bins[:-1] + state_bins[1:]) / 2
+
+# Compute empirical probabilities
+empirical_prob_a1 = np.zeros(n_bins)
+empirical_counts = np.zeros(n_bins)
+
+for m in range(M):
+    for t in range(T):
+        s = states[m, t]
+        a = actions[m, t]
+
+        # Find which bin this state belongs to
+        bin_idx = np.searchsorted(state_bins[1:], s)
+        if 0 <= bin_idx < n_bins:
+            empirical_counts[bin_idx] += 1
+            if a == 1:
+                empirical_prob_a1[bin_idx] += 1
+
+# Compute empirical probabilities (only for bins with observations)
+mask = empirical_counts > 0
+empirical_prob_a1[mask] = empirical_prob_a1[mask] / empirical_counts[mask]
+
+# Compute theoretical probabilities at bin centers
+theoretical_prob_a1 = np.zeros(n_bins)
+for i, s in enumerate(bin_centers):
+    if mask[i]:  # Only compute for bins with observations
+        prob_a0, prob_a1 = ComputeChoiceProbability(
+            s=s,
+            v_theta_0=v_theta_0,
+            v_theta_1=v_theta_1
+        )
+        theoretical_prob_a1[i] = prob_a1
+
+# Filter to only bins with sufficient observations
+min_obs = 10
+sufficient_mask = empirical_counts >= min_obs
+
+# Create scatter plot
+fig, ax = plt.subplots(figsize=(8, 8))
+
+ax.scatter(
+    theoretical_prob_a1[sufficient_mask],
+    empirical_prob_a1[sufficient_mask],
+    alpha=0.6,
+    s=empirical_counts[sufficient_mask] / 10,  # Size proportional to observations
+    c='blue',
+    label=f'Bins (n≥{min_obs})'
+)
+
+# Add 45-degree line
+prob_range = [0, 1]
+ax.plot(prob_range, prob_range, 'k--', linewidth=1.5, label='45° line')
+
+ax.set_xlabel('Theoretical P(a=1|s)', fontsize=12)
+ax.set_ylabel('Empirical P(a=1|s)', fontsize=12)
+ax.set_title('Empirical vs Theoretical Choice Probabilities', fontsize=14)
+ax.legend()
+ax.grid(True, alpha=0.3)
+ax.set_xlim(0, 1)
+ax.set_ylim(0, 1)
+ax.set_aspect('equal')
+
+plt.tight_layout()
+plt.show()
+
+# Compute correlation and RMSE
+valid_data = sufficient_mask
+correlation = np.corrcoef(
+    theoretical_prob_a1[valid_data],
+    empirical_prob_a1[valid_data]
+)[0, 1]
+rmse = np.sqrt(np.mean(
+    (theoretical_prob_a1[valid_data] - empirical_prob_a1[valid_data])**2
+))
+
+print(f"\nComparison Statistics:")
+print(f"Number of bins with sufficient data (n≥{min_obs}): {valid_data.sum()}")
+print(f"Correlation: {correlation:.4f}")
+print(f"RMSE: {rmse:.4f}")
+```
+
+## Simulation Summary Statistics
+
+```{python}
+# Compute summary statistics across paths
+state_mean = states.mean(axis=0)
+state_std = states.std(axis=0)
+state_q25 = np.percentile(states, 25, axis=0)
+state_q50 = np.percentile(states, 50, axis=0)
+state_q75 = np.percentile(states, 75, axis=0)
+
+action_freq = actions.mean(axis=0)  # Fraction of times action 1 was chosen
+
+# Compute cumulative discounted rewards
+discount_factors = delta ** np.arange(T)
+discounted_rewards = rewards * discount_factors[np.newaxis, :]
+cumulative_discounted_rewards = discounted_rewards.sum(axis=1)
+
+print(f"\nState Evolution:")
+print(f"  Initial state (all paths): {s_0:.3f}")
+print(f"  Final state - mean: {state_mean[-1]:.3f}, std: {state_std[-1]:.3f}")
+print(f"  Final state - median: {state_q50[-1]:.3f}")
+
+print(f"\nAction Statistics:")
+print(f"  Overall fraction of a=1: {actions.mean():.3f}")
+print(f"  First period a=1 frequency: {action_freq[0]:.3f}")
+print(f"  Last period a=1 frequency: {action_freq[-1]:.3f}")
+
+print(f"\nReward Statistics:")
+print(f"  Mean cumulative discounted reward: {cumulative_discounted_rewards.mean():.3f}")
+print(f"  Std cumulative discounted reward: {cumulative_discounted_rewards.std():.3f}")
+print(f"  Min cumulative discounted reward: {cumulative_discounted_rewards.min():.3f}")
+print(f"  Max cumulative discounted reward: {cumulative_discounted_rewards.max():.3f}")
+
+# Plot state evolution over time
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+# State evolution
+ax = axes[0, 0]
+ax.plot(state_mean, 'b-', linewidth=2, label='Mean')
+ax.fill_between(range(T), state_q25, state_q75, alpha=0.3, label='IQR (25-75%)')
+ax.plot(state_q50, 'r--', linewidth=1.5, label='Median')
+ax.set_xlabel('Time period')
+ax.set_ylabel('State')
+ax.set_title('State Evolution Across Paths')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+# Action frequency over time
+ax = axes[0, 1]
+ax.plot(action_freq, 'g-', linewidth=2)
+ax.set_xlabel('Time period')
+ax.set_ylabel('Frequency of a=1')
+ax.set_title('Action Choice Over Time')
+ax.set_ylim(0, 1)
+ax.grid(True, alpha=0.3)
+
+# Distribution of final states
+ax = axes[1, 0]
+ax.hist(states[:, -1], bins=30, alpha=0.7, edgecolor='black')
+ax.axvline(state_mean[-1], color='red', linestyle='--', linewidth=2, label=f'Mean: {state_mean[-1]:.2f}')
+ax.set_xlabel('Final state value')
+ax.set_ylabel('Number of paths')
+ax.set_title('Distribution of Final States')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+# Distribution of cumulative rewards
+ax = axes[1, 1]
+ax.hist(cumulative_discounted_rewards, bins=30, alpha=0.7, edgecolor='black')
+ax.axvline(cumulative_discounted_rewards.mean(), color='red', linestyle='--', linewidth=2,
+           label=f'Mean: {cumulative_discounted_rewards.mean():.2f}')
+ax.set_xlabel('Cumulative discounted reward')
+ax.set_ylabel('Number of paths')
+ax.set_title('Distribution of Total Rewards')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+fig.tight_layout()
+plt.show()
+```
