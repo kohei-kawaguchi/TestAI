@@ -312,6 +312,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from concurrent.futures import ThreadPoolExecutor
 import os
+import json
+from pathlib import Path
 
 from mdp_solver import SolveValueIteration, ComputeChoiceProbability
 ```
@@ -466,6 +468,47 @@ threshold_s = s_plot_np[threshold_idx]
 
 print(f"\nPolicy switches near s ≈ {threshold_s:.3f}")
 print(f"At this state: P(a=0) = {prob_a0[threshold_idx]:.3f}, P(a=1) = {prob_a1[threshold_idx]:.3f}")
+
+# Persist trained policy artifacts for downstream simulation
+output_dir = Path('../../output/sovle_mdp')
+output_dir.mkdir(parents=True, exist_ok=True)
+
+config_payload = {
+    "beta": beta,
+    "gamma": gamma,
+    "delta": delta,
+    "gamma_E": gamma_E,
+    "hyperparameters": hyperparameters,
+    "state_range": list(state_range),
+    "N": N,
+    "max_iter": max_iter,
+    "epsilon_tol": epsilon_tol,
+    "num_epochs": num_epochs,
+    "learning_rate": learning_rate,
+}
+
+with open(output_dir / 'config.json', 'w', encoding='utf-8') as config_file:
+    json.dump(config_payload, config_file, indent=2)
+
+torch.save(v_theta_0.state_dict(), output_dir / 'v_theta_0.pt')
+torch.save(v_theta_1.state_dict(), output_dir / 'v_theta_1.pt')
+
+np.savez(
+    output_dir / 'policy_data.npz',
+    state_grid=s_plot_np,
+    v0=v0_values,
+    v1=v1_values,
+    prob_a0=prob_a0,
+    prob_a1=prob_a1,
+)
+
+np.savez(
+    output_dir / 'convergence_history.npz',
+    iterations=np.asarray(history['iterations'], dtype=np.int64),
+    max_errors=np.asarray(history['max_errors'], dtype=np.float64),
+)
+
+print(f"Saved trained artifacts to {output_dir.resolve()}")
 ```
 
 ## Comparative Statics
