@@ -310,7 +310,6 @@ sys.path.insert(0, '../../src')
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 from concurrent.futures import ThreadPoolExecutor
 import os
 import json
@@ -318,6 +317,13 @@ from pathlib import Path
 
 from mdp_solver import SolveValueIteration, ComputeChoiceProbability
 from config_mdp import get_solver_config, get_comparative_statics
+from mdp_utils import (
+    plot_convergence_history,
+    plot_choice_value_functions,
+    plot_policy_probabilities,
+    plot_comparative_value_functions,
+    plot_comparative_policies,
+)
 ```
 
 ```{python}
@@ -364,20 +370,13 @@ print(f"Final max error: {history['max_errors'][-1]:.6f}")
 ```{python}
 #| cache: true
 
-# Plot convergence history
-fig, ax = plt.subplots(figsize=(10, 6))
-
-ax.plot(history['iterations'], history['max_errors'], 'b-', linewidth=2, label='Max Error')
-ax.axhline(y=epsilon_tol, color='r', linestyle='--', linewidth=1.5, label=f'Tolerance (ε={epsilon_tol})')
-
-ax.set_xlabel('Iteration', fontsize=12)
-ax.set_ylabel('Maximum Error', fontsize=12)
-ax.set_title('Convergence of Value Function Iteration', fontsize=14, fontweight='bold')
-ax.set_yscale('log')
-ax.grid(True, alpha=0.3)
-ax.legend(fontsize=11)
-
-plt.tight_layout()
+# Plot convergence history using shared utility
+ax = plot_convergence_history(
+    iterations=history['iterations'],
+    max_errors=history['max_errors'],
+    epsilon_tol=epsilon_tol,
+)
+ax.figure.tight_layout()
 plt.show()
 
 print(f"Converged in {len(history['iterations'])} iterations")
@@ -400,19 +399,13 @@ with torch.no_grad():
 
 s_plot_np = s_plot.numpy().flatten()
 
-# Plot value functions
-fig, ax = plt.subplots(figsize=(10, 6))
-
-ax.plot(s_plot_np, v0_values, 'b-', linewidth=2.5, label='v(s, a=0)', alpha=0.8)
-ax.plot(s_plot_np, v1_values, 'r-', linewidth=2.5, label='v(s, a=1)', alpha=0.8)
-
-ax.set_xlabel('State (s)', fontsize=12)
-ax.set_ylabel('Value Function v(s, a)', fontsize=12)
-ax.set_title('Choice-Specific Value Functions', fontsize=14, fontweight='bold')
-ax.grid(True, alpha=0.3)
-ax.legend(fontsize=11, loc='best')
-
-plt.tight_layout()
+# Plot value functions with shared utility
+ax = plot_choice_value_functions(
+    state_grid=s_plot_np,
+    v0_values=v0_values,
+    v1_values=v1_values,
+)
+ax.figure.tight_layout()
 plt.show()
 
 # Print some statistics
@@ -438,21 +431,13 @@ for s_val in s_plot_np:
 prob_a0 = np.array(prob_a0)
 prob_a1 = np.array(prob_a1)
 
-# Plot optimal policy
-fig, ax = plt.subplots(figsize=(10, 6))
-
-ax.plot(s_plot_np, prob_a0, 'b-', linewidth=2.5, label='P(a=0|s)', alpha=0.8)
-ax.plot(s_plot_np, prob_a1, 'r-', linewidth=2.5, label='P(a=1|s)', alpha=0.8)
-ax.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
-
-ax.set_xlabel('State (s)', fontsize=12)
-ax.set_ylabel('Choice Probability', fontsize=12)
-ax.set_title('Optimal Policy (Choice Probabilities)', fontsize=14, fontweight='bold')
-ax.set_ylim([0, 1])
-ax.grid(True, alpha=0.3)
-ax.legend(fontsize=11, loc='best')
-
-plt.tight_layout()
+# Plot optimal policy with shared utility
+ax = plot_policy_probabilities(
+    state_grid=s_plot_np,
+    prob_a0=prob_a0,
+    prob_a1=prob_a1,
+)
+ax.figure.tight_layout()
 plt.show()
 
 # Find approximate threshold where policy switches
@@ -563,55 +548,11 @@ for r in results:
 ```{python}
 #| cache: true
 
-# Create color maps: black to blue for a=0, black to red for a=1
-def get_color(beta_val, beta_min, beta_max, colormap_name):
-    """Get color based on beta value."""
-    if beta_max == beta_min:
-        norm_val = 0.5
-    else:
-        norm_val = (beta_val - beta_min) / (beta_max - beta_min)
-    cmap = cm.get_cmap(colormap_name)
-    return cmap(norm_val)
-
-beta_min = beta_values.min()
-beta_max = beta_values.max()
-
-# Plot value functions
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-
-# Action 0 value functions (black to blue)
-for r in results:
-    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
-    # Mix with blue
-    blue_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
-    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
-             color[2] * (1 - blue_weight) + blue_weight, 1)
-    ax1.plot(s_plot_np, r['v0'], linewidth=2, alpha=0.7, color=color,
-             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
-
-ax1.set_xlabel('State (s)', fontsize=12)
-ax1.set_ylabel('Value Function v(s, a=0)', fontsize=12)
-ax1.set_title('Value Functions for a=0 (Black→Blue as β increases)', fontsize=14, fontweight='bold')
-ax1.grid(True, alpha=0.3)
-ax1.legend(fontsize=10)
-
-# Action 1 value functions (black to red)
-for r in results:
-    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
-    # Mix with red
-    red_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
-    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
-             color[2] * (1 - red_weight), 1)
-    ax2.plot(s_plot_np, r['v1'], linewidth=2, alpha=0.7, color=color,
-             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
-
-ax2.set_xlabel('State (s)', fontsize=12)
-ax2.set_ylabel('Value Function v(s, a=1)', fontsize=12)
-ax2.set_title('Value Functions for a=1 (Black→Red as β increases)', fontsize=14, fontweight='bold')
-ax2.grid(True, alpha=0.3)
-ax2.legend(fontsize=10)
-
-plt.tight_layout()
+fig, _ = plot_comparative_value_functions(
+    state_grid=s_plot_np,
+    results=results,
+    parameter_key='beta',
+)
 plt.show()
 ```
 
@@ -620,44 +561,11 @@ plt.show()
 ```{python}
 #| cache: true
 
-# Plot policies
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-
-# Probability of action 0 (black to blue)
-for r in results:
-    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
-    blue_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
-    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
-             color[2] * (1 - blue_weight) + blue_weight, 1)
-    ax1.plot(s_plot_np, r['prob_a0'], linewidth=2, alpha=0.7, color=color,
-             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
-
-ax1.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
-ax1.set_xlabel('State (s)', fontsize=12)
-ax1.set_ylabel('P(a=0|s)', fontsize=12)
-ax1.set_title('Policy for a=0 (Black→Blue as β increases)', fontsize=14, fontweight='bold')
-ax1.set_ylim([0, 1])
-ax1.grid(True, alpha=0.3)
-ax1.legend(fontsize=10)
-
-# Probability of action 1 (black to red)
-for r in results:
-    color = get_color(r['beta'], beta_min, beta_max, 'Greys_r')
-    red_weight = (r['beta'] - beta_min) / (beta_max - beta_min) if beta_max > beta_min else 0
-    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
-             color[2] * (1 - red_weight), 1)
-    ax2.plot(s_plot_np, r['prob_a1'], linewidth=2, alpha=0.7, color=color,
-             label=f'β={r["beta"]:.2f}' if r['beta'] % 0.5 == 0 else '')
-
-ax2.axhline(y=0.5, color='gray', linestyle=':', linewidth=1, alpha=0.5)
-ax2.set_xlabel('State (s)', fontsize=12)
-ax2.set_ylabel('P(a=1|s)', fontsize=12)
-ax2.set_title('Policy for a=1 (Black→Red as β increases)', fontsize=14, fontweight='bold')
-ax2.set_ylim([0, 1])
-ax2.grid(True, alpha=0.3)
-ax2.legend(fontsize=10)
-
-plt.tight_layout()
+fig, _ = plot_comparative_policies(
+    state_grid=s_plot_np,
+    results=results,
+    parameter_key='beta',
+)
 plt.show()
 ```
 
@@ -725,45 +633,11 @@ for r in gamma_results:
 ```{python}
 #| cache: true
 
-gamma_min = gamma_values.min()
-gamma_max = gamma_values.max()
-
-# Plot value functions
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-
-# Action 0 value functions (black to blue)
-for r in gamma_results:
-    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
-    # Mix with blue
-    blue_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
-    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
-             color[2] * (1 - blue_weight) + blue_weight, 1)
-    ax1.plot(s_plot_np, r['v0'], linewidth=2, alpha=0.7, color=color,
-             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
-
-ax1.set_xlabel('State (s)', fontsize=12)
-ax1.set_ylabel('Value Function v(s, a=0)', fontsize=12)
-ax1.set_title('Value Functions for a=0 (Black→Blue as γ increases)', fontsize=14, fontweight='bold')
-ax1.grid(True, alpha=0.3)
-ax1.legend(fontsize=10)
-
-# Action 1 value functions (black to red)
-for r in gamma_results:
-    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
-    # Mix with red
-    red_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
-    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
-             color[2] * (1 - red_weight), 1)
-    ax2.plot(s_plot_np, r['v1'], linewidth=2, alpha=0.7, color=color,
-             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
-
-ax2.set_xlabel('State (s)', fontsize=12)
-ax2.set_ylabel('Value Function v(s, a=1)', fontsize=12)
-ax2.set_title('Value Functions for a=1 (Black→Red as γ increases)', fontsize=14, fontweight='bold')
-ax2.grid(True, alpha=0.3)
-ax2.legend(fontsize=10)
-
-plt.tight_layout()
+fig, _ = plot_comparative_value_functions(
+    state_grid=s_plot_np,
+    results=gamma_results,
+    parameter_key='gamma',
+)
 plt.show()
 ```
 
@@ -772,42 +646,11 @@ plt.show()
 ```{python}
 #| cache: true
 
-# Plot policies
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
-
-# Probability of action 0 (black to blue)
-for r in gamma_results:
-    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
-    blue_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
-    color = (color[0] * (1 - blue_weight), color[1] * (1 - blue_weight),
-             color[2] * (1 - blue_weight) + blue_weight, 1)
-    ax1.plot(s_plot_np, r['prob_a0'], linewidth=2, alpha=0.7, color=color,
-             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
-
-ax1.set_xlabel('State (s)', fontsize=12)
-ax1.set_ylabel('P(a=0|s)', fontsize=12)
-ax1.set_title('Policy for a=0 (Black→Blue as γ increases)', fontsize=14, fontweight='bold')
-ax1.set_ylim([0, 1])
-ax1.grid(True, alpha=0.3)
-ax1.legend(fontsize=10)
-
-# Probability of action 1 (black to red)
-for r in gamma_results:
-    color = get_color(r['gamma'], gamma_min, gamma_max, 'Greys_r')
-    red_weight = (r['gamma'] - gamma_min) / (gamma_max - gamma_min) if gamma_max > gamma_min else 0
-    color = (color[0] * (1 - red_weight) + red_weight, color[1] * (1 - red_weight),
-             color[2] * (1 - red_weight), 1)
-    ax2.plot(s_plot_np, r['prob_a1'], linewidth=2, alpha=0.7, color=color,
-             label=f'γ={r["gamma"]:.2f}' if r['gamma'] % 0.5 == 0 else '')
-
-ax2.set_xlabel('State (s)', fontsize=12)
-ax2.set_ylabel('P(a=1|s)', fontsize=12)
-ax2.set_title('Policy for a=1 (Black→Red as γ increases)', fontsize=14, fontweight='bold')
-ax2.set_ylim([0, 1])
-ax2.grid(True, alpha=0.3)
-ax2.legend(fontsize=10)
-
-plt.tight_layout()
+fig, _ = plot_comparative_policies(
+    state_grid=s_plot_np,
+    results=gamma_results,
+    parameter_key='gamma',
+)
 plt.show()
 ```
 

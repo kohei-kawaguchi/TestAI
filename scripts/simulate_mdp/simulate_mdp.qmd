@@ -30,6 +30,11 @@ import matplotlib.pyplot as plt
 
 from mdp_solver import MonotonicNetwork
 from config_mdp import get_solver_config, get_comparative_statics
+from mdp_utils import (
+    plot_choice_value_functions,
+    plot_convergence_history,
+    plot_policy_probabilities,
+)
 
 artifact_dir = Path('../../output/sovle_mdp')
 if not artifact_dir.exists():
@@ -92,38 +97,30 @@ v_theta_1.eval()
 
 ```{python}
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-
-ax1.plot(state_grid, v0_grid, label='v(s, a=0)', color='tab:blue')
-ax1.plot(state_grid, v1_grid, label='v(s, a=1)', color='tab:red')
-ax1.set_xlabel('State')
-ax1.set_ylabel('Value')
-ax1.set_title('Choice-Specific Value Functions')
-ax1.grid(alpha=0.3)
-ax1.legend()
-
-ax2.plot(history_iterations, history_max_errors, color='tab:green')
-ax2.axhline(epsilon_tol, color='tab:gray', linestyle='--', linewidth=1)
-ax2.set_xlabel('Iteration')
-ax2.set_ylabel('Max Error')
-ax2.set_title('Convergence History')
-ax2.set_yscale('log')
-ax2.grid(alpha=0.3)
-
-plt.tight_layout()
+plot_choice_value_functions(
+    state_grid=state_grid,
+    v0_values=v0_grid,
+    v1_values=v1_grid,
+    ax=ax1,
+    title='Choice-Specific Value Functions',
+)
+plot_convergence_history(
+    iterations=history_iterations,
+    max_errors=history_max_errors,
+    epsilon_tol=epsilon_tol,
+    ax=ax2,
+    title='Convergence History',
+)
+fig.tight_layout()
 plt.show()
 ```
 
 ```{python}
-fig, ax = plt.subplots(figsize=(8, 5))
-ax.plot(state_grid, prob_a1_grid, label='P(a=1|s)', color='tab:orange')
-ax.plot(state_grid, prob_a0_grid, label='P(a=0|s)', color='tab:purple')
-ax.axhline(0.5, color='tab:gray', linestyle=':')
-ax.set_xlabel('State')
-ax.set_ylabel('Choice Probability')
-ax.set_title('Stored Policy Probabilities')
-ax.set_ylim(0, 1)
-ax.grid(alpha=0.3)
-ax.legend()
-plt.tight_layout()
+ax = plot_policy_probabilities(
+    state_grid=state_grid,
+    prob_a0=prob_a0_grid,
+    prob_a1=prob_a1_grid,
+)
+ax.figure.tight_layout()
 plt.show()
 ```
