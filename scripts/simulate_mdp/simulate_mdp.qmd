@@ -18,6 +18,7 @@ networks, and inspects the stored artifacts for verification.
 
 ```{python}
 import sys
+sys.path.insert(0, '..')
 sys.path.insert(0, '../../src')
 
 import json
@@ -28,6 +29,7 @@ import torch
 import matplotlib.pyplot as plt
 
 from mdp_solver import MonotonicNetwork
+from config_mdp import get_solver_config, get_comparative_statics
 
 artifact_dir = Path('../../output/sovle_mdp')
 if not artifact_dir.exists():
@@ -35,27 +37,12 @@ if not artifact_dir.exists():
         f"Expected trained artifacts in {artifact_dir}. Run solve_mdp.qmd first."
     )
 
-# Load configuration
+module_config = get_solver_config()
+module_statics = get_comparative_statics()
+
+# Load configuration written alongside the trained policy
 with open(artifact_dir / 'config.json', 'r', encoding='utf-8') as config_file:
     config = json.load(config_file)
-
-beta = config['beta']
-gamma = config['gamma']
-delta = config['delta']
-gamma_E = config['gamma_E']
-hyperparameters = config['hyperparameters']
-state_range = config['state_range']
-hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
-
-# Rebuild networks and load weights
-v_theta_0 = MonotonicNetwork(hidden_sizes=hidden_sizes)
-v_theta_1 = MonotonicNetwork(hidden_sizes=hidden_sizes)
-
-v_theta_0.load_state_dict(torch.load(artifact_dir / 'v_theta_0.pt', map_location='cpu'))
-v_theta_1.load_state_dict(torch.load(artifact_dir / 'v_theta_1.pt', map_location='cpu'))
-
-v_theta_0.eval()
-v_theta_1.eval()
 
 # Load precomputed grids for diagnostics
 policy_store = np.load(artifact_dir / 'policy_data.npz')
@@ -70,6 +57,35 @@ history_iterations = history_store['iterations']
 history_max_errors = history_store['max_errors']
 
 print(f"Loaded trained networks with hidden sizes {hidden_sizes}")
+
+module_config_for_compare = module_config.copy()
+module_config_for_compare['state_range'] = list(module_config_for_compare['state_range'])
+
+stored_subset = {k: config[k] for k in module_config}
+if module_config_for_compare != stored_subset:
+    raise ValueError("Module configuration and stored configuration are inconsistent.")
+
+if module_statics != config.get('comparative_statics', {}):
+    raise ValueError("Comparative statics configuration mismatch.")
+
+beta = module_config['beta']
+gamma = module_config['gamma']
+delta = module_config['delta']
+gamma_E = module_config['gamma_E']
+hyperparameters = module_config['hyperparameters']
+state_range = tuple(module_config['state_range'])
+hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
+epsilon_tol = module_config['epsilon_tol']
+
+# Rebuild networks and load weights
+v_theta_0 = MonotonicNetwork(hidden_sizes=hidden_sizes)
+v_theta_1 = MonotonicNetwork(hidden_sizes=hidden_sizes)
+
+v_theta_0.load_state_dict(torch.load(artifact_dir / 'v_theta_0.pt', map_location='cpu'))
+v_theta_1.load_state_dict(torch.load(artifact_dir / 'v_theta_1.pt', map_location='cpu'))
+
+v_theta_0.eval()
+v_theta_1.eval()
 ```
 
 ## Stored Policy Diagnostics
@@ -86,7 +102,7 @@ ax1.grid(alpha=0.3)
 ax1.legend()
 
 ax2.plot(history_iterations, history_max_errors, color='tab:green')
-ax2.axhline(config['epsilon_tol'], color='tab:gray', linestyle='--', linewidth=1)
+ax2.axhline(epsilon_tol, color='tab:gray', linestyle='--', linewidth=1)
 ax2.set_xlabel('Iteration')
 ax2.set_ylabel('Max Error')
 ax2.set_title('Convergence History')

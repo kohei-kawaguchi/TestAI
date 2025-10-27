@@ -304,6 +304,7 @@ $$P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$$
 
 ```{python}
 import sys
+sys.path.insert(0, '..')
 sys.path.insert(0, '../../src')
 
 import torch
@@ -316,31 +317,24 @@ import json
 from pathlib import Path
 
 from mdp_solver import SolveValueIteration, ComputeChoiceProbability
+from config_mdp import get_solver_config, get_comparative_statics
 ```
 
 ```{python}
 #| cache: true
 
-# Set parameters
-beta = 1.0
-gamma = 0.1
-delta = 0.95
-gamma_E = 0.5772156649015329
-
-# Network hyperparameters
-hyperparameters = {
-    'hidden_sizes': [32, 32]
-}
-
-# State grid parameters
-N = 100
-state_range = (0.0, 10.0)
-
-# Training parameters
-max_iter = 1000
-epsilon_tol = 1e-4
-num_epochs = 50
-learning_rate = 1e-3
+solver_config = get_solver_config()
+beta = solver_config['beta']
+gamma = solver_config['gamma']
+delta = solver_config['delta']
+gamma_E = solver_config['gamma_E']
+hyperparameters = solver_config['hyperparameters']
+N = solver_config['N']
+state_range = tuple(solver_config['state_range'])
+max_iter = solver_config['max_iter']
+epsilon_tol = solver_config['epsilon_tol']
+num_epochs = solver_config['num_epochs']
+learning_rate = solver_config['learning_rate']
 
 # Solve the MDP using value iteration
 print("Solving MDP with value iteration...")
@@ -473,19 +467,12 @@ print(f"At this state: P(a=0) = {prob_a0[threshold_idx]:.3f}, P(a=1) = {prob_a1[
 output_dir = Path('../../output/sovle_mdp')
 output_dir.mkdir(parents=True, exist_ok=True)
 
-config_payload = {
-    "beta": beta,
-    "gamma": gamma,
-    "delta": delta,
-    "gamma_E": gamma_E,
-    "hyperparameters": hyperparameters,
-    "state_range": list(state_range),
-    "N": N,
-    "max_iter": max_iter,
-    "epsilon_tol": epsilon_tol,
-    "num_epochs": num_epochs,
-    "learning_rate": learning_rate,
-}
+statics = get_comparative_statics()
+
+config_payload = solver_config.copy()
+config_payload['state_range'] = list(state_range)
+config_payload['hyperparameters'] = hyperparameters
+config_payload['comparative_statics'] = statics
 
 with open(output_dir / 'config.json', 'w', encoding='utf-8') as config_file:
     json.dump(config_payload, config_file, indent=2)
@@ -519,7 +506,8 @@ We examine how the optimal policy and value functions change with the reward par
 #| cache: true
 
 # Define beta values to test
-beta_values = np.arange(0, 2.25, 0.25)
+statics = get_comparative_statics()
+beta_values = np.array(statics['beta_values'])
 
 def solve_for_beta(beta_val):
     """Solve MDP for a given beta value."""
@@ -681,7 +669,7 @@ We examine how the optimal policy and value functions change with the persistenc
 #| cache: true
 
 # Define gamma values to test
-gamma_values = np.arange(0, 1.25, 0.25)
+gamma_values = np.array(statics['gamma_values'])
 
 def solve_for_gamma(gamma_val):
     """Solve MDP for a given gamma value."""
