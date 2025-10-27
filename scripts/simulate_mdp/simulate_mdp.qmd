@@ -12,7 +12,7 @@ execute:
 ## Overview
 
 This document loads the policy learned in `solve_mdp.qmd`, reconstructs the trained neural
-networks, and uses them to simulate Markov Decision Process trajectories.
+networks, and inspects the stored artifacts for verification.
 
 ## Load Trained Policy
 
@@ -24,7 +24,6 @@ import json
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import torch
 import matplotlib.pyplot as plt
 
@@ -111,139 +110,4 @@ ax.grid(alpha=0.3)
 ax.legend()
 plt.tight_layout()
 plt.show()
-```
-
-## Simulation Utilities
-
-```{python}
-def evaluate_policy(states: np.ndarray) -> np.ndarray:
-    """
-    Compute action probabilities for a batch of states.
-
-    Args:
-        states: Array of shape (N,) with state values.
-
-    Returns:
-        Array of shape (N, 2) with probabilities for actions 0 and 1.
-    """
-    states_tensor = torch.as_tensor(states, dtype=torch.float32).reshape(-1, 1)
-
-    with torch.no_grad():
-        v0 = v_theta_0(states_tensor)
-        v1 = v_theta_1(states_tensor)
-        logits = torch.cat((v0, v1), dim=1)
-        probs = torch.softmax(logits, dim=1)
-
-    return probs.numpy()
-
-
-def simulate_mdp_paths(
-    *,
-    num_agents: int = 200,
-    num_periods: int = 30,
-    initial_state: float | np.ndarray = 1.0,
-    seed: int | None = 0,
-) -> pd.DataFrame:
-    """
-    Simulate MDP trajectories using the learned policy.
-
-    Args:
-        num_agents: Number of independent agents to simulate.
-        num_periods: Number of decision periods per agent.
-        initial_state: Scalar initial state or array of size num_agents.
-        seed: Random seed for reproducibility.
-
-    Returns:
-        DataFrame containing simulated trajectories.
-    """
-    rng = np.random.default_rng(seed)
-
-    states = np.empty((num_agents, num_periods + 1), dtype=np.float64)
-    if np.isscalar(initial_state):
-        states[:, 0] = float(initial_state)
-    else:
-        initial_state = np.asarray(initial_state, dtype=np.float64)
-        if initial_state.shape != (num_agents,):
-            raise ValueError("initial_state array must have shape (num_agents,)")
-        states[:, 0] = initial_state
-
-    action_probs = np.empty((num_agents, num_periods), dtype=np.float64)
-    actions = np.empty((num_agents, num_periods), dtype=np.int64)
-    rewards = np.empty((num_agents, num_periods), dtype=np.float64)
-
-    for t in range(num_periods):
-        s_t = states[:, t]
-        probs = evaluate_policy(s_t)
-        action_probs[:, t] = probs[:, 1]
-
-        draws = rng.random(num_agents)
-        chosen_actions = (draws < probs[:, 1]).astype(np.int64)
-        actions[:, t] = chosen_actions
-
-        mean_reward = beta * np.log1p(s_t) - chosen_actions
-        eps0 = rng.gumbel(loc=0.0, scale=1.0, size=num_agents)
-        eps1 = rng.gumbel(loc=0.0, scale=1.0, size=num_agents)
-        realized_shock = np.where(chosen_actions == 0, eps0, eps1)
-        rewards[:, t] = mean_reward + realized_shock
-
-        next_state = (1.0 - gamma) * s_t + chosen_actions
-        states[:, t + 1] = next_state
-
-    agent_ids = np.repeat(np.arange(num_agents), num_periods)
-    period_ids = np.tile(np.arange(num_periods), num_agents)
-
-    data = {
-        "agent": agent_ids,
-        "period": period_ids,
-        "state": states[:, :-1].reshape(-1),
-        "action": actions.reshape(-1),
-        "prob_action_1": action_probs.reshape(-1),
-        "reward": rewards.reshape(-1),
-        "next_state": states[:, 1:].reshape(-1),
-    }
-
-    return pd.DataFrame(data)
-```
-
-## Generate Simulated Data
-
-```{python}
-simulated_df = simulate_mdp_paths(num_agents=200, num_periods=40, initial_state=1.0, seed=42)
-simulated_df.head()
-```
-
-```{python}
-summary = (
-    simulated_df.groupby('action')
-    .agg(
-        count=('reward', 'size'),
-        mean_reward=('reward', 'mean'),
-        mean_prob_action_1=('prob_action_1', 'mean'),
-        mean_state=('state', 'mean'),
-    )
-    .reset_index()
-)
-summary
-```
-
-```{python}
-fig, ax = plt.subplots(figsize=(10, 5))
-sample_agents = simulated_df['agent'].unique()[:5]
-for agent in sample_agents:
-    agent_states = simulated_df.loc[simulated_df['agent'] == agent, ['period', 'state']]
-    ax.plot(agent_states['period'], agent_states['state'], marker='o', alpha=0.7, label=f'Agent {agent}')
-
-ax.set_xlabel('Period')
-ax.set_ylabel('State')
-ax.set_title('Sample State Trajectories')
-ax.grid(alpha=0.3)
-ax.legend()
-plt.tight_layout()
-plt.show()
-```
-
-```{python}
-output_path = artifact_dir / 'simulated_trajectories.csv'
-simulated_df.to_csv(output_path, index=False)
-print(f"Wrote {len(simulated_df)} simulated observations to {output_path.resolve()}")
 ```

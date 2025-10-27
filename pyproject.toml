@@ -13,7 +13,6 @@ dependencies = [
     "matplotlib>=3.10.7",
     "nbformat>=5.10.4",
     "numpy>=2.3.4",
-    "pandas>=2.2.3",
     "torch>=2.9.0",
 ]
 
