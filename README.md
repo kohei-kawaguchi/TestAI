@@ -118,6 +118,9 @@ source('scripts/analyze_data_true/compare_results.R')
 # Run unit tests
 uv run pytest test/
 
+# Launch live preview (serves at http://127.0.0.1:4200 after port-forwarding)
+uv run quarto preview scripts/solve_mdp/solve_mdp.qmd
+
 # Render Quarto documentation with results
 cd scripts/solve_mdp
 uv run quarto render solve_mdp.qmd
@@ -125,6 +128,15 @@ uv run quarto render solve_mdp.qmd
 # View the rendered HTML report
 # Open scripts/solve_mdp/solve_mdp.html in your browser
 ```
+
+When working inside a container (e.g., VS Code Dev Containers), forward port `4200` and open `http://127.0.0.1:4200` in the VS Code Simple Browser or your local browser. The live server command above reuses cached computations (`_freeze/`) unless you edit the document code, so previewing is lightweight.
+
+**Quarto workflow with cached figures**
+- Always use the project environment: `source .venv/bin/activate` or prefix commands with `QUARTO_PYTHON=.venv/bin/python`.
+- Render once with execution enabled: `quarto render scripts/solve_mdp/solve_mdp.qmd --no-browser --no-watch-inputs`.
+- For previews, reuse the cache: `QUARTO_PYTHON=.venv/bin/python quarto preview scripts/solve_mdp/solve_mdp.qmd --no-browser --no-watch-inputs`.
+- Avoid `--no-execute` unless you only need text; it strips figure references from the regenerated HTML.
+- To share a static copy, bundle the HTML with `solve_mdp_files/` or render with `--self-contained`.
 
 ## Validation Results
 
