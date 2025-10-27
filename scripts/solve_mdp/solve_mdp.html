@@ -365,7 +365,7 @@ Algorithm: Value Function Iteration with Neural Networks
 <li><strong>Optimizer</strong>: Use adaptive optimizers such as Adam for faster convergence</li>
 <li><strong>Batch updates</strong>: Process all states in parallel for efficiency</li>
 </ul>
-<div id="f67cd540" class="cell">
+<div id="11c1d304" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -388,7 +388,7 @@ Algorithm: Value Function Iteration with Neural Networks
 <span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    plot_comparative_policies,</span>
 <span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="84980d80" class="cell" data-cache="true">
+<div id="8aa1723c" class="cell" data-cache="true" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>solver_config <span class="op">=</span> get_solver_config()</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>beta <span class="op">=</span> solver_config[<span class="st">'beta'</span>]</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>gamma <span class="op">=</span> solver_config[<span class="st">'gamma'</span>]</span>
@@ -421,6 +421,112 @@ Algorithm: Value Function Iteration with Neural Networks
 <span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Converged after </span><span class="sc">{</span><span class="bu">len</span>(history[<span class="st">'iterations'</span>])<span class="sc">}</span><span class="ss"> iterations"</span>)</span>
 <span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Final max error: </span><span class="sc">{</span>history[<span class="st">'max_errors'</span>][<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.6f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Solving MDP with value iteration...
+Iteration 0: max_error = 7.661229
+Iteration 10: max_error = 1.492981
+Iteration 20: max_error = 1.489792
+Iteration 30: max_error = 1.563889
+Iteration 40: max_error = 1.586372
+Iteration 50: max_error = 1.594822
+Iteration 60: max_error = 1.616291
+Iteration 70: max_error = 1.114883
+Iteration 80: max_error = 0.985760
+Iteration 90: max_error = 0.514111
+Iteration 100: max_error = 0.646481
+Iteration 110: max_error = 0.121384
+Iteration 120: max_error = 0.073193
+Iteration 130: max_error = 0.056316
+Iteration 140: max_error = 0.063118
+Iteration 150: max_error = 0.064049
+Iteration 160: max_error = 0.058277
+Iteration 170: max_error = 0.050964
+Iteration 180: max_error = 0.044617
+Iteration 190: max_error = 0.039131
+Iteration 200: max_error = 0.035519
+Iteration 210: max_error = 0.032154
+Iteration 220: max_error = 0.026787
+Iteration 230: max_error = 0.023808
+Iteration 240: max_error = 0.019688
+Iteration 250: max_error = 0.016026
+Iteration 260: max_error = 0.013218
+Iteration 270: max_error = 0.013687
+Iteration 280: max_error = 0.012375
+Iteration 290: max_error = 0.011929
+Iteration 300: max_error = 0.011200
+Iteration 310: max_error = 0.010639
+Iteration 320: max_error = 0.011127
+Iteration 330: max_error = 0.010006
+Iteration 340: max_error = 0.009701
+Iteration 350: max_error = 0.011135
+Iteration 360: max_error = 0.009037
+Iteration 370: max_error = 0.008812
+Iteration 380: max_error = 0.008469
+Iteration 390: max_error = 0.008224
+Iteration 400: max_error = 0.008911
+Iteration 410: max_error = 0.007759
+Iteration 420: max_error = 0.007626
+Iteration 430: max_error = 0.007397
+Iteration 440: max_error = 0.007870
+Iteration 450: max_error = 0.007160
+Iteration 460: max_error = 0.007282
+Iteration 470: max_error = 0.006977
+Iteration 480: max_error = 0.006863
+Iteration 490: max_error = 0.005985
+Iteration 500: max_error = 0.006439
+Iteration 510: max_error = 0.006229
+Iteration 520: max_error = 0.008556
+Iteration 530: max_error = 0.006771
+Iteration 540: max_error = 0.005974
+Iteration 550: max_error = 0.006237
+Iteration 560: max_error = 0.006805
+Iteration 570: max_error = 0.009098
+Iteration 580: max_error = 0.006100
+Iteration 590: max_error = 0.005817
+Iteration 600: max_error = 0.005760
+Iteration 610: max_error = 0.005726
+Iteration 620: max_error = 0.005947
+Iteration 630: max_error = 0.005314
+Iteration 640: max_error = 0.009384
+Iteration 650: max_error = 0.006001
+Iteration 660: max_error = 0.005604
+Iteration 670: max_error = 0.005535
+Iteration 680: max_error = 0.006580
+Iteration 690: max_error = 0.005257
+Iteration 700: max_error = 0.005234
+Iteration 710: max_error = 0.005165
+Iteration 720: max_error = 0.012096
+Iteration 730: max_error = 0.005119
+Iteration 740: max_error = 0.005016
+Iteration 750: max_error = 0.005184
+Iteration 760: max_error = 0.004982
+Iteration 770: max_error = 0.005192
+Iteration 780: max_error = 0.005733
+Iteration 790: max_error = 0.008099
+Iteration 800: max_error = 0.005688
+Iteration 810: max_error = 0.005028
+Iteration 820: max_error = 0.008011
+Iteration 830: max_error = 0.004875
+Iteration 840: max_error = 0.006500
+Iteration 850: max_error = 0.006561
+Iteration 860: max_error = 0.004936
+Iteration 870: max_error = 0.004921
+Iteration 880: max_error = 0.005531
+Iteration 890: max_error = 0.007553
+Iteration 900: max_error = 0.004784
+Iteration 910: max_error = 0.006004
+Iteration 920: max_error = 0.007343
+Iteration 930: max_error = 0.004898
+Iteration 940: max_error = 0.005074
+Iteration 950: max_error = 0.005920
+Iteration 960: max_error = 0.005116
+Iteration 970: max_error = 0.006840
+Iteration 980: max_error = 0.005112
+Iteration 990: max_error = 0.008549
+
+Converged after 1000 iterations
+Final max error: 0.004631</code></pre>
+</div>
 </div>
 </section>
 </section>
@@ -428,17 +534,27 @@ Algorithm: Value Function Iteration with Neural Networks
 <h2 class="anchored" data-anchor-id="results">Results</h2>
 <section id="convergence-plot" class="level3">
 <h3 class="anchored" data-anchor-id="convergence-plot">Convergence Plot</h3>
-<div id="86b74ff9" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot convergence history using shared utility</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_convergence_history(</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    iterations<span class="op">=</span>history[<span class="st">'iterations'</span>],</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    max_errors<span class="op">=</span>history[<span class="st">'max_errors'</span>],</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Converged in </span><span class="sc">{</span><span class="bu">len</span>(history[<span class="st">'iterations'</span>])<span class="sc">}</span><span class="ss"> iterations"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="c4d8dfca" class="cell" data-cache="true" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot convergence history using shared utility</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_convergence_history(</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    iterations<span class="op">=</span>history[<span class="st">'iterations'</span>],</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    max_errors<span class="op">=</span>history[<span class="st">'max_errors'</span>],</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Converged in </span><span class="sc">{</span><span class="bu">len</span>(history[<span class="st">'iterations'</span>])<span class="sc">}</span><span class="ss"> iterations"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_mdp_files/figure-html/cell-4-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Converged in 1000 iterations</code></pre>
+</div>
 </div>
 </section>
 </section>
@@ -446,254 +562,330 @@ Algorithm: Value Function Iteration with Neural Networks
 <h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
 <section id="choice-specific-value-functions" class="level3">
 <h3 class="anchored" data-anchor-id="choice-specific-value-functions">Choice-Specific Value Functions</h3>
-<div id="53ca3cd0" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate dense grid for visualization</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>s_plot <span class="op">=</span> torch.linspace(state_range[<span class="dv">0</span>], state_range[<span class="dv">1</span>], <span class="dv">200</span>).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute value functions for both actions</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    v0_values <span class="op">=</span> v_theta_0(s_plot).numpy().flatten()</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    v1_values <span class="op">=</span> v_theta_1(s_plot).numpy().flatten()</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>s_plot_np <span class="op">=</span> s_plot.numpy().flatten()</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot value functions with shared utility</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_choice_value_functions(</span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    v0_values<span class="op">=</span>v0_values,</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    v1_values<span class="op">=</span>v1_values,</span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Print some statistics</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Value Function Statistics:"</span>)</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"v(s, a=0): min=</span><span class="sc">{</span>v0_values<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, max=</span><span class="sc">{</span>v0_values<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">, mean=</span><span class="sc">{</span>v0_values<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"v(s, a=1): min=</span><span class="sc">{</span>v1_values<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, max=</span><span class="sc">{</span>v1_values<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">, mean=</span><span class="sc">{</span>v1_values<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="07a2d2b1" class="cell" data-cache="true" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate dense grid for visualization</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>s_plot <span class="op">=</span> torch.linspace(state_range[<span class="dv">0</span>], state_range[<span class="dv">1</span>], <span class="dv">200</span>).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute value functions for both actions</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    v0_values <span class="op">=</span> v_theta_0(s_plot).numpy().flatten()</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    v1_values <span class="op">=</span> v_theta_1(s_plot).numpy().flatten()</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>s_plot_np <span class="op">=</span> s_plot.numpy().flatten()</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot value functions with shared utility</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_choice_value_functions(</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    v0_values<span class="op">=</span>v0_values,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    v1_values<span class="op">=</span>v1_values,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Print some statistics</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Value Function Statistics:"</span>)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"v(s, a=0): min=</span><span class="sc">{</span>v0_values<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, max=</span><span class="sc">{</span>v0_values<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">, mean=</span><span class="sc">{</span>v0_values<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"v(s, a=1): min=</span><span class="sc">{</span>v1_values<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">, max=</span><span class="sc">{</span>v1_values<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">, mean=</span><span class="sc">{</span>v1_values<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_mdp_files/figure-html/cell-5-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Value Function Statistics:
+v(s, a=0): min=40.440, max=54.567, mean=49.049
+v(s, a=1): min=41.752, max=54.335, mean=49.262</code></pre>
+</div>
 </div>
 </section>
 <section id="optimal-policy" class="level3">
 <h3 class="anchored" data-anchor-id="optimal-policy">Optimal Policy</h3>
-<div id="98189dee" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute optimal policy probabilities</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>prob_a0 <span class="op">=</span> []</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>prob_a1 <span class="op">=</span> []</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s_val <span class="kw">in</span> s_plot_np:</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    p0, p1 <span class="op">=</span> ComputeChoiceProbability(s<span class="op">=</span><span class="bu">float</span>(s_val), v_theta_0<span class="op">=</span>v_theta_0, v_theta_1<span class="op">=</span>v_theta_1)</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    prob_a0.append(p0)</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    prob_a1.append(p1)</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>prob_a0 <span class="op">=</span> np.array(prob_a0)</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>prob_a1 <span class="op">=</span> np.array(prob_a1)</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot optimal policy with shared utility</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_policy_probabilities(</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0,</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    prob_a1<span class="op">=</span>prob_a1,</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Find approximate threshold where policy switches</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>diff <span class="op">=</span> np.<span class="bu">abs</span>(prob_a0 <span class="op">-</span> <span class="fl">0.5</span>)</span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>threshold_idx <span class="op">=</span> np.argmin(diff)</span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>threshold_s <span class="op">=</span> s_plot_np[threshold_idx]</span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Policy switches near s ≈ </span><span class="sc">{</span>threshold_s<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"At this state: P(a=0) = </span><span class="sc">{</span>prob_a0[threshold_idx]<span class="sc">:.3f}</span><span class="ss">, P(a=1) = </span><span class="sc">{</span>prob_a1[threshold_idx]<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Persist trained policy artifacts for downstream simulation</span></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/sovle_mdp'</span>)</span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>statics <span class="op">=</span> get_comparative_statics()</span>
-<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>config_payload <span class="op">=</span> solver_config.copy()</span>
-<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>config_payload[<span class="st">'state_range'</span>] <span class="op">=</span> <span class="bu">list</span>(state_range)</span>
-<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>config_payload[<span class="st">'hyperparameters'</span>] <span class="op">=</span> hyperparameters</span>
-<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>config_payload[<span class="st">'comparative_statics'</span>] <span class="op">=</span> statics</span>
-<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(output_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'w'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> config_file:</span>
-<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>    json.dump(config_payload, config_file, indent<span class="op">=</span><span class="dv">2</span>)</span>
-<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>torch.save(v_theta_0.state_dict(), output_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>)</span>
-<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>torch.save(v_theta_1.state_dict(), output_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>)</span>
-<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>np.savez(</span>
-<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>    output_dir <span class="op">/</span> <span class="st">'policy_data.npz'</span>,</span>
-<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
-<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>    v0<span class="op">=</span>v0_values,</span>
-<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>    v1<span class="op">=</span>v1_values,</span>
-<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0,</span>
-<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>    prob_a1<span class="op">=</span>prob_a1,</span>
-<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>np.savez(</span>
-<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>    output_dir <span class="op">/</span> <span class="st">'convergence_history.npz'</span>,</span>
-<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>    iterations<span class="op">=</span>np.asarray(history[<span class="st">'iterations'</span>], dtype<span class="op">=</span>np.int64),</span>
-<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>    max_errors<span class="op">=</span>np.asarray(history[<span class="st">'max_errors'</span>], dtype<span class="op">=</span>np.float64),</span>
-<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved trained artifacts to </span><span class="sc">{</span>output_dir<span class="sc">.</span>resolve()<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="360babad" class="cell" data-cache="true" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute optimal policy probabilities</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>prob_a0 <span class="op">=</span> []</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>prob_a1 <span class="op">=</span> []</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> s_val <span class="kw">in</span> s_plot_np:</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    p0, p1 <span class="op">=</span> ComputeChoiceProbability(s<span class="op">=</span><span class="bu">float</span>(s_val), v_theta_0<span class="op">=</span>v_theta_0, v_theta_1<span class="op">=</span>v_theta_1)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    prob_a0.append(p0)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    prob_a1.append(p1)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>prob_a0 <span class="op">=</span> np.array(prob_a0)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>prob_a1 <span class="op">=</span> np.array(prob_a1)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot optimal policy with shared utility</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_policy_probabilities(</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0,</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    prob_a1<span class="op">=</span>prob_a1,</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Find approximate threshold where policy switches</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>diff <span class="op">=</span> np.<span class="bu">abs</span>(prob_a0 <span class="op">-</span> <span class="fl">0.5</span>)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>threshold_idx <span class="op">=</span> np.argmin(diff)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>threshold_s <span class="op">=</span> s_plot_np[threshold_idx]</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Policy switches near s ≈ </span><span class="sc">{</span>threshold_s<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"At this state: P(a=0) = </span><span class="sc">{</span>prob_a0[threshold_idx]<span class="sc">:.3f}</span><span class="ss">, P(a=1) = </span><span class="sc">{</span>prob_a1[threshold_idx]<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Persist trained policy artifacts for downstream simulation</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/sovle_mdp'</span>)</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>statics <span class="op">=</span> get_comparative_statics()</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>config_payload <span class="op">=</span> solver_config.copy()</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>config_payload[<span class="st">'state_range'</span>] <span class="op">=</span> <span class="bu">list</span>(state_range)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>config_payload[<span class="st">'hyperparameters'</span>] <span class="op">=</span> hyperparameters</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>config_payload[<span class="st">'comparative_statics'</span>] <span class="op">=</span> statics</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(output_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'w'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> config_file:</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>    json.dump(config_payload, config_file, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>torch.save(v_theta_0.state_dict(), output_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>)</span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>torch.save(v_theta_1.state_dict(), output_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>)</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>np.savez(</span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>    output_dir <span class="op">/</span> <span class="st">'policy_data.npz'</span>,</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>    v0<span class="op">=</span>v0_values,</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>    v1<span class="op">=</span>v1_values,</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0,</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    prob_a1<span class="op">=</span>prob_a1,</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>np.savez(</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>    output_dir <span class="op">/</span> <span class="st">'convergence_history.npz'</span>,</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>    iterations<span class="op">=</span>np.asarray(history[<span class="st">'iterations'</span>], dtype<span class="op">=</span>np.int64),</span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>    max_errors<span class="op">=</span>np.asarray(history[<span class="st">'max_errors'</span>], dtype<span class="op">=</span>np.float64),</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved trained artifacts to </span><span class="sc">{</span>output_dir<span class="sc">.</span>resolve()<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_mdp_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Policy switches near s ≈ 6.181
+At this state: P(a=0) = 0.500, P(a=1) = 0.500
+Saved trained artifacts to /root/TestAI/output/sovle_mdp</code></pre>
+</div>
 </div>
 </section>
 </section>
 <section id="comparative-statics" class="level2">
 <h2 class="anchored" data-anchor-id="comparative-statics">Comparative Statics</h2>
 <p>We examine how the optimal policy and value functions change with the reward parameter <span class="math inline">\(\beta\)</span>, which controls the weight on the logarithmic state value.</p>
-<div id="df849264" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define beta values to test</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>statics <span class="op">=</span> get_comparative_statics()</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>beta_values <span class="op">=</span> np.array(statics[<span class="st">'beta_values'</span>])</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solve_for_beta(beta_val):</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Solve MDP for a given beta value."""</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    v0, v1, hist <span class="op">=</span> SolveValueIteration(</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        beta<span class="op">=</span>beta_val,</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        gamma<span class="op">=</span>gamma,</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        delta<span class="op">=</span>delta,</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        gamma_E<span class="op">=</span>gamma_E,</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        hyperparameters<span class="op">=</span>hyperparameters,</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        N<span class="op">=</span>N,</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        state_range<span class="op">=</span>state_range,</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        max_iter<span class="op">=</span>max_iter,</span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        epsilon_tol<span class="op">=</span>epsilon_tol,</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        num_epochs<span class="op">=</span>num_epochs,</span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span>learning_rate,</span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>        verbose<span class="op">=</span><span class="va">False</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute value functions on plot grid</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        v0_vals <span class="op">=</span> v0(s_plot).numpy().flatten()</span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        v1_vals <span class="op">=</span> v1(s_plot).numpy().flatten()</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute policy probabilities</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> []</span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> s_val <span class="kw">in</span> s_plot_np:</span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>        p0, p1 <span class="op">=</span> ComputeChoiceProbability(s<span class="op">=</span><span class="bu">float</span>(s_val), v_theta_0<span class="op">=</span>v0, v_theta_1<span class="op">=</span>v1)</span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>        policy_probs.append((p0, p1))</span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> np.array(policy_probs)</span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
-<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">'beta'</span>: beta_val,</span>
-<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v0'</span>: v0_vals,</span>
-<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v1'</span>: v1_vals,</span>
-<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a0'</span>: policy_probs[:, <span class="dv">0</span>],</span>
-<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a1'</span>: policy_probs[:, <span class="dv">1</span>],</span>
-<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>        <span class="st">'iterations'</span>: <span class="bu">len</span>(hist[<span class="st">'iterations'</span>])</span>
-<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve in parallel using threads</span></span>
-<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Solving MDP for </span><span class="sc">{</span><span class="bu">len</span>(beta_values)<span class="sc">}</span><span class="ss"> different beta values in parallel..."</span>)</span>
-<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> ThreadPoolExecutor(max_workers<span class="op">=</span>os.cpu_count()) <span class="im">as</span> executor:</span>
-<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>    results <span class="op">=</span> <span class="bu">list</span>(executor.<span class="bu">map</span>(solve_for_beta, beta_values))</span>
-<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Completed all </span><span class="sc">{</span><span class="bu">len</span>(results)<span class="sc">}</span><span class="ss"> solutions"</span>)</span>
-<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> results:</span>
-<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  β = </span><span class="sc">{</span>r[<span class="st">'beta'</span>]<span class="sc">:.2f}</span><span class="ss">: converged in </span><span class="sc">{</span>r[<span class="st">'iterations'</span>]<span class="sc">}</span><span class="ss"> iterations"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="6157386c" class="cell" data-cache="true" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define beta values to test</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>statics <span class="op">=</span> get_comparative_statics()</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>beta_values <span class="op">=</span> np.array(statics[<span class="st">'beta_values'</span>])</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solve_for_beta(beta_val):</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Solve MDP for a given beta value."""</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    v0, v1, hist <span class="op">=</span> SolveValueIteration(</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        beta<span class="op">=</span>beta_val,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        gamma<span class="op">=</span>gamma,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        delta<span class="op">=</span>delta,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        gamma_E<span class="op">=</span>gamma_E,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>        hyperparameters<span class="op">=</span>hyperparameters,</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>        N<span class="op">=</span>N,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>        state_range<span class="op">=</span>state_range,</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>        max_iter<span class="op">=</span>max_iter,</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>        epsilon_tol<span class="op">=</span>epsilon_tol,</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>        num_epochs<span class="op">=</span>num_epochs,</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span>learning_rate,</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>        verbose<span class="op">=</span><span class="va">False</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute value functions on plot grid</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>        v0_vals <span class="op">=</span> v0(s_plot).numpy().flatten()</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>        v1_vals <span class="op">=</span> v1(s_plot).numpy().flatten()</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute policy probabilities</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> []</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> s_val <span class="kw">in</span> s_plot_np:</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>        p0, p1 <span class="op">=</span> ComputeChoiceProbability(s<span class="op">=</span><span class="bu">float</span>(s_val), v_theta_0<span class="op">=</span>v0, v_theta_1<span class="op">=</span>v1)</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>        policy_probs.append((p0, p1))</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> np.array(policy_probs)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">'beta'</span>: beta_val,</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v0'</span>: v0_vals,</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v1'</span>: v1_vals,</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a0'</span>: policy_probs[:, <span class="dv">0</span>],</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a1'</span>: policy_probs[:, <span class="dv">1</span>],</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>        <span class="st">'iterations'</span>: <span class="bu">len</span>(hist[<span class="st">'iterations'</span>])</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve in parallel using threads</span></span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Solving MDP for </span><span class="sc">{</span><span class="bu">len</span>(beta_values)<span class="sc">}</span><span class="ss"> different beta values in parallel..."</span>)</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> ThreadPoolExecutor(max_workers<span class="op">=</span>os.cpu_count()) <span class="im">as</span> executor:</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>    results <span class="op">=</span> <span class="bu">list</span>(executor.<span class="bu">map</span>(solve_for_beta, beta_values))</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Completed all </span><span class="sc">{</span><span class="bu">len</span>(results)<span class="sc">}</span><span class="ss"> solutions"</span>)</span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> results:</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  β = </span><span class="sc">{</span>r[<span class="st">'beta'</span>]<span class="sc">:.2f}</span><span class="ss">: converged in </span><span class="sc">{</span>r[<span class="st">'iterations'</span>]<span class="sc">}</span><span class="ss"> iterations"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Solving MDP for 9 different beta values in parallel...
+Completed all 9 solutions
+  β = 0.00: converged in 672 iterations
+  β = 0.25: converged in 1000 iterations
+  β = 0.50: converged in 1000 iterations
+  β = 0.75: converged in 1000 iterations
+  β = 1.00: converged in 1000 iterations
+  β = 1.25: converged in 1000 iterations
+  β = 1.50: converged in 1000 iterations
+  β = 1.75: converged in 1000 iterations
+  β = 2.00: converged in 1000 iterations</code></pre>
+</div>
 </div>
 <section id="value-functions-across-β" class="level3">
 <h3 class="anchored" data-anchor-id="value-functions-across-β">Value Functions Across β</h3>
-<div id="e08effcd" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_value_functions(</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>results,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'beta'</span>,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="6034bb3a" class="cell" data-cache="true" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_value_functions(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>results,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'beta'</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_mdp_files/figure-html/cell-8-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
 </div>
 </section>
 <section id="optimal-policy-across-β" class="level3">
 <h3 class="anchored" data-anchor-id="optimal-policy-across-β">Optimal Policy Across β</h3>
-<div id="055923ae" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_policies(</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>results,</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'beta'</span>,</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="a954f65f" class="cell" data-cache="true" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_policies(</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>results,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'beta'</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_mdp_files/figure-html/cell-9-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
 </div>
 </section>
 <section id="comparative-statics-for-γ" class="level3">
 <h3 class="anchored" data-anchor-id="comparative-statics-for-γ">Comparative Statics for γ</h3>
 <p>We examine how the optimal policy and value functions change with the persistence parameter <span class="math inline">\(\gamma\)</span>, which controls the state transition dynamics.</p>
-<div id="804e6f2f" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define gamma values to test</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>gamma_values <span class="op">=</span> np.array(statics[<span class="st">'gamma_values'</span>])</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solve_for_gamma(gamma_val):</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Solve MDP for a given gamma value."""</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    v0, v1, hist <span class="op">=</span> SolveValueIteration(</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        beta<span class="op">=</span>beta,</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        gamma<span class="op">=</span>gamma_val,</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>        delta<span class="op">=</span>delta,</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        gamma_E<span class="op">=</span>gamma_E,</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>        hyperparameters<span class="op">=</span>hyperparameters,</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>        N<span class="op">=</span>N,</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        state_range<span class="op">=</span>state_range,</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        max_iter<span class="op">=</span>max_iter,</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>        epsilon_tol<span class="op">=</span>epsilon_tol,</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        num_epochs<span class="op">=</span>num_epochs,</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span>learning_rate,</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>        verbose<span class="op">=</span><span class="va">False</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute value functions on plot grid</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>        v0_vals <span class="op">=</span> v0(s_plot).numpy().flatten()</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>        v1_vals <span class="op">=</span> v1(s_plot).numpy().flatten()</span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute policy probabilities</span></span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> []</span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> s_val <span class="kw">in</span> s_plot_np:</span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>        p0, p1 <span class="op">=</span> ComputeChoiceProbability(s<span class="op">=</span><span class="bu">float</span>(s_val), v_theta_0<span class="op">=</span>v0, v_theta_1<span class="op">=</span>v1)</span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>        policy_probs.append((p0, p1))</span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> np.array(policy_probs)</span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>        <span class="st">'gamma'</span>: gamma_val,</span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v0'</span>: v0_vals,</span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v1'</span>: v1_vals,</span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a0'</span>: policy_probs[:, <span class="dv">0</span>],</span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a1'</span>: policy_probs[:, <span class="dv">1</span>],</span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>        <span class="st">'iterations'</span>: <span class="bu">len</span>(hist[<span class="st">'iterations'</span>])</span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve in parallel using threads</span></span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Solving MDP for </span><span class="sc">{</span><span class="bu">len</span>(gamma_values)<span class="sc">}</span><span class="ss"> different gamma values in parallel..."</span>)</span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> ThreadPoolExecutor(max_workers<span class="op">=</span>os.cpu_count()) <span class="im">as</span> executor:</span>
-<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    gamma_results <span class="op">=</span> <span class="bu">list</span>(executor.<span class="bu">map</span>(solve_for_gamma, gamma_values))</span>
-<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Completed all </span><span class="sc">{</span><span class="bu">len</span>(gamma_results)<span class="sc">}</span><span class="ss"> solutions"</span>)</span>
-<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> gamma_results:</span>
-<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  γ = </span><span class="sc">{</span>r[<span class="st">'gamma'</span>]<span class="sc">:.2f}</span><span class="ss">: converged in </span><span class="sc">{</span>r[<span class="st">'iterations'</span>]<span class="sc">}</span><span class="ss"> iterations"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="82f0b6b1" class="cell" data-cache="true" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define gamma values to test</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>gamma_values <span class="op">=</span> np.array(statics[<span class="st">'gamma_values'</span>])</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> solve_for_gamma(gamma_val):</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Solve MDP for a given gamma value."""</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    v0, v1, hist <span class="op">=</span> SolveValueIteration(</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        beta<span class="op">=</span>beta,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>        gamma<span class="op">=</span>gamma_val,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>        delta<span class="op">=</span>delta,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        gamma_E<span class="op">=</span>gamma_E,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        hyperparameters<span class="op">=</span>hyperparameters,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        N<span class="op">=</span>N,</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        state_range<span class="op">=</span>state_range,</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>        max_iter<span class="op">=</span>max_iter,</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>        epsilon_tol<span class="op">=</span>epsilon_tol,</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>        num_epochs<span class="op">=</span>num_epochs,</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>        learning_rate<span class="op">=</span>learning_rate,</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>        verbose<span class="op">=</span><span class="va">False</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute value functions on plot grid</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>        v0_vals <span class="op">=</span> v0(s_plot).numpy().flatten()</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        v1_vals <span class="op">=</span> v1(s_plot).numpy().flatten()</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute policy probabilities</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> []</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> s_val <span class="kw">in</span> s_plot_np:</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>        p0, p1 <span class="op">=</span> ComputeChoiceProbability(s<span class="op">=</span><span class="bu">float</span>(s_val), v_theta_0<span class="op">=</span>v0, v_theta_1<span class="op">=</span>v1)</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>        policy_probs.append((p0, p1))</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    policy_probs <span class="op">=</span> np.array(policy_probs)</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>        <span class="st">'gamma'</span>: gamma_val,</span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v0'</span>: v0_vals,</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">'v1'</span>: v1_vals,</span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a0'</span>: policy_probs[:, <span class="dv">0</span>],</span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">'prob_a1'</span>: policy_probs[:, <span class="dv">1</span>],</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>        <span class="st">'iterations'</span>: <span class="bu">len</span>(hist[<span class="st">'iterations'</span>])</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve in parallel using threads</span></span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Solving MDP for </span><span class="sc">{</span><span class="bu">len</span>(gamma_values)<span class="sc">}</span><span class="ss"> different gamma values in parallel..."</span>)</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> ThreadPoolExecutor(max_workers<span class="op">=</span>os.cpu_count()) <span class="im">as</span> executor:</span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>    gamma_results <span class="op">=</span> <span class="bu">list</span>(executor.<span class="bu">map</span>(solve_for_gamma, gamma_values))</span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Completed all </span><span class="sc">{</span><span class="bu">len</span>(gamma_results)<span class="sc">}</span><span class="ss"> solutions"</span>)</span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> r <span class="kw">in</span> gamma_results:</span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  γ = </span><span class="sc">{</span>r[<span class="st">'gamma'</span>]<span class="sc">:.2f}</span><span class="ss">: converged in </span><span class="sc">{</span>r[<span class="st">'iterations'</span>]<span class="sc">}</span><span class="ss"> iterations"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Solving MDP for 5 different gamma values in parallel...
+Completed all 5 solutions
+  γ = 0.00: converged in 1000 iterations
+  γ = 0.25: converged in 1000 iterations
+  γ = 0.50: converged in 1000 iterations
+  γ = 0.75: converged in 1000 iterations
+  γ = 1.00: converged in 1000 iterations</code></pre>
+</div>
 </div>
 </section>
 <section id="value-functions-across-γ" class="level3">
 <h3 class="anchored" data-anchor-id="value-functions-across-γ">Value Functions Across γ</h3>
-<div id="e34c93b0" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_value_functions(</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>gamma_results,</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'gamma'</span>,</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="1448932b" class="cell" data-cache="true" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_value_functions(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>gamma_results,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'gamma'</span>,</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_mdp_files/figure-html/cell-11-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
 </div>
 </section>
 <section id="optimal-policy-across-γ" class="level3">
 <h3 class="anchored" data-anchor-id="optimal-policy-across-γ">Optimal Policy Across γ</h3>
-<div id="8146ff54" class="cell" data-cache="true">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_policies(</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>gamma_results,</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'gamma'</span>,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="ce8b085d" class="cell" data-cache="true" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>fig, _ <span class="op">=</span> plot_comparative_policies(</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>s_plot_np,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    results<span class="op">=</span>gamma_results,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">'gamma'</span>,</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_mdp_files/figure-html/cell-12-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
 </div>
 </section>
 </section>

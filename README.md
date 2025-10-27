@@ -138,6 +138,21 @@ When working inside a container (e.g., VS Code Dev Containers), forward port `42
 - Avoid `--no-execute` unless you only need text; it strips figure references from the regenerated HTML.
 - To share a static copy, bundle the HTML with `solve_mdp_files/` or render with `--self-contained`.
 
+#### MDP Simulator
+```bash
+# Launch live preview (serves at http://127.0.0.1:4300 after port-forwarding)
+uv run quarto preview scripts/simulate_mdp/simulate_mdp.qmd
+
+# Render Quarto documentation with results
+cd scripts/simulate_mdp
+uv run quarto render simulate_mdp.qmd
+
+# View the rendered HTML report
+# Open scripts/simulate_mdp/simulate_mdp.html in your browser
+```
+
+Forward port `4300` alongside `4200` when working inside containers so both solver and simulator previews are reachable. Use the same cached-figure workflow as above, substituting `simulate_mdp.qmd` for the solver document.
+
 ## Validation Results
 
 ### DiD Implementation Validation
