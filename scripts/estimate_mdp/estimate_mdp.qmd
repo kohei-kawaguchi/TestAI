@@ -570,7 +570,7 @@ from mdp_solver import GenerateStateGrid, SolveValueIteration
 print(f"\nSolving for value functions under estimated parameters...")
 print(f"  Using gamma_hat={gamma_hat:.4f}, beta_hat={beta_hat:.4f}")
 
-v_theta_0_est, v_theta_1_est = SolveValueIteration(
+v_theta_0_est, v_theta_1_est, _ = SolveValueIteration(
     beta=beta_hat,
     gamma=gamma_hat,
     delta=delta,
