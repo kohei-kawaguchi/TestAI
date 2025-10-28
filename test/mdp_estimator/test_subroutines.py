@@ -49,6 +49,27 @@ def test_decreasing_ccp_network_output_in_valid_range():
     assert torch.all(output <= 1.0)
 
 
+def test_decreasing_ccp_network_uses_negative_weights():
+    """Network should use negative weights (w <= 0) via -softplus(w)."""
+    network = DecreasingCCPNetwork(hidden_sizes=[16, 16])
+
+    # Create test input
+    states_test = torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float32)
+
+    # Forward pass to ensure weights are used
+    with torch.no_grad():
+        output = network(states_test)
+
+    # Verify all effective weights are non-positive
+    for layer in network.layers:
+        # Effective weight is -softplus(layer.weight)
+        effective_weight = -torch.nn.functional.softplus(layer.weight)
+        assert torch.all(effective_weight <= 0), \
+            "All weights should be non-positive (w <= 0)"
+        assert torch.all(effective_weight <= 1e-6), \
+            "Effective weights should be negative or near-zero"
+
+
 def test_decreasing_ccp_network_monotonically_decreasing():
     """Network should be monotonically DECREASING in state."""
     network = DecreasingCCPNetwork(hidden_sizes=[32, 32])

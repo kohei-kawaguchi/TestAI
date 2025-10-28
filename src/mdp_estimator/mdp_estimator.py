@@ -37,9 +37,11 @@ class DecreasingCCPNetwork(nn.Module):
     In the capital accumulation model, P(a=1|s) should be DECREASING in state s:
     - Higher capital stock → Lower probability of investing
 
-    Implementation: Wraps MonotonicNetwork (which is increasing) and negates the
-    input to flip monotonicity direction: P(s) = σ(g(-s)) where g is monotonic
-    increasing and σ is sigmoid to ensure output in [0,1].
+    Implementation: Constrains all weights to be NON-POSITIVE (w ≤ 0) using
+    negative softplus: w = -softplus(w_unconstrained). This ensures:
+    - Positive input s with negative weights → negative pre-activation
+    - Monotonic decreasing through all layers
+    - Sigmoid output maps to [0,1] probability range
     """
 
     def __init__(self, hidden_sizes: list = [32, 32]):
@@ -50,14 +52,27 @@ class DecreasingCCPNetwork(nn.Module):
             hidden_sizes: List of hidden layer sizes
         """
         super().__init__()
-        self.base_network = MonotonicNetwork(hidden_sizes=hidden_sizes)
+        self.hidden_sizes = hidden_sizes
+
+        # Create layers
+        layers = []
+        input_size = 1  # Single state input
+
+        for hidden_size in hidden_sizes:
+            layers.append(nn.Linear(input_size, hidden_size))
+            input_size = hidden_size
+
+        # Output layer
+        layers.append(nn.Linear(input_size, 1))
+
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, s: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass with input negation and sigmoid output.
+        Forward pass with negative weight constraints and sigmoid output.
 
-        Negates input to flip monotonicity: increasing in -s = decreasing in s.
-        Then applies sigmoid to ensure probabilities in [0,1].
+        Applies negative softplus to all weights to ensure w ≤ 0, maintaining
+        monotonic decrease. Uses tanh activation in hidden layers.
 
         Args:
             s: State tensor of shape (N, 1)
@@ -66,8 +81,25 @@ class DecreasingCCPNetwork(nn.Module):
             Probability tensor of shape (N, 1) with values in [0,1],
             monotonically DECREASING in s
         """
-        logits = self.base_network(-s)  # Negate input to flip monotonicity
+        x = s
+
+        # Apply layers with negative softplus on weights to ensure w ≤ 0
+        for layer in self.layers[:-1]:
+            # Apply negative softplus to weights: w = -softplus(w_raw)
+            weight = -torch.nn.functional.softplus(layer.weight)
+            bias = layer.bias
+            x = torch.nn.functional.linear(x, weight, bias)
+            x = torch.tanh(x)  # Smooth activation
+
+        # Final layer with negative weights
+        final_layer = self.layers[-1]
+        weight = -torch.nn.functional.softplus(final_layer.weight)
+        bias = final_layer.bias
+        logits = torch.nn.functional.linear(x, weight, bias)
+
+        # Apply sigmoid to map to [0,1]
         probabilities = torch.sigmoid(logits)
+
         return probabilities
 
 
