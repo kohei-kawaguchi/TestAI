@@ -190,77 +190,157 @@ $$\hat{\beta} = \arg\max_{\beta} \ell(\beta; \hat{\gamma}) = \arg\max_{\beta} \s
 2. **Compute likelihood**: Evaluate $P(a_{mt} | s_{mt}; \beta, \hat{\gamma}, \delta)$ for all observations and compute $\ell(\beta; \hat{\gamma})$
 3. **Outer loop (Optimization)**: Use numerical optimization (e.g., Nelder-Mead, BFGS) to search for $\beta$ that maximizes $\ell(\beta; \hat{\gamma})$
 
-### Algorithm Summary
+### Pseudo Code
 
 ::: {.callout-note appearance="simple"}
 
 ## Algorithm: Nested Fixed Point Estimation
 
+**Design Principles:**
+
+This pseudo code is designed for direct implementation:
+
+- **No placeholders**: Every operation corresponds to a concrete function or method call
+- **Explicit parameters**: All inputs are passed as parameters, no implicit/global state
+- **Reuses shared functions**: Uses `SolveValueIteration`, `ComputeChoiceProbability`, `ComputeNextState`, `ComputeMeanReward` from solve_mdp
+- **No hard-coding**: All values are parameterized
+
 **Input:**
-- Observed data: $\{(s_{mt}, a_{mt})\}_{m=1,t=1}^{M,T}$
-- Known parameters: $\delta$, $\gamma_E$
-- MDP solver configuration: hyperparameters, state grid, convergence tolerance, etc.
-- Optimization configuration: bounds on $\beta$, optimization method, tolerance
+
+- Observed data: states: Array[$M \times T$], actions: Array[$M \times T$]
+- Known parameters: $\delta$: float, $\gamma_E$: float
+- MDP solver configuration: solver_config: dict (containing hyperparameters, $N$, state_range, max_iter, $\epsilon_{\text{tol}}$, num_epochs, learning_rate)
+- Optimization configuration: optimization_config: dict (containing beta_bounds: tuple[float, float], method: str, tolerance: float)
 
 **Output:**
-- Estimated parameters: $\hat{\beta}$, $\hat{\gamma}$
 
----
-
-### Step 1: Estimate State Transition Parameter
-
-**Procedure** `EstimateGamma`($\{(s_{mt}, a_{mt}, s_{m,t+1})\}$) $\to$ float
-
-1. Stack all state transition observations: $(s_{mt}, a_{mt}, s_{m,t+1})$ for $m = 1, \ldots, M$ and $t = 1, \ldots, T-1$
-
-2. Compute OLS estimator:
-   $$\hat{\gamma} = 1 - \frac{\sum_{m,t} s_{mt}(s_{m,t+1} - a_{mt})}{\sum_{m,t} s_{mt}^2}$$
-
-3. **Return** $\hat{\gamma}$
-
----
-
-### Step 2: Estimate Reward Parameter via Maximum Likelihood
-
-**Procedure** `EstimateBeta`($\{(s_{mt}, a_{mt})\}$, $\hat{\gamma}$, $\delta$, $\gamma_E$, solver_config, optimization_config) $\to$ float
-
-1. Define log-likelihood function:
-
-   **Procedure** `LogLikelihood`($\beta$: float) $\to$ float
-
-   a. Solve MDP using value iteration:
-      $$v_0, v_1 \leftarrow \text{SolveValueIteration}(\beta, \hat{\gamma}, \delta, \gamma_E, \text{solver\_config})$$
-
-   b. Initialize log-likelihood: $\ell \leftarrow 0$
-
-   c. For each observation $(s_{mt}, a_{mt})$:
-
-      i. Compute choice probabilities:
-         $$P_0, P_1 \leftarrow \text{ComputeChoiceProbability}(s_{mt}, v_0, v_1)$$
-
-      ii. Add to log-likelihood:
-         $$\ell \leftarrow \ell + \log(P_{a_{mt}})$$
-
-   d. **Return** $\ell$
-
-2. Maximize log-likelihood over $\beta$:
-   $$\hat{\beta} \leftarrow \arg\max_{\beta} \text{LogLikelihood}(\beta)$$
-
-   using numerical optimization (e.g., scipy.optimize.minimize with method='Nelder-Mead' or 'L-BFGS-B')
-
-3. **Return** $\hat{\beta}$
+- Estimated parameters: $\hat{\beta}$: float, $\hat{\gamma}$: float
 
 ---
 
 ### Main Estimation Procedure
 
-**Procedure** `EstimateMDP`($\{(s_{mt}, a_{mt})\}$, $\delta$, $\gamma_E$, solver_config, optimization_config) $\to$ ($\hat{\beta}$, $\hat{\gamma}$)
+**Procedure** `EstimateMDP`(states: Array[$M \times T$], actions: Array[$M \times T$], $\delta$: float, $\gamma_E$: float, solver_config: dict, optimization_config: dict) $\to$ (float, float)
 
-1. $\hat{\gamma} \leftarrow$ `EstimateGamma`($\{(s_{mt}, a_{mt}, s_{m,t+1})\}$)
+1. $\hat{\gamma}$: float $\leftarrow$ `EstimateGamma`(states, actions)
 
-2. $\hat{\beta} \leftarrow$ `EstimateBeta`($\{(s_{mt}, a_{mt})\}$, $\hat{\gamma}$, $\delta$, $\gamma_E$, solver_config, optimization_config)
+2. $\hat{\beta}$: float $\leftarrow$ `EstimateBeta`(states, actions, $\hat{\gamma}$, $\delta$, $\gamma_E$, solver_config, optimization_config)
 
 3. **Return** $\hat{\beta}$, $\hat{\gamma}$
+
+---
+
+### Subroutines
+
+**Procedure** `EstimateGamma`(states: Array[$M \times T$], actions: Array[$M \times T$]) $\to$ float
+
+1. Initialize sums: $\text{numer}$: float $\leftarrow 0$, $\text{denom}$: float $\leftarrow 0$
+
+2. For $m$: int = 1 to $M$:
+
+   For $t$: int = 1 to $T-1$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;$s_t$: float $\leftarrow$ states[$m$, $t$]
+
+   &nbsp;&nbsp;&nbsp;&nbsp;$a_t$: int $\leftarrow$ actions[$m$, $t$]
+
+   &nbsp;&nbsp;&nbsp;&nbsp;$s_{t+1}$: float $\leftarrow$ states[$m$, $t+1$]
+
+   &nbsp;&nbsp;&nbsp;&nbsp;$\text{numer} \leftarrow \text{numer} + s_t \cdot (s_{t+1} - a_t)$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;$\text{denom} \leftarrow \text{denom} + s_t^2$
+
+3. $\hat{\gamma}$: float $\leftarrow 1 - \text{numer} / \text{denom}$
+
+4. **Return** $\hat{\gamma}$
+
+---
+
+**Procedure** `EstimateBeta`(states: Array[$M \times T$], actions: Array[$M \times T$], $\hat{\gamma}$: float, $\delta$: float, $\gamma_E$: float, solver_config: dict, optimization_config: dict) $\to$ float
+
+1. Define log-likelihood function:
+
+   **Procedure** `LogLikelihood`($\beta$: float) $\to$ float
+
+   a. Solve MDP using value iteration (reuses solver from solve_mdp):
+
+   &nbsp;&nbsp;&nbsp;&nbsp;$v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network $\leftarrow$ `SolveValueIteration`($\beta$, $\hat{\gamma}$, $\delta$, $\gamma_E$, solver_config)
+
+   b. Initialize log-likelihood: $\ell$: float $\leftarrow 0$
+
+   c. For $m$: int = 1 to $M$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;For $t$: int = 1 to $T$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$s_{mt}$: float $\leftarrow$ states[$m$, $t$]
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$a_{mt}$: int $\leftarrow$ actions[$m$, $t$]
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$P_0$: float, $P_1$: float $\leftarrow$ `ComputeChoiceProbability`($s_{mt}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**If** $a_{mt} = 0$: $\ell \leftarrow \ell + \log(P_0)$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Else**: $\ell \leftarrow \ell + \log(P_1)$
+
+   d. **Return** $\ell$
+
+2. Extract optimization parameters:
+
+   beta_bounds: tuple[float, float] $\leftarrow$ optimization_config['beta_bounds']
+
+   method: str $\leftarrow$ optimization_config['method']
+
+   tolerance: float $\leftarrow$ optimization_config['tolerance']
+
+3. Maximize log-likelihood over $\beta$ using numerical optimization:
+
+   result: OptimizationResult $\leftarrow$ `scipy.optimize.minimize`(
+
+   &nbsp;&nbsp;&nbsp;&nbsp;fun=lambda $\beta$: $-$`LogLikelihood`($\beta$),
+
+   &nbsp;&nbsp;&nbsp;&nbsp;x0=initial_beta,
+
+   &nbsp;&nbsp;&nbsp;&nbsp;method=method,
+
+   &nbsp;&nbsp;&nbsp;&nbsp;bounds=[beta_bounds],
+
+   &nbsp;&nbsp;&nbsp;&nbsp;options={'ftol': tolerance}
+
+   )
+
+4. $\hat{\beta}$: float $\leftarrow$ result.x[0]
+
+5. **Return** $\hat{\beta}$
+
+---
+
+### Shared Functions from solve_mdp
+
+The following functions are imported from solve_mdp and reused directly to ensure DRY:
+
+**Procedure** `SolveValueIteration`($\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float, solver_config: dict) $\to$ (Network, Network)
+
+- Solves the MDP using neural network value iteration
+- Returns trained networks $v_\theta^{(0)}$ and $v_\theta^{(1)}$
+- See solve_mdp documentation for implementation details
+
+**Procedure** `ComputeChoiceProbability`($s$: float, $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ (float, float)
+
+- Computes $P(a=0|s)$ and $P(a=1|s)$ using logit formula:
+  $$P(a|s) = \frac{\exp(v(s,a))}{\sum_{a'} \exp(v(s,a'))}$$
+- See solve_mdp documentation for implementation details
+
+**Procedure** `ComputeNextState`($s$: float, $a$: int, $\gamma$: float) $\to$ float
+
+- Returns $(1 - \gamma) \cdot s + a$
+- Used for validation and diagnostics
+- See solve_mdp documentation for implementation details
+
+**Procedure** `ComputeMeanReward`($s$: float, $a$: int, $\beta$: float) $\to$ float
+
+- Returns $\beta \cdot \log(1 + s) - a$
+- Used for validation and diagnostics
+- See solve_mdp documentation for implementation details
 
 :::
 

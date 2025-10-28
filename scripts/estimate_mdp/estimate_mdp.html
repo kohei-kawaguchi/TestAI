@@ -115,7 +115,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#model-specification" id="toc-model-specification" class="nav-link" data-scroll-target="#model-specification">Model Specification</a></li>
   <li><a href="#two-step-estimation-procedure" id="toc-two-step-estimation-procedure" class="nav-link" data-scroll-target="#two-step-estimation-procedure">Two-Step Estimation Procedure</a></li>
-  <li><a href="#algorithm-summary" id="toc-algorithm-summary" class="nav-link" data-scroll-target="#algorithm-summary">Algorithm Summary</a></li>
+  <li><a href="#pseudo-code" id="toc-pseudo-code" class="nav-link" data-scroll-target="#pseudo-code">Pseudo Code</a></li>
   <li><a href="#key-implementation-details" id="toc-key-implementation-details" class="nav-link" data-scroll-target="#key-implementation-details">Key Implementation Details</a></li>
   </ul></li>
   </ul>
@@ -148,7 +148,7 @@ window.Quarto = {
 </section>
 <section id="load-configuration-and-simulated-data" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulated-data">Load Configuration and Simulated Data</h2>
-<div id="3872bb74" class="cell" data-execution_count="1">
+<div id="09393181" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -216,7 +216,7 @@ Loaded simulated data:
 </section>
 <section id="data-summary" class="level2">
 <h2 class="anchored" data-anchor-id="data-summary">Data Summary</h2>
-<div id="4f47750e" class="cell" data-execution_count="2">
+<div id="2c6ffb14" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic summary statistics</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Data Summary Statistics:"</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">States:"</span>)</span>
@@ -331,8 +331,8 @@ Rewards:
 <p><strong>Nested Fixed Point Structure</strong>: For each candidate value of <span class="math inline">\(\beta\)</span>: 1. <strong>Inner loop (Fixed Point)</strong>: Solve the MDP using value iteration to obtain <span class="math inline">\(v(s, a; \beta, \hat{\gamma}, \delta)\)</span> 2. <strong>Compute likelihood</strong>: Evaluate <span class="math inline">\(P(a_{mt} | s_{mt}; \beta, \hat{\gamma}, \delta)\)</span> for all observations and compute <span class="math inline">\(\ell(\beta; \hat{\gamma})\)</span> 3. <strong>Outer loop (Optimization)</strong>: Use numerical optimization (e.g., Nelder-Mead, BFGS) to search for <span class="math inline">\(\beta\)</span> that maximizes <span class="math inline">\(\ell(\beta; \hat{\gamma})\)</span></p>
 </section>
 </section>
-<section id="algorithm-summary" class="level3">
-<h3 class="anchored" data-anchor-id="algorithm-summary">Algorithm Summary</h3>
+<section id="pseudo-code" class="level3">
+<h3 class="anchored" data-anchor-id="pseudo-code">Pseudo Code</h3>
 <div class="callout callout-style-simple callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -343,49 +343,116 @@ Algorithm: Nested Fixed Point Estimation
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><strong>Input:</strong> - Observed data: <span class="math inline">\(\{(s_{mt}, a_{mt})\}_{m=1,t=1}^{M,T}\)</span> - Known parameters: <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span> - MDP solver configuration: hyperparameters, state grid, convergence tolerance, etc. - Optimization configuration: bounds on <span class="math inline">\(\beta\)</span>, optimization method, tolerance</p>
-<p><strong>Output:</strong> - Estimated parameters: <span class="math inline">\(\hat{\beta}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span></p>
+<p><strong>Design Principles:</strong></p>
+<p>This pseudo code is designed for direct implementation:</p>
+<ul>
+<li><strong>No placeholders</strong>: Every operation corresponds to a concrete function or method call</li>
+<li><strong>Explicit parameters</strong>: All inputs are passed as parameters, no implicit/global state</li>
+<li><strong>Reuses shared functions</strong>: Uses <code>SolveValueIteration</code>, <code>ComputeChoiceProbability</code>, <code>ComputeNextState</code>, <code>ComputeMeanReward</code> from solve_mdp</li>
+<li><strong>No hard-coding</strong>: All values are parameterized</li>
+</ul>
+<p><strong>Input:</strong></p>
+<ul>
+<li>Observed data: states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>]</li>
+<li>Known parameters: <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float</li>
+<li>MDP solver configuration: solver_config: dict (containing hyperparameters, <span class="math inline">\(N\)</span>, state_range, max_iter, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, num_epochs, learning_rate)</li>
+<li>Optimization configuration: optimization_config: dict (containing beta_bounds: tuple[float, float], method: str, tolerance: float)</li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul>
+<li>Estimated parameters: <span class="math inline">\(\hat{\beta}\)</span>: float, <span class="math inline">\(\hat{\gamma}\)</span>: float</li>
+</ul>
 <hr>
-<section id="step-1-estimate-state-transition-parameter" class="level3">
-<h3 class="anchored" data-anchor-id="step-1-estimate-state-transition-parameter">Step 1: Estimate State Transition Parameter</h3>
-<p><strong>Procedure</strong> <code>EstimateGamma</code>(<span class="math inline">\(\{(s_{mt}, a_{mt}, s_{m,t+1})\}\)</span>) <span class="math inline">\(\to\)</span> float</p>
+<section id="main-estimation-procedure" class="level3">
+<h3 class="anchored" data-anchor-id="main-estimation-procedure">Main Estimation Procedure</h3>
+<p><strong>Procedure</strong> <code>EstimateMDP</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, solver_config: dict, optimization_config: dict) <span class="math inline">\(\to\)</span> (float, float)</p>
 <ol type="1">
-<li><p>Stack all state transition observations: <span class="math inline">\((s_{mt}, a_{mt}, s_{m,t+1})\)</span> for <span class="math inline">\(m = 1, \ldots, M\)</span> and <span class="math inline">\(t = 1, \ldots, T-1\)</span></p></li>
-<li><p>Compute OLS estimator: <span class="math display">\[\hat{\gamma} = 1 - \frac{\sum_{m,t} s_{mt}(s_{m,t+1} - a_{mt})}{\sum_{m,t} s_{mt}^2}\]</span></p></li>
-<li><p><strong>Return</strong> <span class="math inline">\(\hat{\gamma}\)</span></p></li>
+<li><p><span class="math inline">\(\hat{\gamma}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>EstimateGamma</code>(states, actions)</p></li>
+<li><p><span class="math inline">\(\hat{\beta}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>EstimateBeta</code>(states, actions, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, solver_config, optimization_config)</p></li>
+<li><p><strong>Return</strong> <span class="math inline">\(\hat{\beta}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span></p></li>
 </ol>
 <hr>
 </section>
-<section id="step-2-estimate-reward-parameter-via-maximum-likelihood" class="level3">
-<h3 class="anchored" data-anchor-id="step-2-estimate-reward-parameter-via-maximum-likelihood">Step 2: Estimate Reward Parameter via Maximum Likelihood</h3>
-<p><strong>Procedure</strong> <code>EstimateBeta</code>(<span class="math inline">\(\{(s_{mt}, a_{mt})\}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, solver_config, optimization_config) <span class="math inline">\(\to\)</span> float</p>
+<section id="subroutines" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines">Subroutines</h3>
+<p><strong>Procedure</strong> <code>EstimateGamma</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>]) <span class="math inline">\(\to\)</span> float</p>
+<ol type="1">
+<li><p>Initialize sums: <span class="math inline">\(\text{numer}\)</span>: float <span class="math inline">\(\leftarrow 0\)</span>, <span class="math inline">\(\text{denom}\)</span>: float <span class="math inline">\(\leftarrow 0\)</span></p></li>
+<li><p>For <span class="math inline">\(m\)</span>: int = 1 to <span class="math inline">\(M\)</span>:</p>
+<p>For <span class="math inline">\(t\)</span>: int = 1 to <span class="math inline">\(T-1\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s_t\)</span>: float <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(a_t\)</span>: int <span class="math inline">\(\leftarrow\)</span> actions[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s_{t+1}\)</span>: float <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t+1\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\text{numer} \leftarrow \text{numer} + s_t \cdot (s_{t+1} - a_t)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\text{denom} \leftarrow \text{denom} + s_t^2\)</span></p></li>
+<li><p><span class="math inline">\(\hat{\gamma}\)</span>: float <span class="math inline">\(\leftarrow 1 - \text{numer} / \text{denom}\)</span></p></li>
+<li><p><strong>Return</strong> <span class="math inline">\(\hat{\gamma}\)</span></p></li>
+</ol>
+<hr>
+<p><strong>Procedure</strong> <code>EstimateBeta</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], <span class="math inline">\(\hat{\gamma}\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, solver_config: dict, optimization_config: dict) <span class="math inline">\(\to\)</span> float</p>
 <ol type="1">
 <li><p>Define log-likelihood function:</p>
 <p><strong>Procedure</strong> <code>LogLikelihood</code>(<span class="math inline">\(\beta\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
 <ol type="a">
-<li><p>Solve MDP using value iteration: <span class="math display">\[v_0, v_1 \leftarrow \text{SolveValueIteration}(\beta, \hat{\gamma}, \delta, \gamma_E, \text{solver\_config})\]</span></p></li>
-<li><p>Initialize log-likelihood: <span class="math inline">\(\ell \leftarrow 0\)</span></p></li>
-<li><p>For each observation <span class="math inline">\((s_{mt}, a_{mt})\)</span>:</p>
-<ol type="i">
-<li><p>Compute choice probabilities: <span class="math display">\[P_0, P_1 \leftarrow \text{ComputeChoiceProbability}(s_{mt}, v_0, v_1)\]</span></p></li>
-<li><p>Add to log-likelihood: <span class="math display">\[\ell \leftarrow \ell + \log(P_{a_{mt}})\]</span></p></li>
+<li>Solve MDP using value iteration (reuses solver from solve_mdp):</li>
+</ol>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>SolveValueIteration</code>(<span class="math inline">\(\beta\)</span>, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, solver_config)</p>
+<ol start="2" type="a">
+<li><p>Initialize log-likelihood: <span class="math inline">\(\ell\)</span>: float <span class="math inline">\(\leftarrow 0\)</span></p></li>
+<li><p>For <span class="math inline">\(m\)</span>: int = 1 to <span class="math inline">\(M\)</span>:</p></li>
+</ol>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;For <span class="math inline">\(t\)</span>: int = 1 to <span class="math inline">\(T\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s_{mt}\)</span>: float <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(a_{mt}\)</span>: int <span class="math inline">\(\leftarrow\)</span> actions[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(P_0\)</span>: float, <span class="math inline">\(P_1\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeChoiceProbability</code>(<span class="math inline">\(s_{mt}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>If</strong> <span class="math inline">\(a_{mt} = 0\)</span>: <span class="math inline">\(\ell \leftarrow \ell + \log(P_0)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Else</strong>: <span class="math inline">\(\ell \leftarrow \ell + \log(P_1)\)</span></p>
+<ol start="4" type="a">
+<li><strong>Return</strong> <span class="math inline">\(\ell\)</span></li>
 </ol></li>
-<li><p><strong>Return</strong> <span class="math inline">\(\ell\)</span></p></li>
-</ol></li>
-<li><p>Maximize log-likelihood over <span class="math inline">\(\beta\)</span>: <span class="math display">\[\hat{\beta} \leftarrow \arg\max_{\beta} \text{LogLikelihood}(\beta)\]</span></p>
-<p>using numerical optimization (e.g., scipy.optimize.minimize with method=‘Nelder-Mead’ or ‘L-BFGS-B’)</p></li>
+<li><p>Extract optimization parameters:</p>
+<p>beta_bounds: tuple[float, float] <span class="math inline">\(\leftarrow\)</span> optimization_config[‘beta_bounds’]</p>
+<p>method: str <span class="math inline">\(\leftarrow\)</span> optimization_config[‘method’]</p>
+<p>tolerance: float <span class="math inline">\(\leftarrow\)</span> optimization_config[‘tolerance’]</p></li>
+<li><p>Maximize log-likelihood over <span class="math inline">\(\beta\)</span> using numerical optimization:</p>
+<p>result: OptimizationResult <span class="math inline">\(\leftarrow\)</span> <code>scipy.optimize.minimize</code>(</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;fun=lambda <span class="math inline">\(\beta\)</span>: <span class="math inline">\(-\)</span><code>LogLikelihood</code>(<span class="math inline">\(\beta\)</span>),</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;x0=initial_beta,</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;method=method,</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;bounds=[beta_bounds],</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;options={‘ftol’: tolerance}</p>
+<p>)</p></li>
+<li><p><span class="math inline">\(\hat{\beta}\)</span>: float <span class="math inline">\(\leftarrow\)</span> result.x[0]</p></li>
 <li><p><strong>Return</strong> <span class="math inline">\(\hat{\beta}\)</span></p></li>
 </ol>
 <hr>
 </section>
-<section id="main-estimation-procedure" class="level3">
-<h3 class="anchored" data-anchor-id="main-estimation-procedure">Main Estimation Procedure</h3>
-<p><strong>Procedure</strong> <code>EstimateMDP</code>(<span class="math inline">\(\{(s_{mt}, a_{mt})\}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, solver_config, optimization_config) <span class="math inline">\(\to\)</span> (<span class="math inline">\(\hat{\beta}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span>)</p>
-<ol type="1">
-<li><p><span class="math inline">\(\hat{\gamma} \leftarrow\)</span> <code>EstimateGamma</code>(<span class="math inline">\(\{(s_{mt}, a_{mt}, s_{m,t+1})\}\)</span>)</p></li>
-<li><p><span class="math inline">\(\hat{\beta} \leftarrow\)</span> <code>EstimateBeta</code>(<span class="math inline">\(\{(s_{mt}, a_{mt})\}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, solver_config, optimization_config)</p></li>
-<li><p><strong>Return</strong> <span class="math inline">\(\hat{\beta}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span></p></li>
-</ol>
+<section id="shared-functions-from-solve_mdp" class="level3">
+<h3 class="anchored" data-anchor-id="shared-functions-from-solve_mdp">Shared Functions from solve_mdp</h3>
+<p>The following functions are imported from solve_mdp and reused directly to ensure DRY:</p>
+<p><strong>Procedure</strong> <code>SolveValueIteration</code>(<span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, solver_config: dict) <span class="math inline">\(\to\)</span> (Network, Network)</p>
+<ul>
+<li>Solves the MDP using neural network value iteration</li>
+<li>Returns trained networks <span class="math inline">\(v_\theta^{(0)}\)</span> and <span class="math inline">\(v_\theta^{(1)}\)</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeChoiceProbability</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network) <span class="math inline">\(\to\)</span> (float, float)</p>
+<ul>
+<li>Computes <span class="math inline">\(P(a=0|s)\)</span> and <span class="math inline">\(P(a=1|s)\)</span> using logit formula: <span class="math display">\[P(a|s) = \frac{\exp(v(s,a))}{\sum_{a'} \exp(v(s,a'))}\]</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeNextState</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\gamma\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
+<ul>
+<li>Returns <span class="math inline">\((1 - \gamma) \cdot s + a\)</span></li>
+<li>Used for validation and diagnostics</li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeMeanReward</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\beta\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
+<ul>
+<li>Returns <span class="math inline">\(\beta \cdot \log(1 + s) - a\)</span></li>
+<li>Used for validation and diagnostics</li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
 </section>
 </div>
 </div>
