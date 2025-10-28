@@ -43,7 +43,7 @@ def EstimateMDP(
     epsilon_tol: float,
     max_iter: int,
     gamma_E: float
-) -> Tuple[float, float]:
+) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """
     Procedure EstimateMDP(...)
 
@@ -64,13 +64,17 @@ def EstimateMDP(
         gamma_E: Euler-Mascheroni constant
 
     Returns:
-        Tuple of (gamma_hat, beta_hat): Estimated parameters
+        Tuple of (gamma_hat, beta_hat, beta_grid, distances):
+            gamma_hat: Estimated depreciation parameter
+            beta_hat: Estimated reward parameter
+            beta_grid: Array of beta candidates searched
+            distances: Array of distances for each beta candidate
     """
     # Step 1: Estimate gamma
     gamma_hat = EstimateGamma(states=states, actions=actions)
 
     # Step 2: Estimate beta
-    beta_hat = EstimateBeta(
+    beta_hat, distances = EstimateBeta(
         states=states,
         actions=actions,
         gamma=gamma_hat,
@@ -86,7 +90,7 @@ def EstimateMDP(
         gamma_E=gamma_E
     )
 
-    return gamma_hat, beta_hat
+    return gamma_hat, beta_hat, beta_grid, distances
 
 
 # ============================================================================
@@ -149,9 +153,9 @@ def EstimateBeta(
     epsilon_tol: float,
     max_iter: int,
     gamma_E: float
-) -> float:
+) -> Tuple[float, np.ndarray]:
     """
-    Procedure EstimateBeta(...) -> float
+    Procedure EstimateBeta(...) -> (float, Array[K])
 
     Estimate beta parameter via revealed preference approach.
 
@@ -175,7 +179,9 @@ def EstimateBeta(
         gamma_E: Euler-Mascheroni constant
 
     Returns:
-        beta_hat: Estimated beta parameter
+        Tuple of (beta_hat, distances):
+            beta_hat: Estimated beta parameter
+            distances: Array of distances for each beta candidate
     """
     # Step 2a: Estimate CCP from data
     P_hat = EstimateCCP(
@@ -236,12 +242,13 @@ def EstimateBeta(
                 distances[k] = np.inf
 
     # Find beta that minimizes distance
-    k_star = np.argmin(distances)
+    distances_array = np.array(distances)
+    k_star = np.argmin(distances_array)
     beta_hat = beta_grid[k_star]
 
-    print(f"  Best beta: {beta_hat:.4f} (k={k_star}, distance={distances[k_star]:.6f})")
+    print(f"  Best beta: {beta_hat:.4f} (k={k_star}, distance={distances_array[k_star]:.6f})")
 
-    return beta_hat
+    return beta_hat, distances_array
 
 
 def _evaluate_beta_candidate(

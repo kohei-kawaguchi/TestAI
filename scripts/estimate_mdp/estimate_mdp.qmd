@@ -160,18 +160,20 @@ This pseudo code is designed for direct implementation:
 **Output:**
 
 - Estimated parameters: $\hat{\gamma}$: float, $\hat{\beta}$: float
+- Beta search grid: beta_grid: Array[$K$]
+- Distances for each beta candidate: distances: Array[$K$]
 
 ---
 
 ### Main Algorithm
 
-**Procedure** `EstimateMDP`(states: Array[$M \times T$], actions: Array[$M \times T$], $\delta$: float, $N$: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[$K$], $\epsilon_{\text{tol}}$: float, max_iter: int, $\gamma_E$: float) $\to$ (float, float)
+**Procedure** `EstimateMDP`(states: Array[$M \times T$], actions: Array[$M \times T$], $\delta$: float, $N$: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[$K$], $\epsilon_{\text{tol}}$: float, max_iter: int, $\gamma_E$: float) $\to$ (float, float, Array[$K$], Array[$K$])
 
 1. $\hat{\gamma}$: float $\leftarrow$ `EstimateGamma`(states, actions)
 
-2. $\hat{\beta}$: float $\leftarrow$ `EstimateBeta`(states, actions, $\hat{\gamma}$, $\delta$, $N$, state_range, hyperparameters, num_epochs, learning_rate, beta_grid, $\epsilon_{\text{tol}}$, max_iter, $\gamma_E$)
+2. $\hat{\beta}$: float, distances: Array[$K$] $\leftarrow$ `EstimateBeta`(states, actions, $\hat{\gamma}$, $\delta$, $N$, state_range, hyperparameters, num_epochs, learning_rate, beta_grid, $\epsilon_{\text{tol}}$, max_iter, $\gamma_E$)
 
-3. **Return** $\hat{\gamma}$, $\hat{\beta}$
+3. **Return** $\hat{\gamma}$, $\hat{\beta}$, beta_grid, distances
 
 ---
 
@@ -205,7 +207,7 @@ This pseudo code is designed for direct implementation:
 
 ### Step 2: Estimate Beta via Revealed Preference
 
-**Procedure** `EstimateBeta`(states: Array[$M \times T$], actions: Array[$M \times T$], $\hat{\gamma}$: float, $\delta$: float, $N$: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[$K$], $\epsilon_{\text{tol}}$: float, max_iter: int, $\gamma_E$: float) $\to$ float
+**Procedure** `EstimateBeta`(states: Array[$M \times T$], actions: Array[$M \times T$], $\hat{\gamma}$: float, $\delta$: float, $N$: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[$K$], $\epsilon_{\text{tol}}$: float, max_iter: int, $\gamma_E$: float) $\to$ (float, Array[$K$])
 
 1. $\hat{P}$: Network $\leftarrow$ `EstimateCCP`(states, actions, hyperparameters, num_epochs, learning_rate)
 
@@ -227,7 +229,7 @@ This pseudo code is designed for direct implementation:
 
 7. $\hat{\beta}$: float $\leftarrow$ beta_grid[$k^*$]
 
-8. **Return** $\hat{\beta}$
+8. **Return** $\hat{\beta}$, distances
 
 ---
 
