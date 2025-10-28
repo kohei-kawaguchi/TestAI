@@ -15,6 +15,7 @@ import numpy as np
 from typing import Tuple, Dict
 import sys
 sys.path.insert(0, '..')
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from mdp_solver import (
     MonotonicNetwork,
@@ -191,44 +192,119 @@ def EstimateBeta(
     # Generate state grid for evaluation
     S = GenerateStateGrid(N=N, state_range=state_range)
 
-    # Step 2b-2d: Search over beta grid
-    distances = []
+    # Step 2b-2d: Search over beta grid in parallel
     K = len(beta_grid)
 
-    for k in range(K):
-        beta_k = beta_grid[k]
+    # Evaluate estimated CCP on grid (once, outside loop)
+    with torch.no_grad():
+        P_hat_eval = P_hat(S)
 
-        # Solve value functions given CCP and beta_k
-        v_theta_0, v_theta_1 = SolveValueFunctionGivenCCP(
-            P_hat=P_hat,
-            beta=beta_k,
-            gamma=gamma,
-            delta=delta,
-            gamma_E=gamma_E,
-            hyperparameters=hyperparameters,
-            S=S,
-            max_iter=max_iter,
-            epsilon_tol=epsilon_tol,
-            num_epochs=num_epochs,
-            learning_rate=learning_rate
-        )
+    print(f"  Searching over {K} beta candidates in parallel...")
 
-        # Compute updated CCP from value functions
-        P_updated = ComputeCCPFromValue(S=S, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+    # Parallel evaluation of beta candidates
+    distances = [None] * K
 
-        # Evaluate estimated CCP on grid
-        with torch.no_grad():
-            P_hat_eval = P_hat(S)
+    # Use ProcessPoolExecutor for CPU-based parallelization
+    # Note: PyTorch works better with multiprocessing than threading for CPU
+    with ProcessPoolExecutor(max_workers=min(K, 4)) as executor:
+        # Submit all beta evaluations
+        future_to_k = {
+            executor.submit(
+                _evaluate_beta_candidate,
+                beta_grid[k],
+                P_hat,
+                P_hat_eval,
+                gamma,
+                delta,
+                gamma_E,
+                hyperparameters,
+                S,
+                max_iter,
+                epsilon_tol,
+                num_epochs,
+                learning_rate
+            ): k
+            for k in range(K)
+        }
 
-        # Compute distance
-        distance = ComputeDistance(P_hat_eval=P_hat_eval, P_updated=P_updated)
-        distances.append(distance)
+        # Collect results as they complete
+        for future in as_completed(future_to_k):
+            k = future_to_k[future]
+            try:
+                distance = future.result()
+                distances[k] = distance
+                print(f"    Completed beta[{k}]={beta_grid[k]:.3f}, distance={distance:.6f}")
+            except Exception as exc:
+                print(f"    Beta[{k}]={beta_grid[k]:.3f} generated an exception: {exc}")
+                distances[k] = np.inf
 
     # Find beta that minimizes distance
     k_star = np.argmin(distances)
     beta_hat = beta_grid[k_star]
 
+    print(f"  Best beta: {beta_hat:.4f} (k={k_star}, distance={distances[k_star]:.6f})")
+
     return beta_hat
+
+
+def _evaluate_beta_candidate(
+    beta_k: float,
+    P_hat: MonotonicNetwork,
+    P_hat_eval: torch.Tensor,
+    gamma: float,
+    delta: float,
+    gamma_E: float,
+    hyperparameters: Dict,
+    S: torch.Tensor,
+    max_iter: int,
+    epsilon_tol: float,
+    num_epochs: int,
+    learning_rate: float
+) -> float:
+    """
+    Helper function to evaluate a single beta candidate.
+
+    This function is designed to be called in parallel.
+
+    Args:
+        beta_k: Candidate beta value
+        P_hat: Estimated CCP network
+        P_hat_eval: Pre-computed P_hat(S) on grid
+        gamma: Estimated gamma
+        delta: Discount factor
+        gamma_E: Euler-Mascheroni constant
+        hyperparameters: Network hyperparameters
+        S: State grid
+        max_iter: Maximum iterations
+        epsilon_tol: Convergence tolerance
+        num_epochs: Training epochs
+        learning_rate: Learning rate
+
+    Returns:
+        distance: Distance between estimated and updated CCPs
+    """
+    # Solve value functions given CCP and beta_k
+    v_theta_0, v_theta_1 = SolveValueFunctionGivenCCP(
+        P_hat=P_hat,
+        beta=beta_k,
+        gamma=gamma,
+        delta=delta,
+        gamma_E=gamma_E,
+        hyperparameters=hyperparameters,
+        S=S,
+        max_iter=max_iter,
+        epsilon_tol=epsilon_tol,
+        num_epochs=num_epochs,
+        learning_rate=learning_rate
+    )
+
+    # Compute updated CCP from value functions
+    P_updated = ComputeCCPFromValue(S=S, v_theta_0=v_theta_0, v_theta_1=v_theta_1)
+
+    # Compute distance
+    distance = ComputeDistance(P_hat_eval=P_hat_eval, P_updated=P_updated)
+
+    return distance
 
 
 # ============================================================================

@@ -112,10 +112,12 @@ $$\hat{\beta} = \arg\min_\beta \sum_{s \in \mathcal{S}} \left[\hat{P}(a=1|s) - P
 where $\mathcal{S}$ is a grid of state values spanning the observed state range.
 
 This is a nested fixed-point problem:
-- **Outer loop**: Search over candidate values of $\beta$
+- **Outer loop**: Search over candidate values of $\beta$ **in parallel**
 - **Inner loop**: For each $\beta$, solve for value functions consistent with estimated CCP, then compute updated CCP
 
 The optimal $\beta$ is the one where the estimated policy (from data) is consistent with the optimal policy (from the model).
+
+**Parallelization**: Since the evaluation of each $\beta$ candidate is independent, we can parallelize the search across multiple workers, significantly reducing computation time.
 
 ## Pseudo Code
 
@@ -197,27 +199,37 @@ This pseudo code is designed for direct implementation:
 
 2. $S$: Tensor[$N \times 1$] $\leftarrow$ `GenerateStateGrid`($N$, state_range)
 
-3. distances: Array[$K$] $\leftarrow$ Empty array
+3. $\hat{P}_{\text{eval}}$: Tensor[$N \times 1$] $\leftarrow \hat{P}(S)$ &nbsp;&nbsp;&nbsp;&nbsp;// Pre-compute once
 
-4. For $k$: int = 1 to $K$:
+4. distances: Array[$K$] $\leftarrow$ Empty array
+
+5. **ParallelFor** $k$: int = 1 to $K$ **do in parallel**: &nbsp;&nbsp;&nbsp;&nbsp;// Evaluate beta candidates in parallel
 
    a. $\beta_k$: float $\leftarrow$ beta_grid[$k$]
 
-   b. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `SolveValueFunctionGivenCCP`($\hat{P}$, $\beta_k$, $\hat{\gamma}$, $\delta$, $\gamma_E$, hyperparameters, $S$, max_iter, $\epsilon_{\text{tol}}$, num_epochs, learning_rate)
+   b. distance: float $\leftarrow$ `EvaluateBetaCandidate`($\beta_k$, $\hat{P}$, $\hat{P}_{\text{eval}}$, $\hat{\gamma}$, $\delta$, $\gamma_E$, hyperparameters, $S$, max_iter, $\epsilon_{\text{tol}}$, num_epochs, learning_rate)
 
-   c. $P^{\text{updated}}$: Tensor[$N \times 1$] $\leftarrow$ `ComputeCCPFromValue`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+   c. distances[$k$] $\leftarrow$ distance
 
-   d. $\hat{P}_{\text{eval}}$: Tensor[$N \times 1$] $\leftarrow \hat{P}(S)$
+6. $k^*$: int $\leftarrow$ `ArgMin`(distances)
 
-   e. distance: float $\leftarrow$ `ComputeDistance`($\hat{P}_{\text{eval}}$, $P^{\text{updated}}$)
+7. $\hat{\beta}$: float $\leftarrow$ beta_grid[$k^*$]
 
-   f. distances[$k$] $\leftarrow$ distance
+8. **Return** $\hat{\beta}$
 
-5. $k^*$: int $\leftarrow$ `ArgMin`(distances)
+---
 
-6. $\hat{\beta}$: float $\leftarrow$ beta_grid[$k^*$]
+### Subroutine for Parallel Beta Evaluation
 
-7. **Return** $\hat{\beta}$
+**Procedure** `EvaluateBetaCandidate`($\beta_k$: float, $\hat{P}$: Network, $\hat{P}_{\text{eval}}$: Tensor[$N \times 1$], $\gamma$: float, $\delta$: float, $\gamma_E$: float, hyperparameters: dict, $S$: Tensor[$N \times 1$], max_iter: int, $\epsilon_{\text{tol}}$: float, num_epochs: int, learning_rate: float) $\to$ float
+
+1. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `SolveValueFunctionGivenCCP`($\hat{P}$, $\beta_k$, $\gamma$, $\delta$, $\gamma_E$, hyperparameters, $S$, max_iter, $\epsilon_{\text{tol}}$, num_epochs, learning_rate)
+
+2. $P^{\text{updated}}$: Tensor[$N \times 1$] $\leftarrow$ `ComputeCCPFromValue`($S$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+3. distance: float $\leftarrow$ `ComputeDistance`($\hat{P}_{\text{eval}}$, $P^{\text{updated}}$)
+
+4. **Return** distance
 
 ---
 
@@ -358,3 +370,272 @@ The following functions are imported from solve_mdp and reused directly:
 - **Nested fixed-point**: The outer loop searches over $\beta$ candidates, inner loop solves value functions for each $\beta$
 - **Binary cross-entropy loss**: For CCP estimation, use $-[a \log(\hat{p}) + (1-a) \log(1-\hat{p})]$
 - **Grid search for $\beta$**: Can be replaced with gradient-free optimization methods like Nelder-Mead
+
+## Run Estimation
+
+```{python}
+import torch
+import matplotlib.pyplot as plt
+
+from mdp_estimator import EstimateMDP
+from mdp_solver import MonotonicNetwork, ComputeChoiceProbability
+
+# Load solver configuration for shared parameters
+solver_config = get_solver_config()
+gamma_E = solver_config['gamma_E']
+hyperparameters = solver_config['hyperparameters']
+N = solver_config['N']
+epsilon_tol = solver_config['epsilon_tol']
+max_iter = solver_config['max_iter']
+num_epochs = solver_config['num_epochs']
+learning_rate = solver_config['learning_rate']
+
+# Create beta grid for search
+beta_grid = np.linspace(0.5, 1.5, 11)  # Search around true value of 1.0
+
+print(f"\nEstimation Configuration:")
+print(f"  State grid size (N): {N}")
+print(f"  Beta grid: {beta_grid}")
+print(f"  Max iterations: {max_iter}")
+print(f"  Tolerance: {epsilon_tol}")
+print(f"  Training epochs per iteration: {num_epochs}")
+print(f"  Learning rate: {learning_rate}")
+
+# Run estimation
+print(f"\nRunning estimation...")
+gamma_hat, beta_hat = EstimateMDP(
+    states=states,
+    actions=actions,
+    delta=delta,
+    N=N,
+    state_range=state_range,
+    hyperparameters=hyperparameters,
+    num_epochs=num_epochs,
+    learning_rate=learning_rate,
+    beta_grid=beta_grid,
+    epsilon_tol=epsilon_tol,
+    max_iter=max_iter,
+    gamma_E=gamma_E
+)
+
+print(f"\nEstimation Results:")
+print(f"  Estimated gamma: {gamma_hat:.4f}")
+print(f"  True gamma: {gamma_true:.4f}")
+print(f"  Error: {abs(gamma_hat - gamma_true):.4f}")
+print(f"\n  Estimated beta: {beta_hat:.4f}")
+print(f"  True beta: {beta_true:.4f}")
+print(f"  Error: {abs(beta_hat - beta_true):.4f}")
+```
+
+## Save Estimation Results
+
+```{python}
+# Save estimation results
+output_dir = Path('../../output/estimate_mdp')
+output_dir.mkdir(parents=True, exist_ok=True)
+
+# Save estimated parameters
+est_results = {
+    'gamma_hat': float(gamma_hat),
+    'beta_hat': float(beta_hat),
+    'gamma_true': float(gamma_true),
+    'beta_true': float(beta_true),
+    'gamma_error': float(abs(gamma_hat - gamma_true)),
+    'beta_error': float(abs(beta_hat - beta_true)),
+    'beta_grid': beta_grid.tolist(),
+    'N': int(N),
+    'epsilon_tol': float(epsilon_tol),
+    'max_iter': int(max_iter)
+}
+
+with open(output_dir / 'estimation_results.json', 'w', encoding='utf-8') as f:
+    json.dump(est_results, f, indent=2)
+
+print(f"Saved estimation results to {output_dir.resolve()}")
+```
+
+## Compare Estimated and True Parameters
+
+```{python}
+# Create comparison table
+comparison_data = {
+    'Parameter': ['gamma', 'beta'],
+    'True Value': [gamma_true, beta_true],
+    'Estimated Value': [gamma_hat, beta_hat],
+    'Absolute Error': [abs(gamma_hat - gamma_true), abs(beta_hat - beta_true)],
+    'Relative Error (%)': [
+        100 * abs(gamma_hat - gamma_true) / gamma_true,
+        100 * abs(beta_hat - beta_true) / beta_true
+    ]
+}
+
+import pandas as pd
+df_comparison = pd.DataFrame(comparison_data)
+print("\nParameter Estimation Comparison:")
+print(df_comparison.to_string(index=False))
+```
+
+## Compare Equilibrium Objects
+
+Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.
+
+```{python}
+# Load true value functions from solver
+solver_dir = Path('../../output/sovle_mdp')
+if not solver_dir.exists():
+    raise FileNotFoundError(
+        f"Expected solver results in {solver_dir}. Run solve_mdp.qmd first."
+    )
+
+# Load true networks
+v_theta_0_true = MonotonicNetwork(hidden_sizes=hyperparameters['hidden_sizes'])
+v_theta_1_true = MonotonicNetwork(hidden_sizes=hyperparameters['hidden_sizes'])
+
+v_theta_0_true.load_state_dict(torch.load(solver_dir / 'v_theta_0.pt', map_location='cpu'))
+v_theta_1_true.load_state_dict(torch.load(solver_dir / 'v_theta_1.pt', map_location='cpu'))
+
+v_theta_0_true.eval()
+v_theta_1_true.eval()
+
+print("Loaded true value functions from solver")
+```
+
+```{python}
+from mdp_solver import GenerateStateGrid, SolveValueIteration
+
+# Solve for estimated value functions using estimated parameters
+print(f"\nSolving for value functions under estimated parameters...")
+print(f"  Using gamma_hat={gamma_hat:.4f}, beta_hat={beta_hat:.4f}")
+
+v_theta_0_est, v_theta_1_est = SolveValueIteration(
+    beta=beta_hat,
+    gamma=gamma_hat,
+    delta=delta,
+    gamma_E=gamma_E,
+    hyperparameters=hyperparameters,
+    N=N,
+    state_range=state_range,
+    max_iter=max_iter,
+    epsilon_tol=epsilon_tol,
+    num_epochs=num_epochs,
+    learning_rate=learning_rate
+)
+
+print("Solved value functions under estimated parameters")
+```
+
+```{python}
+# Generate evaluation grid
+S_eval = GenerateStateGrid(N=N, state_range=state_range)
+
+# Compute true CCPs and values
+with torch.no_grad():
+    # True equilibrium
+    prob_a0_true, prob_a1_true = ComputeChoiceProbability(
+        s=S_eval,
+        v_theta_0=v_theta_0_true,
+        v_theta_1=v_theta_1_true
+    )
+    v0_true = v_theta_0_true(S_eval)
+    v1_true = v_theta_1_true(S_eval)
+
+    # Estimated equilibrium
+    prob_a0_est, prob_a1_est = ComputeChoiceProbability(
+        s=S_eval,
+        v_theta_0=v_theta_0_est,
+        v_theta_1=v_theta_1_est
+    )
+    v0_est = v_theta_0_est(S_eval)
+    v1_est = v_theta_1_est(S_eval)
+
+# Convert to numpy
+s_grid = S_eval.numpy().flatten()
+prob_a1_true_np = prob_a1_true.numpy().flatten()
+prob_a1_est_np = prob_a1_est.numpy().flatten()
+v0_true_np = v0_true.numpy().flatten()
+v0_est_np = v0_est.numpy().flatten()
+v1_true_np = v1_true.numpy().flatten()
+v1_est_np = v1_est.numpy().flatten()
+
+print(f"\nComputed equilibrium objects on grid of {N} points")
+```
+
+```{python}
+# Create comparison plots
+fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+
+# Plot 1: CCP comparison (scatter with 45-degree line)
+ax = axes[0, 0]
+ax.scatter(prob_a1_true_np, prob_a1_est_np, alpha=0.6, s=20)
+ax.plot([0, 1], [0, 1], 'k--', linewidth=2, label='45° line')
+ax.set_xlabel('True P(a=1|s)', fontsize=12)
+ax.set_ylabel('Estimated P(a=1|s)', fontsize=12)
+ax.set_title('Conditional Choice Probability Comparison', fontsize=14)
+ax.legend()
+ax.grid(True, alpha=0.3)
+ax.set_xlim(0, 1)
+ax.set_ylim(0, 1)
+ax.set_aspect('equal')
+
+# Compute CCP correlation
+ccp_corr = np.corrcoef(prob_a1_true_np, prob_a1_est_np)[0, 1]
+ccp_rmse = np.sqrt(np.mean((prob_a1_true_np - prob_a1_est_np)**2))
+ax.text(0.05, 0.95, f'Corr: {ccp_corr:.4f}\nRMSE: {ccp_rmse:.4f}',
+        transform=ax.transAxes, verticalalignment='top',
+        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+# Plot 2: Value function v0 comparison
+ax = axes[0, 1]
+ax.scatter(v0_true_np, v0_est_np, alpha=0.6, s=20)
+v0_min, v0_max = min(v0_true_np.min(), v0_est_np.min()), max(v0_true_np.max(), v0_est_np.max())
+ax.plot([v0_min, v0_max], [v0_min, v0_max], 'k--', linewidth=2, label='45° line')
+ax.set_xlabel('True v(s, a=0)', fontsize=12)
+ax.set_ylabel('Estimated v(s, a=0)', fontsize=12)
+ax.set_title('Value Function (a=0) Comparison', fontsize=14)
+ax.legend()
+ax.grid(True, alpha=0.3)
+ax.set_aspect('equal', adjustable='box')
+
+v0_corr = np.corrcoef(v0_true_np, v0_est_np)[0, 1]
+v0_rmse = np.sqrt(np.mean((v0_true_np - v0_est_np)**2))
+ax.text(0.05, 0.95, f'Corr: {v0_corr:.4f}\nRMSE: {v0_rmse:.4f}',
+        transform=ax.transAxes, verticalalignment='top',
+        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+# Plot 3: Value function v1 comparison
+ax = axes[1, 0]
+ax.scatter(v1_true_np, v1_est_np, alpha=0.6, s=20)
+v1_min, v1_max = min(v1_true_np.min(), v1_est_np.min()), max(v1_true_np.max(), v1_est_np.max())
+ax.plot([v1_min, v1_max], [v1_min, v1_max], 'k--', linewidth=2, label='45° line')
+ax.set_xlabel('True v(s, a=1)', fontsize=12)
+ax.set_ylabel('Estimated v(s, a=1)', fontsize=12)
+ax.set_title('Value Function (a=1) Comparison', fontsize=14)
+ax.legend()
+ax.grid(True, alpha=0.3)
+ax.set_aspect('equal', adjustable='box')
+
+v1_corr = np.corrcoef(v1_true_np, v1_est_np)[0, 1]
+v1_rmse = np.sqrt(np.mean((v1_true_np - v1_est_np)**2))
+ax.text(0.05, 0.95, f'Corr: {v1_corr:.4f}\nRMSE: {v1_rmse:.4f}',
+        transform=ax.transAxes, verticalalignment='top',
+        bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+
+# Plot 4: CCP as function of state
+ax = axes[1, 1]
+ax.plot(s_grid, prob_a1_true_np, 'b-', linewidth=2, label='True', alpha=0.7)
+ax.plot(s_grid, prob_a1_est_np, 'r--', linewidth=2, label='Estimated', alpha=0.7)
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('P(a=1|s)', fontsize=12)
+ax.set_title('CCP as Function of State', fontsize=14)
+ax.legend()
+ax.grid(True, alpha=0.3)
+ax.set_ylim(0, 1)
+
+fig.tight_layout()
+plt.show()
+
+print(f"\nEquilibrium Object Comparison:")
+print(f"  CCP - Correlation: {ccp_corr:.4f}, RMSE: {ccp_rmse:.4f}")
+print(f"  V0  - Correlation: {v0_corr:.4f}, RMSE: {v0_rmse:.4f}")
+print(f"  V1  - Correlation: {v1_corr:.4f}, RMSE: {v1_rmse:.4f}")
+```
