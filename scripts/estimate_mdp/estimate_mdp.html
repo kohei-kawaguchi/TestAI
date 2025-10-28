@@ -183,7 +183,7 @@ window.Quarto = {
 
 <section id="load-configuration-and-simulation-results" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulation-results">Load Configuration and Simulation Results</h2>
-<div id="f920f5ce" class="cell" data-execution_count="1">
+<div id="d284cb3c" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -517,7 +517,7 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <section id="diagnostic-compare-estimated-ccp-with-true-ccp" class="level2">
 <h2 class="anchored" data-anchor-id="diagnostic-compare-estimated-ccp-with-true-ccp">Diagnostic: Compare Estimated CCP with True CCP</h2>
 <p>Before running the full estimation, we diagnose the quality of CCP estimation by comparing the estimated CCP (from observed choices) with the true CCP (from the solver’s value functions).</p>
-<div id="80ab6c29" class="cell" data-execution_count="2">
+<div id="2cc23dbd" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -627,9 +627,9 @@ Loading true value functions from solver...
 Comparing: Estimated CCP (from data) vs. True CCP (from solver)
 
 P(a=1|s) errors:
-  Mean absolute error: 0.050150
-  Max absolute error:  0.188001
-  Root mean squared error: 0.065476</code></pre>
+  Mean absolute error: 0.028513
+  Max absolute error:  0.165464
+  Root mean squared error: 0.041657</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -648,7 +648,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 </section>
 <section id="run-estimation" class="level2">
 <h2 class="anchored" data-anchor-id="run-estimation">Run Estimation</h2>
-<div id="68ab5018" class="cell" data-execution_count="3">
+<div id="f4ffe157" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration from solver output (for estimation hyperparameters)</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -722,235 +722,420 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Minimum distance at beta = </span><span class="sc">{</span>beta_grid_used[min_idx]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
 <span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  True beta = </span><span class="sc">{</span>beta_true<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
 <span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Distance at true beta index: </span><span class="sc">{</span>distances[min_idx]<span class="sc">:.6f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Estimation Configuration:
+  State grid size (N): 100
+  Beta grid: [0.5 0.6 0.7 0.8 0.9 1.  1.1 1.2 1.3 1.4 1.5]
+  Max iterations: 1000
+  Tolerance: 0.0001
+  Training epochs per iteration: 50
+  Learning rate: 0.001
+
+Running estimation...
+  Searching over 11 beta candidates in parallel...
+    Completed beta[3]=0.800, distance=3.892855
+    Completed beta[1]=0.600, distance=1.686915
+    Completed beta[0]=0.500, distance=3.353758
+    Completed beta[2]=0.700, distance=1.657237
+    Completed beta[4]=0.900, distance=1.033644
+    Completed beta[5]=1.000, distance=2.964520
+    Completed beta[6]=1.100, distance=2.748766
+    Completed beta[7]=1.200, distance=1.820782
+    Completed beta[8]=1.300, distance=1.742946
+    Completed beta[9]=1.400, distance=0.746599
+    Completed beta[10]=1.500, distance=1.236360
+  Best beta: 1.4000 (k=9, distance=0.746599)
+
+Estimation Results:
+  Estimated gamma: 0.1000
+  True gamma: 0.1000
+  Error: 0.0000
+
+  Estimated beta: 1.4000
+  True beta: 1.0000
+  Error: 0.4000</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="estimate_mdp_files/figure-html/cell-4-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Beta Grid Search Diagnostics:
+  Minimum distance at beta = 1.4000
+  True beta = 1.0000
+  Distance at true beta index: 0.746599</code></pre>
+</div>
 </div>
 </section>
 <section id="save-estimation-results" class="level2">
 <h2 class="anchored" data-anchor-id="save-estimation-results">Save Estimation Results</h2>
-<div id="80dc7aad" class="cell" data-execution_count="4">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimation results</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/estimate_mdp'</span>)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimated parameters</span></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>est_results <span class="op">=</span> {</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">'gamma_hat'</span>: <span class="bu">float</span>(gamma_hat),</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_hat'</span>: <span class="bu">float</span>(beta_hat),</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'gamma_true'</span>: <span class="bu">float</span>(gamma_true),</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_true'</span>: <span class="bu">float</span>(beta_true),</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">'gamma_error'</span>: <span class="bu">float</span>(<span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true)),</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_error'</span>: <span class="bu">float</span>(<span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true)),</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_grid'</span>: beta_grid.tolist(),</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">'N'</span>: <span class="bu">int</span>(N),</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">'epsilon_tol'</span>: <span class="bu">float</span>(epsilon_tol),</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">'max_iter'</span>: <span class="bu">int</span>(max_iter)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(output_dir <span class="op">/</span> <span class="st">'estimation_results.json'</span>, <span class="st">'w'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    json.dump(est_results, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved estimation results to </span><span class="sc">{</span>output_dir<span class="sc">.</span>resolve()<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="dbe88576" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimation results</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/estimate_mdp'</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimated parameters</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>est_results <span class="op">=</span> {</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">'gamma_hat'</span>: <span class="bu">float</span>(gamma_hat),</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_hat'</span>: <span class="bu">float</span>(beta_hat),</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">'gamma_true'</span>: <span class="bu">float</span>(gamma_true),</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_true'</span>: <span class="bu">float</span>(beta_true),</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">'gamma_error'</span>: <span class="bu">float</span>(<span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true)),</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_error'</span>: <span class="bu">float</span>(<span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true)),</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">'beta_grid'</span>: beta_grid.tolist(),</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">'N'</span>: <span class="bu">int</span>(N),</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">'epsilon_tol'</span>: <span class="bu">float</span>(epsilon_tol),</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">'max_iter'</span>: <span class="bu">int</span>(max_iter)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(output_dir <span class="op">/</span> <span class="st">'estimation_results.json'</span>, <span class="st">'w'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    json.dump(est_results, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved estimation results to </span><span class="sc">{</span>output_dir<span class="sc">.</span>resolve()<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Saved estimation results to C:\Users\kohei\Documents\TestAI\output\estimate_mdp</code></pre>
+</div>
 </div>
 </section>
 <section id="compare-estimated-and-true-parameters" class="level2">
 <h2 class="anchored" data-anchor-id="compare-estimated-and-true-parameters">Compare Estimated and True Parameters</h2>
-<div id="9845e2a9" class="cell" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison table</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>comparison_data <span class="op">=</span> {</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Parameter'</span>: [<span class="st">'gamma'</span>, <span class="st">'beta'</span>],</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'True Value'</span>: [gamma_true, beta_true],</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Estimated Value'</span>: [gamma_hat, beta_hat],</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Absolute Error'</span>: [<span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true), <span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true)],</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Relative Error (%)'</span>: [</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>        <span class="dv">100</span> <span class="op">*</span> <span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true) <span class="op">/</span> gamma_true,</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>        <span class="dv">100</span> <span class="op">*</span> <span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true) <span class="op">/</span> beta_true</span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>df_comparison <span class="op">=</span> pd.DataFrame(comparison_data)</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Parameter Estimation Comparison:"</span>)</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df_comparison.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="955fe8a5" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison table</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>comparison_data <span class="op">=</span> {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Parameter'</span>: [<span class="st">'gamma'</span>, <span class="st">'beta'</span>],</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'True Value'</span>: [gamma_true, beta_true],</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Estimated Value'</span>: [gamma_hat, beta_hat],</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Absolute Error'</span>: [<span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true), <span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true)],</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Relative Error (%)'</span>: [</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        <span class="dv">100</span> <span class="op">*</span> <span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true) <span class="op">/</span> gamma_true,</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        <span class="dv">100</span> <span class="op">*</span> <span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true) <span class="op">/</span> beta_true</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>df_comparison <span class="op">=</span> pd.DataFrame(comparison_data)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Parameter Estimation Comparison:"</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df_comparison.to_string(index<span class="op">=</span><span class="va">False</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Parameter Estimation Comparison:
+Parameter  True Value  Estimated Value  Absolute Error  Relative Error (%)
+    gamma         0.1              0.1    2.335316e-08            0.000023
+     beta         1.0              1.4    4.000000e-01           40.000000</code></pre>
+</div>
 </div>
 </section>
 <section id="compare-equilibrium-objects" class="level2">
 <h2 class="anchored" data-anchor-id="compare-equilibrium-objects">Compare Equilibrium Objects</h2>
 <p>Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.</p>
-<div id="39230dbe" class="cell" data-execution_count="6">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> solver_dir.exists():</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">FileNotFoundError</span>(</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"Expected solver results in </span><span class="sc">{</span>solver_dir<span class="sc">}</span><span class="ss">. Run solve_mdp.qmd first."</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true networks</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>v_theta_0_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>v_theta_1_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.<span class="bu">eval</span>()</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.<span class="bu">eval</span>()</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Loaded true value functions from solver"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="c912e673" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> solver_dir.exists():</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">FileNotFoundError</span>(</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"Expected solver results in </span><span class="sc">{</span>solver_dir<span class="sc">}</span><span class="ss">. Run solve_mdp.qmd first."</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true networks</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>v_theta_0_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>v_theta_1_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.<span class="bu">eval</span>()</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.<span class="bu">eval</span>()</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Loaded true value functions from solver"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded true value functions from solver</code></pre>
 </div>
-<div id="b95a36e6" class="cell" data-execution_count="7">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> GenerateStateGrid, SolveValueIteration</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve for estimated value functions using estimated parameters</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Solving for value functions under estimated parameters..."</span>)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Using gamma_hat=</span><span class="sc">{</span>gamma_hat<span class="sc">:.4f}</span><span class="ss">, beta_hat=</span><span class="sc">{</span>beta_hat<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>v_theta_0_est, v_theta_1_est, _ <span class="op">=</span> SolveValueIteration(</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    beta<span class="op">=</span>beta_hat,</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    gamma<span class="op">=</span>gamma_hat,</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    delta<span class="op">=</span>delta,</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    gamma_E<span class="op">=</span>gamma_E,</span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    N<span class="op">=</span>N,</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    state_range<span class="op">=</span>state_range,</span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span>max_iter,</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Solved value functions under estimated parameters"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="db96df35" class="cell" data-execution_count="8">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute true CCPs and values</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute value functions on grid</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    v0_true <span class="op">=</span> v_theta_0_true(S_eval)</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    v1_true <span class="op">=</span> v_theta_1_true(S_eval)</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    v0_est <span class="op">=</span> v_theta_0_est(S_eval)</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    v1_est <span class="op">=</span> v_theta_1_est(S_eval)</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute choice probabilities for each state in the grid</span></span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    prob_a0_true_list <span class="op">=</span> []</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    prob_a1_true_list <span class="op">=</span> []</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    prob_a0_est_list <span class="op">=</span> []</span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    prob_a1_est_list <span class="op">=</span> []</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N):</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>        s_i <span class="op">=</span> S_eval[i].item()</span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># True equilibrium probabilities</span></span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>        prob_a0_t, prob_a1_t <span class="op">=</span> ComputeChoiceProbability(</span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span>s_i,</span>
-<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>            v_theta_0<span class="op">=</span>v_theta_0_true,</span>
-<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>            v_theta_1<span class="op">=</span>v_theta_1_true</span>
-<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>        prob_a0_true_list.append(prob_a0_t)</span>
-<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>        prob_a1_true_list.append(prob_a1_t)</span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Estimated equilibrium probabilities</span></span>
-<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>        prob_a0_e, prob_a1_e <span class="op">=</span> ComputeChoiceProbability(</span>
-<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span>s_i,</span>
-<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>            v_theta_0<span class="op">=</span>v_theta_0_est,</span>
-<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>            v_theta_1<span class="op">=</span>v_theta_1_est</span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>        prob_a0_est_list.append(prob_a0_e)</span>
-<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>        prob_a1_est_list.append(prob_a1_e)</span>
-<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Convert to tensors</span></span>
-<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>    prob_a0_true <span class="op">=</span> torch.tensor(prob_a0_true_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>    prob_a1_true <span class="op">=</span> torch.tensor(prob_a1_true_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a>    prob_a0_est <span class="op">=</span> torch.tensor(prob_a0_est_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>    prob_a1_est <span class="op">=</span> torch.tensor(prob_a1_est_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
-<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to numpy</span></span>
-<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>s_grid <span class="op">=</span> S_eval.numpy().flatten()</span>
-<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>prob_a1_true_np <span class="op">=</span> prob_a1_true.numpy().flatten()</span>
-<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>prob_a1_est_np <span class="op">=</span> prob_a1_est.numpy().flatten()</span>
-<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>v0_true_np <span class="op">=</span> v0_true.numpy().flatten()</span>
-<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>v0_est_np <span class="op">=</span> v0_est.numpy().flatten()</span>
-<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>v1_true_np <span class="op">=</span> v1_true.numpy().flatten()</span>
-<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>v1_est_np <span class="op">=</span> v1_est.numpy().flatten()</span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Computed equilibrium objects on grid of </span><span class="sc">{</span>N<span class="sc">}</span><span class="ss"> points"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="32467d5c" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> GenerateStateGrid, SolveValueIteration</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve for estimated value functions using estimated parameters</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Solving for value functions under estimated parameters..."</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Using gamma_hat=</span><span class="sc">{</span>gamma_hat<span class="sc">:.4f}</span><span class="ss">, beta_hat=</span><span class="sc">{</span>beta_hat<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>v_theta_0_est, v_theta_1_est, _ <span class="op">=</span> SolveValueIteration(</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    beta<span class="op">=</span>beta_hat,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    gamma<span class="op">=</span>gamma_hat,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    delta<span class="op">=</span>delta,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    gamma_E<span class="op">=</span>gamma_E,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    N<span class="op">=</span>N,</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    state_range<span class="op">=</span>state_range,</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span>max_iter,</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Solved value functions under estimated parameters"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Solving for value functions under estimated parameters...
+  Using gamma_hat=0.1000, beta_hat=1.4000
+Iteration 0: max_error = 11.181829
+Iteration 10: max_error = 1.891396
+Iteration 20: max_error = 2.109634
+Iteration 30: max_error = 2.455990
+Iteration 40: max_error = 2.548412
+Iteration 50: max_error = 2.517834
+Iteration 60: max_error = 2.179832
+Iteration 70: max_error = 0.999920
+Iteration 80: max_error = 0.493973
+Iteration 90: max_error = 0.307968
+Iteration 100: max_error = 0.177498
+Iteration 110: max_error = 0.123810
+Iteration 120: max_error = 0.102707
+Iteration 130: max_error = 0.088379
+Iteration 140: max_error = 0.074211
+Iteration 150: max_error = 0.061447
+Iteration 160: max_error = 0.050926
+Iteration 170: max_error = 0.042412
+Iteration 180: max_error = 0.035690
+Iteration 190: max_error = 0.030266
+Iteration 200: max_error = 0.025780
+Iteration 210: max_error = 0.022240
+Iteration 220: max_error = 0.019058
+Iteration 230: max_error = 0.016884
+Iteration 240: max_error = 0.014183
+Iteration 250: max_error = 0.012688
+Iteration 260: max_error = 0.011253
+Iteration 270: max_error = 0.011086
+Iteration 280: max_error = 0.011726
+Iteration 290: max_error = 0.010445
+Iteration 300: max_error = 0.009590
+Iteration 310: max_error = 0.009453
+Iteration 320: max_error = 0.009987
+Iteration 330: max_error = 0.009140
+Iteration 340: max_error = 0.009178
+Iteration 350: max_error = 0.008461
+Iteration 360: max_error = 0.008965
+Iteration 370: max_error = 0.008720
+Iteration 380: max_error = 0.008018
+Iteration 390: max_error = 0.008209
+Iteration 400: max_error = 0.007668
+Iteration 410: max_error = 0.007553
+Iteration 420: max_error = 0.007347
+Iteration 430: max_error = 0.007301
+Iteration 440: max_error = 0.007195
+Iteration 450: max_error = 0.007156
+Iteration 460: max_error = 0.006798
+Iteration 470: max_error = 0.006760
+Iteration 480: max_error = 0.006721
+Iteration 490: max_error = 0.006859
+Iteration 500: max_error = 0.006653
+Iteration 510: max_error = 0.006378
+Iteration 520: max_error = 0.005974
+Iteration 530: max_error = 0.005913
+Iteration 540: max_error = 0.006744
+Iteration 550: max_error = 0.006241
+Iteration 560: max_error = 0.011890
+Iteration 570: max_error = 0.010361
+Iteration 580: max_error = 0.011623
+Iteration 590: max_error = 0.005867
+Iteration 600: max_error = 0.006218
+Iteration 610: max_error = 0.005898
+Iteration 620: max_error = 0.005791
+Iteration 630: max_error = 0.004967
+Iteration 640: max_error = 0.005432
+Iteration 650: max_error = 0.005592
+Iteration 660: max_error = 0.005768
+Iteration 670: max_error = 0.006310
+Iteration 680: max_error = 0.005569
+Iteration 690: max_error = 0.005402
+Iteration 700: max_error = 0.016052
+Iteration 710: max_error = 0.006523
+Iteration 720: max_error = 0.005638
+Iteration 730: max_error = 0.005249
+Iteration 740: max_error = 0.005287
+Iteration 750: max_error = 0.005333
+Iteration 760: max_error = 0.005165
+Iteration 770: max_error = 0.004951
+Iteration 780: max_error = 0.005142
+Iteration 790: max_error = 0.004860
+Iteration 800: max_error = 0.004166
+Iteration 810: max_error = 0.004890
+Iteration 820: max_error = 0.004730
+Iteration 830: max_error = 0.004738
+Iteration 840: max_error = 0.004684
+Iteration 850: max_error = 0.005283
+Iteration 860: max_error = 0.004623
+Iteration 870: max_error = 0.005966
+Iteration 880: max_error = 0.004738
+Iteration 890: max_error = 0.004684
+Iteration 900: max_error = 0.004669
+Iteration 910: max_error = 0.010475
+Iteration 920: max_error = 0.004593
+Iteration 930: max_error = 0.004601
+Iteration 940: max_error = 0.004616
+Iteration 950: max_error = 0.004555
+Iteration 960: max_error = 0.003967
+Iteration 970: max_error = 0.004509
+Iteration 980: max_error = 0.005146
+Iteration 990: max_error = 0.004623
+Solved value functions under estimated parameters</code></pre>
 </div>
-<div id="1cb5630d" class="cell" data-execution_count="9">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison plots</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">12</span>))</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 1: CCP comparison (scatter with 45-degree line)</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">0</span>]</span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>ax.scatter(prob_a1_true_np, prob_a1_est_np, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">20</span>)</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Conditional Choice Probability Comparison'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute CCP correlation</span></span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>ccp_corr <span class="op">=</span> np.corrcoef(prob_a1_true_np, prob_a1_est_np)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>ccp_rmse <span class="op">=</span> np.sqrt(np.mean((prob_a1_true_np <span class="op">-</span> prob_a1_est_np)<span class="op">**</span><span class="dv">2</span>))</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="fl">0.05</span>, <span class="fl">0.95</span>, <span class="ss">f'Corr: </span><span class="sc">{</span>ccp_corr<span class="sc">:.4f}</span><span class="ch">\n</span><span class="ss">RMSE: </span><span class="sc">{</span>ccp_rmse<span class="sc">:.4f}</span><span class="ss">'</span>,</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>        transform<span class="op">=</span>ax.transAxes, verticalalignment<span class="op">=</span><span class="st">'top'</span>,</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>        bbox<span class="op">=</span><span class="bu">dict</span>(boxstyle<span class="op">=</span><span class="st">'round'</span>, facecolor<span class="op">=</span><span class="st">'wheat'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>))</span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 2: Value function v0 comparison</span></span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">1</span>]</span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>ax.scatter(v0_true_np, v0_est_np, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">20</span>)</span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>v0_min, v0_max <span class="op">=</span> <span class="bu">min</span>(v0_true_np.<span class="bu">min</span>(), v0_est_np.<span class="bu">min</span>()), <span class="bu">max</span>(v0_true_np.<span class="bu">max</span>(), v0_est_np.<span class="bu">max</span>())</span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>ax.plot([v0_min, v0_max], [v0_min, v0_max], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True v(s, a=0)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated v(s, a=0)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Value Function (a=0) Comparison'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>, adjustable<span class="op">=</span><span class="st">'box'</span>)</span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>v0_corr <span class="op">=</span> np.corrcoef(v0_true_np, v0_est_np)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>v0_rmse <span class="op">=</span> np.sqrt(np.mean((v0_true_np <span class="op">-</span> v0_est_np)<span class="op">**</span><span class="dv">2</span>))</span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="fl">0.05</span>, <span class="fl">0.95</span>, <span class="ss">f'Corr: </span><span class="sc">{</span>v0_corr<span class="sc">:.4f}</span><span class="ch">\n</span><span class="ss">RMSE: </span><span class="sc">{</span>v0_rmse<span class="sc">:.4f}</span><span class="ss">'</span>,</span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>        transform<span class="op">=</span>ax.transAxes, verticalalignment<span class="op">=</span><span class="st">'top'</span>,</span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>        bbox<span class="op">=</span><span class="bu">dict</span>(boxstyle<span class="op">=</span><span class="st">'round'</span>, facecolor<span class="op">=</span><span class="st">'wheat'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>))</span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 3: Value function v1 comparison</span></span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">0</span>]</span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>ax.scatter(v1_true_np, v1_est_np, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">20</span>)</span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>v1_min, v1_max <span class="op">=</span> <span class="bu">min</span>(v1_true_np.<span class="bu">min</span>(), v1_est_np.<span class="bu">min</span>()), <span class="bu">max</span>(v1_true_np.<span class="bu">max</span>(), v1_est_np.<span class="bu">max</span>())</span>
-<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>ax.plot([v1_min, v1_max], [v1_min, v1_max], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
-<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True v(s, a=1)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated v(s, a=1)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Value Function (a=1) Comparison'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
-<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
-<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>, adjustable<span class="op">=</span><span class="st">'box'</span>)</span>
-<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a>v1_corr <span class="op">=</span> np.corrcoef(v1_true_np, v1_est_np)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
-<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>v1_rmse <span class="op">=</span> np.sqrt(np.mean((v1_true_np <span class="op">-</span> v1_est_np)<span class="op">**</span><span class="dv">2</span>))</span>
-<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="fl">0.05</span>, <span class="fl">0.95</span>, <span class="ss">f'Corr: </span><span class="sc">{</span>v1_corr<span class="sc">:.4f}</span><span class="ch">\n</span><span class="ss">RMSE: </span><span class="sc">{</span>v1_rmse<span class="sc">:.4f}</span><span class="ss">'</span>,</span>
-<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>        transform<span class="op">=</span>ax.transAxes, verticalalignment<span class="op">=</span><span class="st">'top'</span>,</span>
-<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>        bbox<span class="op">=</span><span class="bu">dict</span>(boxstyle<span class="op">=</span><span class="st">'round'</span>, facecolor<span class="op">=</span><span class="st">'wheat'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>))</span>
-<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 4: CCP as function of state</span></span>
-<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">1</span>]</span>
-<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, prob_a1_true_np, <span class="st">'b-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'True'</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
-<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, prob_a1_est_np, <span class="st">'r--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Estimated'</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
-<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'State (s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'CCP as Function of State'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
-<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
-<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
-<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
-<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb12-73"><a href="#cb12-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-74"><a href="#cb12-74" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Equilibrium Object Comparison:"</span>)</span>
-<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  CCP - Correlation: </span><span class="sc">{</span>ccp_corr<span class="sc">:.4f}</span><span class="ss">, RMSE: </span><span class="sc">{</span>ccp_rmse<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  V0  - Correlation: </span><span class="sc">{</span>v0_corr<span class="sc">:.4f}</span><span class="ss">, RMSE: </span><span class="sc">{</span>v0_rmse<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  V1  - Correlation: </span><span class="sc">{</span>v1_corr<span class="sc">:.4f}</span><span class="ss">, RMSE: </span><span class="sc">{</span>v1_rmse<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="8f484240" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute true CCPs and values</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute value functions on grid</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    v0_true <span class="op">=</span> v_theta_0_true(S_eval)</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    v1_true <span class="op">=</span> v_theta_1_true(S_eval)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>    v0_est <span class="op">=</span> v_theta_0_est(S_eval)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>    v1_est <span class="op">=</span> v_theta_1_est(S_eval)</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute choice probabilities for each state in the grid</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>    prob_a0_true_list <span class="op">=</span> []</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    prob_a1_true_list <span class="op">=</span> []</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    prob_a0_est_list <span class="op">=</span> []</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>    prob_a1_est_list <span class="op">=</span> []</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N):</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>        s_i <span class="op">=</span> S_eval[i].item()</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># True equilibrium probabilities</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>        prob_a0_t, prob_a1_t <span class="op">=</span> ComputeChoiceProbability(</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span>s_i,</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>            v_theta_0<span class="op">=</span>v_theta_0_true,</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>            v_theta_1<span class="op">=</span>v_theta_1_true</span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>        prob_a0_true_list.append(prob_a0_t)</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>        prob_a1_true_list.append(prob_a1_t)</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Estimated equilibrium probabilities</span></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>        prob_a0_e, prob_a1_e <span class="op">=</span> ComputeChoiceProbability(</span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span>s_i,</span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>            v_theta_0<span class="op">=</span>v_theta_0_est,</span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>            v_theta_1<span class="op">=</span>v_theta_1_est</span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>        prob_a0_est_list.append(prob_a0_e)</span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>        prob_a1_est_list.append(prob_a1_e)</span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Convert to tensors</span></span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>    prob_a0_true <span class="op">=</span> torch.tensor(prob_a0_true_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    prob_a1_true <span class="op">=</span> torch.tensor(prob_a1_true_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a>    prob_a0_est <span class="op">=</span> torch.tensor(prob_a0_est_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>    prob_a1_est <span class="op">=</span> torch.tensor(prob_a1_est_list).reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to numpy</span></span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a>s_grid <span class="op">=</span> S_eval.numpy().flatten()</span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>prob_a1_true_np <span class="op">=</span> prob_a1_true.numpy().flatten()</span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a>prob_a1_est_np <span class="op">=</span> prob_a1_est.numpy().flatten()</span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a>v0_true_np <span class="op">=</span> v0_true.numpy().flatten()</span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>v0_est_np <span class="op">=</span> v0_est.numpy().flatten()</span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a>v1_true_np <span class="op">=</span> v1_true.numpy().flatten()</span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a>v1_est_np <span class="op">=</span> v1_est.numpy().flatten()</span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Computed equilibrium objects on grid of </span><span class="sc">{</span>N<span class="sc">}</span><span class="ss"> points"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Computed equilibrium objects on grid of 100 points</code></pre>
+</div>
+</div>
+<div id="3f3e6d01" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison plots</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">12</span>))</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 1: CCP comparison (scatter with 45-degree line)</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">0</span>]</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>ax.scatter(prob_a1_true_np, prob_a1_est_np, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Conditional Choice Probability Comparison'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>)</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute CCP correlation</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>ccp_corr <span class="op">=</span> np.corrcoef(prob_a1_true_np, prob_a1_est_np)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>ccp_rmse <span class="op">=</span> np.sqrt(np.mean((prob_a1_true_np <span class="op">-</span> prob_a1_est_np)<span class="op">**</span><span class="dv">2</span>))</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="fl">0.05</span>, <span class="fl">0.95</span>, <span class="ss">f'Corr: </span><span class="sc">{</span>ccp_corr<span class="sc">:.4f}</span><span class="ch">\n</span><span class="ss">RMSE: </span><span class="sc">{</span>ccp_rmse<span class="sc">:.4f}</span><span class="ss">'</span>,</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>        transform<span class="op">=</span>ax.transAxes, verticalalignment<span class="op">=</span><span class="st">'top'</span>,</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>        bbox<span class="op">=</span><span class="bu">dict</span>(boxstyle<span class="op">=</span><span class="st">'round'</span>, facecolor<span class="op">=</span><span class="st">'wheat'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>))</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 2: Value function v0 comparison</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>ax.scatter(v0_true_np, v0_est_np, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>v0_min, v0_max <span class="op">=</span> <span class="bu">min</span>(v0_true_np.<span class="bu">min</span>(), v0_est_np.<span class="bu">min</span>()), <span class="bu">max</span>(v0_true_np.<span class="bu">max</span>(), v0_est_np.<span class="bu">max</span>())</span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>ax.plot([v0_min, v0_max], [v0_min, v0_max], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True v(s, a=0)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated v(s, a=0)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Value Function (a=0) Comparison'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>, adjustable<span class="op">=</span><span class="st">'box'</span>)</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>v0_corr <span class="op">=</span> np.corrcoef(v0_true_np, v0_est_np)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>v0_rmse <span class="op">=</span> np.sqrt(np.mean((v0_true_np <span class="op">-</span> v0_est_np)<span class="op">**</span><span class="dv">2</span>))</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="fl">0.05</span>, <span class="fl">0.95</span>, <span class="ss">f'Corr: </span><span class="sc">{</span>v0_corr<span class="sc">:.4f}</span><span class="ch">\n</span><span class="ss">RMSE: </span><span class="sc">{</span>v0_rmse<span class="sc">:.4f}</span><span class="ss">'</span>,</span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>        transform<span class="op">=</span>ax.transAxes, verticalalignment<span class="op">=</span><span class="st">'top'</span>,</span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>        bbox<span class="op">=</span><span class="bu">dict</span>(boxstyle<span class="op">=</span><span class="st">'round'</span>, facecolor<span class="op">=</span><span class="st">'wheat'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>))</span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 3: Value function v1 comparison</span></span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">0</span>]</span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a>ax.scatter(v1_true_np, v1_est_np, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>v1_min, v1_max <span class="op">=</span> <span class="bu">min</span>(v1_true_np.<span class="bu">min</span>(), v1_est_np.<span class="bu">min</span>()), <span class="bu">max</span>(v1_true_np.<span class="bu">max</span>(), v1_est_np.<span class="bu">max</span>())</span>
+<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>ax.plot([v1_min, v1_max], [v1_min, v1_max], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
+<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True v(s, a=1)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated v(s, a=1)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Value Function (a=1) Comparison'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
+<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>, adjustable<span class="op">=</span><span class="st">'box'</span>)</span>
+<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a>v1_corr <span class="op">=</span> np.corrcoef(v1_true_np, v1_est_np)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a>v1_rmse <span class="op">=</span> np.sqrt(np.mean((v1_true_np <span class="op">-</span> v1_est_np)<span class="op">**</span><span class="dv">2</span>))</span>
+<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a>ax.text(<span class="fl">0.05</span>, <span class="fl">0.95</span>, <span class="ss">f'Corr: </span><span class="sc">{</span>v1_corr<span class="sc">:.4f}</span><span class="ch">\n</span><span class="ss">RMSE: </span><span class="sc">{</span>v1_rmse<span class="sc">:.4f}</span><span class="ss">'</span>,</span>
+<span id="cb19-57"><a href="#cb19-57" aria-hidden="true" tabindex="-1"></a>        transform<span class="op">=</span>ax.transAxes, verticalalignment<span class="op">=</span><span class="st">'top'</span>,</span>
+<span id="cb19-58"><a href="#cb19-58" aria-hidden="true" tabindex="-1"></a>        bbox<span class="op">=</span><span class="bu">dict</span>(boxstyle<span class="op">=</span><span class="st">'round'</span>, facecolor<span class="op">=</span><span class="st">'wheat'</span>, alpha<span class="op">=</span><span class="fl">0.5</span>))</span>
+<span id="cb19-59"><a href="#cb19-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-60"><a href="#cb19-60" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 4: CCP as function of state</span></span>
+<span id="cb19-61"><a href="#cb19-61" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">1</span>]</span>
+<span id="cb19-62"><a href="#cb19-62" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, prob_a1_true_np, <span class="st">'b-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'True'</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb19-63"><a href="#cb19-63" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, prob_a1_est_np, <span class="st">'r--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Estimated'</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb19-64"><a href="#cb19-64" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'State (s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-65"><a href="#cb19-65" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb19-66"><a href="#cb19-66" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'CCP as Function of State'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
+<span id="cb19-67"><a href="#cb19-67" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb19-68"><a href="#cb19-68" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb19-69"><a href="#cb19-69" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb19-70"><a href="#cb19-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-71"><a href="#cb19-71" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb19-72"><a href="#cb19-72" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb19-73"><a href="#cb19-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-74"><a href="#cb19-74" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Equilibrium Object Comparison:"</span>)</span>
+<span id="cb19-75"><a href="#cb19-75" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  CCP - Correlation: </span><span class="sc">{</span>ccp_corr<span class="sc">:.4f}</span><span class="ss">, RMSE: </span><span class="sc">{</span>ccp_rmse<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb19-76"><a href="#cb19-76" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  V0  - Correlation: </span><span class="sc">{</span>v0_corr<span class="sc">:.4f}</span><span class="ss">, RMSE: </span><span class="sc">{</span>v0_rmse<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb19-77"><a href="#cb19-77" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  V1  - Correlation: </span><span class="sc">{</span>v1_corr<span class="sc">:.4f}</span><span class="ss">, RMSE: </span><span class="sc">{</span>v1_rmse<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="estimate_mdp_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Equilibrium Object Comparison:
+  CCP - Correlation: 0.9981, RMSE: 0.0898
+  V0  - Correlation: 1.0000, RMSE: 14.4128
+  V1  - Correlation: 1.0000, RMSE: 14.8001</code></pre>
+</div>
 </div>
 
 

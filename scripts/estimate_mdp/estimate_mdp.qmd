@@ -524,7 +524,7 @@ print("If CCP errors are SMALL: CCP estimation is good; beta estimation issues a
 ## Run Estimation
 
 ```{python}
-#| eval: false
+#| eval: true
 
 # Load solver configuration from solver output (for estimation hyperparameters)
 solver_dir = Path('../../output/solve_mdp')
@@ -604,7 +604,7 @@ print(f"  Distance at true beta index: {distances[min_idx]:.6f}")
 ## Save Estimation Results
 
 ```{python}
-#| eval: false
+#| eval: true
 
 # Save estimation results
 output_dir = Path('../../output/estimate_mdp')
@@ -633,7 +633,7 @@ print(f"Saved estimation results to {output_dir.resolve()}")
 ## Compare Estimated and True Parameters
 
 ```{python}
-#| eval: false
+#| eval: true
 
 # Create comparison table
 comparison_data = {
@@ -657,7 +657,7 @@ print(df_comparison.to_string(index=False))
 Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.
 
 ```{python}
-#| eval: false
+#| eval: true
 
 # Load true value functions from solver
 solver_dir = Path('../../output/solve_mdp')
@@ -680,7 +680,7 @@ print("Loaded true value functions from solver")
 ```
 
 ```{python}
-#| eval: false
+#| eval: true
 
 from mdp_solver import GenerateStateGrid, SolveValueIteration
 
@@ -706,7 +706,7 @@ print("Solved value functions under estimated parameters")
 ```
 
 ```{python}
-#| eval: false
+#| eval: true
 
 # Generate evaluation grid
 S_eval = GenerateStateGrid(N=N, state_range=state_range)
@@ -765,7 +765,7 @@ print(f"\nComputed equilibrium objects on grid of {N} points")
 ```
 
 ```{python}
-#| eval: false
+#| eval: true
 
 # Create comparison plots
 fig, axes = plt.subplots(2, 2, figsize=(14, 12))
