@@ -182,7 +182,7 @@ window.Quarto = {
 
 <section id="load-configuration-and-simulation-results" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulation-results">Load Configuration and Simulation Results</h2>
-<div id="0ca4259a" class="cell" data-execution_count="1">
+<div id="19c7b4f0" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -506,7 +506,7 @@ Algorithm: Two-Step Estimation of MDP Parameters
 </section>
 <section id="run-estimation" class="level2">
 <h2 class="anchored" data-anchor-id="run-estimation">Run Estimation</h2>
-<div id="496ad630" class="cell" data-execution_count="2">
+<div id="425cb309" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -599,27 +599,27 @@ Estimation Configuration:
 
 Running estimation...
   Searching over 11 beta candidates in parallel...
-    Completed beta[0]=0.500, distance=48394.707031
-    Completed beta[3]=0.800, distance=47737.328125
-    Completed beta[2]=0.700, distance=47196.250000
-    Completed beta[1]=0.600, distance=47633.457031
-    Completed beta[4]=0.900, distance=48055.105469
-    Completed beta[5]=1.000, distance=48204.796875
-    Completed beta[7]=1.200, distance=47933.144531
-    Completed beta[6]=1.100, distance=47608.277344
-    Completed beta[8]=1.300, distance=47972.464844
-    Completed beta[9]=1.400, distance=48860.117188
-    Completed beta[10]=1.500, distance=47545.242188
-  Best beta: 0.7000 (k=2, distance=47196.250000)
+    Completed beta[0]=0.500, distance=45401.515625
+    Completed beta[3]=0.800, distance=45383.191406
+    Completed beta[1]=0.600, distance=44188.550781
+    Completed beta[2]=0.700, distance=44394.007812
+    Completed beta[4]=0.900, distance=44679.457031
+    Completed beta[5]=1.000, distance=44530.730469
+    Completed beta[7]=1.200, distance=44560.835938
+    Completed beta[6]=1.100, distance=44277.167969
+    Completed beta[8]=1.300, distance=44872.992188
+    Completed beta[9]=1.400, distance=45407.105469
+    Completed beta[10]=1.500, distance=44689.183594
+  Best beta: 0.6000 (k=1, distance=44188.550781)
 
 Estimation Results:
   Estimated gamma: 0.1000
   True gamma: 0.1000
   Error: 0.0000
 
-  Estimated beta: 0.7000
+  Estimated beta: 0.6000
   True beta: 1.0000
-  Error: 0.3000</code></pre>
+  Error: 0.4000</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -631,15 +631,15 @@ Estimation Results:
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Beta Grid Search Diagnostics:
-  Minimum distance at beta = 0.7000
+  Minimum distance at beta = 0.6000
   True beta = 1.0000
-  Distance at true beta index: 47196.250000</code></pre>
+  Distance at true beta index: 44188.550781</code></pre>
 </div>
 </div>
 </section>
 <section id="save-estimation-results" class="level2">
 <h2 class="anchored" data-anchor-id="save-estimation-results">Save Estimation Results</h2>
-<div id="38fa360f" class="cell" data-execution_count="3">
+<div id="f74fd7d5" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimation results</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/estimate_mdp'</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
@@ -669,7 +669,7 @@ Beta Grid Search Diagnostics:
 </section>
 <section id="compare-estimated-and-true-parameters" class="level2">
 <h2 class="anchored" data-anchor-id="compare-estimated-and-true-parameters">Compare Estimated and True Parameters</h2>
-<div id="58229e0f" class="cell" data-execution_count="4">
+<div id="ed081cdb" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison table</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>comparison_data <span class="op">=</span> {</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Parameter'</span>: [<span class="st">'gamma'</span>, <span class="st">'beta'</span>],</span>
@@ -691,14 +691,14 @@ Beta Grid Search Diagnostics:
 Parameter Estimation Comparison:
 Parameter  True Value  Estimated Value  Absolute Error  Relative Error (%)
     gamma         0.1              0.1    2.335316e-08            0.000023
-     beta         1.0              0.7    3.000000e-01           30.000000</code></pre>
+     beta         1.0              0.6    4.000000e-01           40.000000</code></pre>
 </div>
 </div>
 </section>
 <section id="compare-equilibrium-objects" class="level2">
 <h2 class="anchored" data-anchor-id="compare-equilibrium-objects">Compare Equilibrium Objects</h2>
 <p>Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.</p>
-<div id="8da5783d" class="cell" data-execution_count="5">
+<div id="c56b9348" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> solver_dir.exists():</span>
@@ -721,7 +721,7 @@ Parameter  True Value  Estimated Value  Absolute Error  Relative Error (%)
 <pre><code>Loaded true value functions from solver</code></pre>
 </div>
 </div>
-<div id="9a0f9cfb" class="cell" data-execution_count="6">
+<div id="144199a7" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> GenerateStateGrid, SolveValueIteration</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve for estimated value functions using estimated parameters</span></span>
@@ -746,111 +746,111 @@ Parameter  True Value  Estimated Value  Absolute Error  Relative Error (%)
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Solving for value functions under estimated parameters...
-  Using gamma_hat=0.1000, beta_hat=0.7000
-Iteration 0: max_error = 16.124180
-Iteration 10: max_error = 1.152481
-Iteration 20: max_error = 1.136734
-Iteration 30: max_error = 1.108952
-Iteration 40: max_error = 1.094761
-Iteration 50: max_error = 1.094006
-Iteration 60: max_error = 1.097485
-Iteration 70: max_error = 1.097588
-Iteration 80: max_error = 1.094269
-Iteration 90: max_error = 1.089615
-Iteration 100: max_error = 1.083450
-Iteration 110: max_error = 1.063934
-Iteration 120: max_error = 0.985836
-Iteration 130: max_error = 1.739025
-Iteration 140: max_error = 0.400322
-Iteration 150: max_error = 0.448124
-Iteration 160: max_error = 0.132874
-Iteration 170: max_error = 0.095284
-Iteration 180: max_error = 0.131573
-Iteration 190: max_error = 0.104176
-Iteration 200: max_error = 0.076778
-Iteration 210: max_error = 0.055328
-Iteration 220: max_error = 0.036419
-Iteration 230: max_error = 0.018101
-Iteration 240: max_error = 0.013790
-Iteration 250: max_error = 0.015667
-Iteration 260: max_error = 0.017227
-Iteration 270: max_error = 0.015965
-Iteration 280: max_error = 0.011475
-Iteration 290: max_error = 0.008167
-Iteration 300: max_error = 0.008156
-Iteration 310: max_error = 0.008095
-Iteration 320: max_error = 0.007721
-Iteration 330: max_error = 0.007755
-Iteration 340: max_error = 0.007122
-Iteration 350: max_error = 0.007725
-Iteration 360: max_error = 0.006824
-Iteration 370: max_error = 0.007061
-Iteration 380: max_error = 0.007210
-Iteration 390: max_error = 0.007542
-Iteration 400: max_error = 0.006824
-Iteration 410: max_error = 0.006706
-Iteration 420: max_error = 0.005535
-Iteration 430: max_error = 0.006126
-Iteration 440: max_error = 0.007710
-Iteration 450: max_error = 0.006050
-Iteration 460: max_error = 0.009457
-Iteration 470: max_error = 0.005875
-Iteration 480: max_error = 0.008022
-Iteration 490: max_error = 0.005535
-Iteration 500: max_error = 0.005432
-Iteration 510: max_error = 0.004459
-Iteration 520: max_error = 0.005363
-Iteration 530: max_error = 0.005245
-Iteration 540: max_error = 0.005100
-Iteration 550: max_error = 0.005062
-Iteration 560: max_error = 0.004879
-Iteration 570: max_error = 0.005646
-Iteration 580: max_error = 0.004723
-Iteration 590: max_error = 0.004272
-Iteration 600: max_error = 0.004539
-Iteration 610: max_error = 0.003643
-Iteration 620: max_error = 0.004505
-Iteration 630: max_error = 0.004593
-Iteration 640: max_error = 0.004261
-Iteration 650: max_error = 0.004326
-Iteration 660: max_error = 0.004135
-Iteration 670: max_error = 0.004017
-Iteration 680: max_error = 0.004211
-Iteration 690: max_error = 0.004177
-Iteration 700: max_error = 0.004074
-Iteration 710: max_error = 0.003868
-Iteration 720: max_error = 0.003986
-Iteration 730: max_error = 0.004608
-Iteration 740: max_error = 0.005444
-Iteration 750: max_error = 0.003803
-Iteration 760: max_error = 0.004032
-Iteration 770: max_error = 0.003983
-Iteration 780: max_error = 0.003853
-Iteration 790: max_error = 0.003616
-Iteration 800: max_error = 0.003838
-Iteration 810: max_error = 0.003601
-Iteration 820: max_error = 0.004509
-Iteration 830: max_error = 0.006874
-Iteration 840: max_error = 0.003490
-Iteration 850: max_error = 0.003380
-Iteration 860: max_error = 0.005390
-Iteration 870: max_error = 0.003548
-Iteration 880: max_error = 0.002754
-Iteration 890: max_error = 0.003368
-Iteration 900: max_error = 0.003361
-Iteration 910: max_error = 0.003014
-Iteration 920: max_error = 0.003319
-Iteration 930: max_error = 0.003151
-Iteration 940: max_error = 0.003258
-Iteration 950: max_error = 0.002739
-Iteration 960: max_error = 0.003136
-Iteration 970: max_error = 0.003590
-Iteration 980: max_error = 0.003437
-Iteration 990: max_error = 0.003033
+  Using gamma_hat=0.1000, beta_hat=0.6000
+Iteration 0: max_error = 20.130367
+Iteration 10: max_error = 1.136934
+Iteration 20: max_error = 0.941263
+Iteration 30: max_error = 0.916851
+Iteration 40: max_error = 0.909428
+Iteration 50: max_error = 0.912842
+Iteration 60: max_error = 0.915913
+Iteration 70: max_error = 0.915108
+Iteration 80: max_error = 0.913036
+Iteration 90: max_error = 0.912205
+Iteration 100: max_error = 0.912067
+Iteration 110: max_error = 0.910816
+Iteration 120: max_error = 0.909321
+Iteration 130: max_error = 0.907665
+Iteration 140: max_error = 0.904148
+Iteration 150: max_error = 0.833340
+Iteration 160: max_error = 1.338932
+Iteration 170: max_error = 0.550163
+Iteration 180: max_error = 0.503288
+Iteration 190: max_error = 0.183727
+Iteration 200: max_error = 0.222351
+Iteration 210: max_error = 0.164703
+Iteration 220: max_error = 0.117914
+Iteration 230: max_error = 0.087584
+Iteration 240: max_error = 0.065968
+Iteration 250: max_error = 0.054607
+Iteration 260: max_error = 0.045589
+Iteration 270: max_error = 0.038076
+Iteration 280: max_error = 0.030903
+Iteration 290: max_error = 0.024561
+Iteration 300: max_error = 0.020285
+Iteration 310: max_error = 0.017542
+Iteration 320: max_error = 0.014544
+Iteration 330: max_error = 0.011923
+Iteration 340: max_error = 0.009781
+Iteration 350: max_error = 0.008755
+Iteration 360: max_error = 0.007233
+Iteration 370: max_error = 0.009796
+Iteration 380: max_error = 0.006691
+Iteration 390: max_error = 0.006245
+Iteration 400: max_error = 0.007042
+Iteration 410: max_error = 0.005524
+Iteration 420: max_error = 0.005581
+Iteration 430: max_error = 0.004963
+Iteration 440: max_error = 0.004662
+Iteration 450: max_error = 0.004307
+Iteration 460: max_error = 0.004128
+Iteration 470: max_error = 0.004002
+Iteration 480: max_error = 0.004005
+Iteration 490: max_error = 0.003807
+Iteration 500: max_error = 0.003498
+Iteration 510: max_error = 0.006813
+Iteration 520: max_error = 0.003242
+Iteration 530: max_error = 0.005047
+Iteration 540: max_error = 0.003292
+Iteration 550: max_error = 0.003094
+Iteration 560: max_error = 0.006031
+Iteration 570: max_error = 0.003689
+Iteration 580: max_error = 0.002777
+Iteration 590: max_error = 0.002701
+Iteration 600: max_error = 0.005100
+Iteration 610: max_error = 0.003365
+Iteration 620: max_error = 0.004074
+Iteration 630: max_error = 0.002953
+Iteration 640: max_error = 0.002518
+Iteration 650: max_error = 0.002674
+Iteration 660: max_error = 0.002518
+Iteration 670: max_error = 0.002495
+Iteration 680: max_error = 0.002510
+Iteration 690: max_error = 0.002583
+Iteration 700: max_error = 0.002430
+Iteration 710: max_error = 0.002007
+Iteration 720: max_error = 0.002052
+Iteration 730: max_error = 0.002808
+Iteration 740: max_error = 0.003235
+Iteration 750: max_error = 0.002125
+Iteration 760: max_error = 0.002197
+Iteration 770: max_error = 0.004608
+Iteration 780: max_error = 0.002365
+Iteration 790: max_error = 0.002308
+Iteration 800: max_error = 0.002220
+Iteration 810: max_error = 0.002235
+Iteration 820: max_error = 0.002831
+Iteration 830: max_error = 0.002090
+Iteration 840: max_error = 0.001827
+Iteration 850: max_error = 0.002754
+Iteration 860: max_error = 0.002201
+Iteration 870: max_error = 0.002586
+Iteration 880: max_error = 0.001991
+Iteration 890: max_error = 0.002045
+Iteration 900: max_error = 0.002781
+Iteration 910: max_error = 0.002151
+Iteration 920: max_error = 0.002590
+Iteration 930: max_error = 0.002007
+Iteration 940: max_error = 0.002010
+Iteration 950: max_error = 0.001957
+Iteration 960: max_error = 0.001781
+Iteration 970: max_error = 0.001930
+Iteration 980: max_error = 0.002964
+Iteration 990: max_error = 0.001919
 Solved value functions under estimated parameters</code></pre>
 </div>
 </div>
-<div id="3f77eb0b" class="cell" data-execution_count="7">
+<div id="9b9b7049" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -910,7 +910,7 @@ Solved value functions under estimated parameters</code></pre>
 Computed equilibrium objects on grid of 100 points</code></pre>
 </div>
 </div>
-<div id="30be4f53" class="cell" data-execution_count="8">
+<div id="98dd07b1" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison plots</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">12</span>))</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -998,9 +998,9 @@ Computed equilibrium objects on grid of 100 points</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Equilibrium Object Comparison:
-  CCP - Correlation: 0.9991, RMSE: 0.0788
-  V0  - Correlation: 1.0000, RMSE: 10.3617
-  V1  - Correlation: 1.0000, RMSE: 10.6710</code></pre>
+  CCP - Correlation: 0.9985, RMSE: 0.1074
+  V0  - Correlation: 1.0000, RMSE: 13.7123
+  V1  - Correlation: 1.0000, RMSE: 14.1305</code></pre>
 </div>
 </div>
 
