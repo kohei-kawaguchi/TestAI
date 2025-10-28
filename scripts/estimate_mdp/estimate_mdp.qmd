@@ -411,6 +411,7 @@ import matplotlib.pyplot as plt
 
 from mdp_estimator import EstimateMDP
 from mdp_solver import MonotonicNetwork, ComputeChoiceProbability
+from config_mdp import get_estimator_config
 
 # Load solver configuration from solver output (for estimation hyperparameters)
 solver_dir = Path('../../output/sovle_mdp')
@@ -425,8 +426,13 @@ max_iter = solver_config['max_iter']
 num_epochs = solver_config['num_epochs']
 learning_rate = solver_config['learning_rate']
 
-# Create beta grid for search
-beta_grid = np.linspace(0.5, 1.5, 11)  # Search around true value of 1.0
+# Load estimator configuration (estimation method parameters)
+estimator_config = get_estimator_config()
+beta_grid = np.linspace(
+    estimator_config['beta_grid_min'],
+    estimator_config['beta_grid_max'],
+    estimator_config['beta_grid_points']
+)
 
 print(f"\nEstimation Configuration:")
 print(f"  State grid size (N): {N}")

@@ -50,6 +50,13 @@ _SIMULATOR_CONFIG: Dict[str, Any] = {
     "seed": 42,         # Random seed for reproducibility
 }
 
+# Estimation method parameters (how to estimate from simulated data)
+_ESTIMATOR_CONFIG: Dict[str, Any] = {
+    "beta_grid_min": 0.5,   # Minimum beta value for grid search
+    "beta_grid_max": 1.5,   # Maximum beta value for grid search
+    "beta_grid_points": 11, # Number of grid points for beta search
+}
+
 
 def get_model_config() -> Dict[str, Any]:
     """
@@ -85,9 +92,19 @@ def get_simulator_config() -> Dict[str, Any]:
     return deepcopy(_SIMULATOR_CONFIG)
 
 
+def get_estimator_config() -> Dict[str, Any]:
+    """
+    Return a deep copy of the estimation method configuration.
+
+    These are parameters for how to estimate from simulated data.
+    """
+    return deepcopy(_ESTIMATOR_CONFIG)
+
+
 __all__ = [
     "get_model_config",
     "get_solver_config",
     "get_comparative_statics",
-    "get_simulator_config"
+    "get_simulator_config",
+    "get_estimator_config"
 ]
