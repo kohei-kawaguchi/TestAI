@@ -97,7 +97,9 @@ $$\hat{P}(a=1|s) = f_\theta(s)$$
 
 where $f_\theta$ is a neural network that is:
 - Continuous in $s$
-- Monotonically increasing in $s$ (enforced by architecture)
+- **Monotonically DECREASING in $s$** (enforced by architecture)
+  - Higher capital stock → Lower investment probability
+  - Implemented by negating input: $\hat{P}(s) = \sigma(g(-s))$ where $g$ is monotonic increasing
 
 This is estimated by maximum likelihood using the observed state-action pairs.
 
@@ -259,7 +261,7 @@ This pseudo code is designed for direct implementation:
 
 **Procedure** `EstimateCCP`(states: Array[$M \times T$], actions: Array[$M \times T$], hyperparameters: dict, num_epochs: int, learning_rate: float) $\to$ Network
 
-1. $\hat{P}$: Network $\leftarrow$ `InitializeMonotonicNetwork`(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// Network output layer uses sigmoid: $\sigma(z) = \frac{1}{1+e^{-z}}$ to ensure output $\in [0,1]$
+1. $\hat{P}$: Network $\leftarrow$ `InitializeDecreasingCCPNetwork`(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// DECREASING in $s$: wraps monotonic network with input negation $\hat{P}(s) = \sigma(g(-s))$, output $\in [0,1]$
 
 2. optimizer: Optimizer $\leftarrow$ `CreateOptimizer`($\hat{P}$, learning_rate)
 
@@ -408,7 +410,7 @@ The following functions are imported from solve_mdp and reused directly:
 **Key Implementation Details:**
 
 - **Shared configuration**: Load $\delta$, $\gamma_E$ from the same config used in solve_mdp
-- **Monotonic network for CCP**: The CCP network $\hat{P}$ uses monotonic architecture to ensure $\hat{P}(a=1|s)$ is increasing in $s$. **The network output layer must use a sigmoid activation function** to constrain outputs to the probability range $[0,1]$, since CCP represents $P(a=1|s)$
+- **Monotonic network for CCP**: The CCP network $\hat{P}$ uses monotonic architecture to ensure $\hat{P}(a=1|s)$ is **DECREASING in $s$** (higher capital → lower investment probability). **Implementation**: Negate input before passing to monotonic network: $\hat{P}(s) = \sigma(g(-s))$ where $g$ is monotonic increasing and $\sigma$ is sigmoid to constrain output to $[0,1]$
 - **Nested fixed-point**: The outer loop searches over $\beta$ candidates, inner loop solves value functions for each $\beta$
 - **Binary cross-entropy loss**: For CCP estimation, use $-[a \log(\hat{p}) + (1-a) \log(1-\hat{p})]$
 - **Grid search for $\beta$**: Can be replaced with gradient-free optimization methods like Nelder-Mead
