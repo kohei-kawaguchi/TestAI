@@ -150,6 +150,7 @@ window.Quarto = {
   <li><a href="#step-1-estimate-state-depreciation-parameter-gamma" id="toc-step-1-estimate-state-depreciation-parameter-gamma" class="nav-link" data-scroll-target="#step-1-estimate-state-depreciation-parameter-gamma">Step 1: Estimate State Depreciation Parameter <span class="math inline">\(\gamma\)</span></a></li>
   <li><a href="#step-2-estimate-reward-parameter-beta-via-revealed-preference" id="toc-step-2-estimate-reward-parameter-beta-via-revealed-preference" class="nav-link" data-scroll-target="#step-2-estimate-reward-parameter-beta-via-revealed-preference">Step 2: Estimate Reward Parameter <span class="math inline">\(\beta\)</span> via Revealed Preference</a></li>
   </ul></li>
+  <li><a href="#pseudo-code" id="toc-pseudo-code" class="nav-link" data-scroll-target="#pseudo-code">Pseudo Code</a></li>
   </ul>
 </nav>
     </div>
@@ -177,7 +178,7 @@ window.Quarto = {
 
 <section id="load-configuration-and-simulation-results" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulation-results">Load Configuration and Simulation Results</h2>
-<div id="6eeb4340" class="cell" data-execution_count="1">
+<div id="d711ce7b" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -259,10 +260,208 @@ True parameters: beta=1.0, gamma=0.1</code></pre>
 <p>where <span class="math inline">\(\mathcal{S}\)</span> is a grid of state values spanning the observed state range.</p>
 <p>This is a nested fixed-point problem: - <strong>Outer loop</strong>: Search over candidate values of <span class="math inline">\(\beta\)</span> - <strong>Inner loop</strong>: For each <span class="math inline">\(\beta\)</span>, solve for value functions consistent with estimated CCP, then compute updated CCP</p>
 <p>The optimal <span class="math inline">\(\beta\)</span> is the one where the estimated policy (from data) is consistent with the optimal policy (from the model).</p>
-
-
 </section>
 </section>
+</section>
+<section id="pseudo-code" class="level2">
+<h2 class="anchored" data-anchor-id="pseudo-code">Pseudo Code</h2>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Algorithm: Two-Step Estimation of MDP Parameters
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Design Principles:</strong></p>
+<p>This pseudo code is designed for direct implementation:</p>
+<ul>
+<li><strong>No placeholders</strong>: Every operation corresponds to a concrete function or method call</li>
+<li><strong>Explicit parameters</strong>: All inputs are passed as parameters, no implicit/global state</li>
+<li><strong>Reuses shared functions</strong>: Uses <code>ComputeNextState</code>, <code>ComputeMeanReward</code>, <code>ComputeExpectedValue</code>, <code>ComputeChoiceProbability</code> from solve_mdp</li>
+<li><strong>No hard-coding</strong>: All values are parameterized</li>
+</ul>
+<p><strong>Input:</strong></p>
+<ul>
+<li>Observed data: states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>]</li>
+<li>Known parameter: <span class="math inline">\(\delta\)</span>: float (discount factor)</li>
+<li>State grid for evaluation: <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float]</li>
+<li>Network hyperparameters: hyperparameters: dict (containing <code>hidden_sizes</code>: list[int])</li>
+<li>Training parameters: num_epochs: int, learning_rate: float</li>
+<li>Search grid for <span class="math inline">\(\beta\)</span>: beta_grid: Array[<span class="math inline">\(K\)</span>] (candidate values of <span class="math inline">\(\beta\)</span>)</li>
+<li>Tolerance: <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, max_iter: int</li>
+<li>Other constants: <span class="math inline">\(\gamma_E\)</span>: float (Euler’s constant)</li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul>
+<li>Estimated parameters: <span class="math inline">\(\hat{\gamma}\)</span>: float, <span class="math inline">\(\hat{\beta}\)</span>: float</li>
+</ul>
+<hr>
+<section id="main-algorithm" class="level3">
+<h3 class="anchored" data-anchor-id="main-algorithm">Main Algorithm</h3>
+<p><strong>Procedure</strong> <code>EstimateMDP</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[<span class="math inline">\(K\)</span>], <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, max_iter: int, <span class="math inline">\(\gamma_E\)</span>: float) <span class="math inline">\(\to\)</span> (float, float)</p>
+<ol type="1">
+<li><p><span class="math inline">\(\hat{\gamma}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>EstimateGamma</code>(states, actions)</p></li>
+<li><p><span class="math inline">\(\hat{\beta}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>EstimateBeta</code>(states, actions, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(N\)</span>, state_range, hyperparameters, num_epochs, learning_rate, beta_grid, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, max_iter, <span class="math inline">\(\gamma_E\)</span>)</p></li>
+<li><p><strong>Return</strong> <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\hat{\beta}\)</span></p></li>
+</ol>
+<hr>
+</section>
+<section id="step-1-estimate-gamma" class="level3">
+<h3 class="anchored" data-anchor-id="step-1-estimate-gamma">Step 1: Estimate Gamma</h3>
+<p><strong>Procedure</strong> <code>EstimateGamma</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>]) <span class="math inline">\(\to\)</span> float</p>
+<ol type="1">
+<li><p>gamma_estimates: Array <span class="math inline">\(\leftarrow\)</span> Empty array</p></li>
+<li><p>For <span class="math inline">\(m\)</span>: int = 1 to <span class="math inline">\(M\)</span>:</p>
+<ol type="a">
+<li>For <span class="math inline">\(t\)</span>: int = 1 to <span class="math inline">\(T-1\)</span>:</li>
+</ol>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;i. <span class="math inline">\(s_t\)</span>: float <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;ii. <span class="math inline">\(s_{t+1}\)</span>: float <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t+1\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;iii. <span class="math inline">\(a_t\)</span>: int <span class="math inline">\(\leftarrow\)</span> actions[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;iv. <strong>If</strong> <span class="math inline">\(s_t \neq 0\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\gamma_{mt}\)</span>: float <span class="math inline">\(\leftarrow 1 - \frac{s_{t+1} - a_t}{s_t}\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Append <span class="math inline">\(\gamma_{mt}\)</span> to gamma_estimates</p></li>
+<li><p><span class="math inline">\(\hat{\gamma}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>Mean</code>(gamma_estimates)</p></li>
+<li><p><strong>Return</strong> <span class="math inline">\(\hat{\gamma}\)</span></p></li>
+</ol>
+<hr>
+</section>
+<section id="step-2-estimate-beta-via-revealed-preference" class="level3">
+<h3 class="anchored" data-anchor-id="step-2-estimate-beta-via-revealed-preference">Step 2: Estimate Beta via Revealed Preference</h3>
+<p><strong>Procedure</strong> <code>EstimateBeta</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], <span class="math inline">\(\hat{\gamma}\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[<span class="math inline">\(K\)</span>], <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, max_iter: int, <span class="math inline">\(\gamma_E\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
+<ol type="1">
+<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>EstimateCCP</code>(states, actions, hyperparameters, num_epochs, learning_rate)</p></li>
+<li><p><span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>GenerateStateGrid</code>(<span class="math inline">\(N\)</span>, state_range)</p></li>
+<li><p>distances: Array[<span class="math inline">\(K\)</span>] <span class="math inline">\(\leftarrow\)</span> Empty array</p></li>
+<li><p>For <span class="math inline">\(k\)</span>: int = 1 to <span class="math inline">\(K\)</span>:</p>
+<ol type="a">
+<li><p><span class="math inline">\(\beta_k\)</span>: float <span class="math inline">\(\leftarrow\)</span> beta_grid[<span class="math inline">\(k\)</span>]</p></li>
+<li><p><span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span> <span class="math inline">\(\leftarrow\)</span> <code>SolveValueFunctionGivenCCP</code>(<span class="math inline">\(\hat{P}\)</span>, <span class="math inline">\(\beta_k\)</span>, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, hyperparameters, <span class="math inline">\(S\)</span>, max_iter, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, num_epochs, learning_rate)</p></li>
+<li><p><span class="math inline">\(P^{\text{updated}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>ComputeCCPFromValue</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p></li>
+<li><p><span class="math inline">\(\hat{P}_{\text{eval}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow \hat{P}(S)\)</span></p></li>
+<li><p>distance: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeDistance</code>(<span class="math inline">\(\hat{P}_{\text{eval}}\)</span>, <span class="math inline">\(P^{\text{updated}}\)</span>)</p></li>
+<li><p>distances[<span class="math inline">\(k\)</span>] <span class="math inline">\(\leftarrow\)</span> distance</p></li>
+</ol></li>
+<li><p><span class="math inline">\(k^*\)</span>: int <span class="math inline">\(\leftarrow\)</span> <code>ArgMin</code>(distances)</p></li>
+<li><p><span class="math inline">\(\hat{\beta}\)</span>: float <span class="math inline">\(\leftarrow\)</span> beta_grid[<span class="math inline">\(k^*\)</span>]</p></li>
+<li><p><strong>Return</strong> <span class="math inline">\(\hat{\beta}\)</span></p></li>
+</ol>
+<hr>
+</section>
+<section id="subroutines-for-step-2a-estimate-ccp" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines-for-step-2a-estimate-ccp">Subroutines for Step 2a: Estimate CCP</h3>
+<p><strong>Procedure</strong> <code>EstimateCCP</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], hyperparameters: dict, num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> Network</p>
+<ol type="1">
+<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeMonotonicNetwork</code>(hyperparameters)</p></li>
+<li><p>optimizer: Optimizer <span class="math inline">\(\leftarrow\)</span> <code>CreateOptimizer</code>(<span class="math inline">\(\hat{P}\)</span>, learning_rate)</p></li>
+<li><p>For epoch: int = 1 to num_epochs:</p>
+<ol type="a">
+<li><p>optimizer.<code>zero_grad</code>()</p></li>
+<li><p>For <span class="math inline">\(m\)</span>: int = 1 to <span class="math inline">\(M\)</span>:</p></li>
+</ol>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;i. For <span class="math inline">\(t\)</span>: int = 1 to <span class="math inline">\(T\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s_{mt}\)</span>: Tensor <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(a_{mt}\)</span>: int <span class="math inline">\(\leftarrow\)</span> actions[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\hat{p}_{mt}\)</span>: Tensor <span class="math inline">\(\leftarrow \hat{P}(s_{mt})\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Probability of <span class="math inline">\(a=1\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loss: Tensor <span class="math inline">\(\leftarrow\)</span> <code>ComputeBinaryCrossEntropy</code>(<span class="math inline">\(a_{mt}\)</span>, <span class="math inline">\(\hat{p}_{mt}\)</span>)</p>
+<ol start="3" type="a">
+<li><p>loss.<code>backward</code>()</p></li>
+<li><p>optimizer.<code>step</code>()</p></li>
+</ol></li>
+<li><p><strong>Return</strong> <span class="math inline">\(\hat{P}\)</span></p></li>
+</ol>
+<hr>
+</section>
+<section id="subroutines-for-step-2b-solve-value-function-given-ccp" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines-for-step-2b-solve-value-function-given-ccp">Subroutines for Step 2b: Solve Value Function Given CCP</h3>
+<p><strong>Procedure</strong> <code>SolveValueFunctionGivenCCP</code>(<span class="math inline">\(\hat{P}\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, hyperparameters: dict, <span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], max_iter: int, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> (Network, Network)</p>
+<ol type="1">
+<li><p><span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeNetworks</code>(hyperparameters)</p></li>
+<li><p>optimizer: Optimizer <span class="math inline">\(\leftarrow\)</span> <code>CreateOptimizer</code>(<span class="math inline">\([v_\theta^{(0)}, v_\theta^{(1)}]\)</span>, learning_rate)</p></li>
+<li><p>For iteration: int = 1 to max_iter:</p>
+<ol type="a">
+<li><p><span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>ComputeBellmanTargetsGivenCCP</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\hat{P}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>)</p></li>
+<li><p><span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span> <span class="math inline">\(\leftarrow\)</span> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>, num_epochs, optimizer)</p></li>
+<li><p>max_error: float <span class="math inline">\(\leftarrow\)</span> <code>CheckConvergence</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(\{y_i^{(a)}\}\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p></li>
+<li><p><strong>If</strong> max_error <span class="math inline">\(&lt; \epsilon_{\text{tol}}\)</span>: <strong>Break</strong></p></li>
+</ol></li>
+<li><p><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></p></li>
+</ol>
+<hr>
+<p><strong>Procedure</strong> <code>ComputeBellmanTargetsGivenCCP</code>(<span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\hat{P}\)</span>: Network, <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float) <span class="math inline">\(\to\)</span> Tensor[<span class="math inline">\(N \times 2\)</span>]</p>
+<p>For each <span class="math inline">\(s_i\)</span>: float <span class="math inline">\(\in S\)</span> and <span class="math inline">\(a\)</span>: int <span class="math inline">\(\in \{0, 1\}\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s'_i\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>ComputeNextState</code>(<span class="math inline">\(s_i\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\gamma\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\hat{p}_i\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow \hat{P}(s'_i)\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Estimated <span class="math inline">\(P(a=1|s'_i)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(v_0\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow v_\theta^{(0)}(s'_i)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(v_1\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow v_\theta^{(1)}(s'_i)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\text{EV}_i\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow (1 - \hat{p}_i) \cdot v_0 + \hat{p}_i \cdot v_1 + \gamma_E\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Expected value under estimated policy</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(y_i^{(a)}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>ComputeMeanReward</code>(<span class="math inline">\(s_i\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\beta\)</span>) <span class="math inline">\(+ \delta \cdot \text{EV}_i\)</span></p>
+<p><strong>Return</strong> <span class="math inline">\(\{y_i^{(a)}\}\)</span>: Tensor[<span class="math inline">\(N \times 2\)</span>] for all <span class="math inline">\(i\)</span>, <span class="math inline">\(a\)</span></p>
+<hr>
+</section>
+<section id="subroutines-for-step-2c-compute-ccp-from-value-functions" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines-for-step-2c-compute-ccp-from-value-functions">Subroutines for Step 2c: Compute CCP from Value Functions</h3>
+<p><strong>Procedure</strong> <code>ComputeCCPFromValue</code>(<span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network) <span class="math inline">\(\to\)</span> Tensor[<span class="math inline">\(N \times 1\)</span>]</p>
+<ol type="1">
+<li><p><span class="math inline">\(v_0\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow v_\theta^{(0)}(S)\)</span></p></li>
+<li><p><span class="math inline">\(v_1\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow v_\theta^{(1)}(S)\)</span></p></li>
+<li><p><span class="math inline">\(P^{\text{updated}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow \frac{\exp(v_1)}{\exp(v_0) + \exp(v_1)}\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Probability of <span class="math inline">\(a=1\)</span></p></li>
+<li><p><strong>Return</strong> <span class="math inline">\(P^{\text{updated}}\)</span></p></li>
+</ol>
+<hr>
+</section>
+<section id="subroutines-for-step-2d-compute-distance" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines-for-step-2d-compute-distance">Subroutines for Step 2d: Compute Distance</h3>
+<p><strong>Procedure</strong> <code>ComputeDistance</code>(<span class="math inline">\(\hat{P}_{\text{eval}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(P^{\text{updated}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>]) <span class="math inline">\(\to\)</span> float</p>
+<ol type="1">
+<li><p>diff: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow \hat{P}_{\text{eval}} - P^{\text{updated}}\)</span></p></li>
+<li><p>squared_diff: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> diff <span class="math inline">\(\odot\)</span> diff &nbsp;&nbsp;&nbsp;&nbsp;// Element-wise square</p></li>
+<li><p>distance: float <span class="math inline">\(\leftarrow\)</span> <code>Sum</code>(squared_diff)</p></li>
+<li><p><strong>Return</strong> distance</p></li>
+</ol>
+<hr>
+</section>
+<section id="shared-functions-from-solve_mdp" class="level3">
+<h3 class="anchored" data-anchor-id="shared-functions-from-solve_mdp">Shared Functions from solve_mdp</h3>
+<p>The following functions are imported from solve_mdp and reused directly:</p>
+<p><strong>Procedure</strong> <code>ComputeNextState</code>(<span class="math inline">\(s\)</span>: Tensor, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\gamma\)</span>: float) <span class="math inline">\(\to\)</span> Tensor</p>
+<ul>
+<li>Returns <span class="math inline">\((1 - \gamma) \cdot s + a\)</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeMeanReward</code>(<span class="math inline">\(s\)</span>: Tensor, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\beta\)</span>: float) <span class="math inline">\(\to\)</span> Tensor</p>
+<ul>
+<li>Returns <span class="math inline">\(\beta \cdot \log(1 + s) - a\)</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>InitializeNetworks</code>(hyperparameters: dict) <span class="math inline">\(\to\)</span> (Network, Network)</p>
+<ul>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>UpdateNetworks</code>(<span class="math inline">\(S\)</span>: Tensor, targets: Tensor, <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network, num_epochs: int, optimizer: Optimizer) <span class="math inline">\(\to\)</span> (Network, Network)</p>
+<ul>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>CheckConvergence</code>(<span class="math inline">\(S\)</span>: Tensor, targets: Tensor, <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network) <span class="math inline">\(\to\)</span> float</p>
+<ul>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+</section>
+</div>
+</div>
+<p><strong>Key Implementation Details:</strong></p>
+<ul>
+<li><strong>Shared configuration</strong>: Load <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span> from the same config used in solve_mdp</li>
+<li><strong>Monotonic network for CCP</strong>: The CCP network <span class="math inline">\(\hat{P}\)</span> uses monotonic architecture to ensure <span class="math inline">\(\hat{P}(a=1|s)\)</span> is increasing in <span class="math inline">\(s\)</span></li>
+<li><strong>Nested fixed-point</strong>: The outer loop searches over <span class="math inline">\(\beta\)</span> candidates, inner loop solves value functions for each <span class="math inline">\(\beta\)</span></li>
+<li><strong>Binary cross-entropy loss</strong>: For CCP estimation, use <span class="math inline">\(-[a \log(\hat{p}) + (1-a) \log(1-\hat{p})]\)</span></li>
+<li><strong>Grid search for <span class="math inline">\(\beta\)</span></strong>: Can be replaced with gradient-free optimization methods like Nelder-Mead</li>
+</ul>
+
+
 </section>
 
 </main> <!-- /main -->
