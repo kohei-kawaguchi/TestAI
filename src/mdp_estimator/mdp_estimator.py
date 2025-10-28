@@ -30,24 +30,24 @@ from mdp_solver import (
 # CCP Network with Sigmoid Output
 # ============================================================================
 
-class DecreasingCCPNetwork(nn.Module):
+class IncreasingCCPNetwork(nn.Module):
     """
-    Monotonically DECREASING network for CCP estimation with sigmoid output.
+    Monotonically INCREASING network for CCP estimation with sigmoid output.
 
-    In the capital accumulation model, P(a=1|s) should be DECREASING in state s:
-    - Higher capital stock → Lower probability of investing
+    In the capital accumulation model, P(a=1|s) should be DECREASING in state s.
+    Instead of directly predicting this, we predict P(a=0|s) which is INCREASING:
+    - Higher capital stock → Higher probability of NOT investing
+    - Then compute P(a=1|s) = 1 - P(a=0|s)
 
     Implementation:
-    - First layer: negative weights (w₁ ≤ 0) via -softplus to flip sign
-    - Remaining layers: positive weights (wᵢ ≥ 0) via softplus to preserve monotonicity
-    - Composition: positive input s → negative (layer 1) → monotonic increasing (layers 2+)
-    - Overall effect: monotonically DECREASING in s
+    - All layers: positive weights (w_i ≥ 0) via softplus to ensure increasing
+    - This is the standard monotonic increasing network architecture
     - Sigmoid output maps to [0,1] probability range
     """
 
     def __init__(self, hidden_sizes: list = [32, 32]):
         """
-        Initialize decreasing CCP network.
+        Initialize increasing CCP network.
 
         Args:
             hidden_sizes: List of hidden layer sizes
@@ -70,38 +70,27 @@ class DecreasingCCPNetwork(nn.Module):
 
     def forward(self, s: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass with monotonic decreasing constraints and sigmoid output.
+        Forward pass with monotonic increasing constraint and sigmoid output.
 
-        First layer uses negative weights (w₁ ≤ 0) to flip sign, remaining layers
-        use positive weights (wᵢ ≥ 0) to preserve monotonicity. This ensures:
-        - Positive input s → negative after first layer
-        - Monotonic increasing through remaining layers
-        - Overall effect: monotonically DECREASING in s
+        All layers use positive weights (w_i ≥ 0) via softplus to ensure increasing.
 
         Args:
             s: State tensor of shape (N, 1)
 
         Returns:
             Probability tensor of shape (N, 1) with values in [0,1],
-            monotonically DECREASING in s
+            monotonically INCREASING in s, representing P(a=0|s)
         """
         x = s
 
-        # First layer: negative weights to flip sign (w₁ ≤ 0)
-        first_layer = self.layers[0]
-        weight = -torch.nn.functional.softplus(first_layer.weight)
-        bias = first_layer.bias
-        x = torch.nn.functional.linear(x, weight, bias)
-        x = torch.tanh(x)
-
-        # Remaining hidden layers: positive weights to preserve monotonicity (wᵢ ≥ 0)
-        for layer in self.layers[1:-1]:
+        # All hidden layers: positive weights to ensure increasing (w_i ≥ 0)
+        for layer in self.layers[:-1]:
             weight = torch.nn.functional.softplus(layer.weight)
             bias = layer.bias
             x = torch.nn.functional.linear(x, weight, bias)
             x = torch.tanh(x)
 
-        # Final layer: positive weights (w_out ≥ 0)
+        # Final layer: positive weights
         final_layer = self.layers[-1]
         weight = torch.nn.functional.softplus(final_layer.weight)
         bias = final_layer.bias
@@ -286,8 +275,9 @@ def EstimateBeta(
     K = len(beta_grid)
 
     # Evaluate estimated CCP on grid (once, outside loop)
+    # P_hat predicts P(a=0|s), convert to P(a=1|s) = 1 - P(a=0|s)
     with torch.no_grad():
-        P_hat_eval = P_hat(S)
+        P_hat_eval = 1 - P_hat(S)
 
     print(f"  Searching over {K} beta candidates in parallel...")
 
@@ -359,8 +349,8 @@ def _evaluate_beta_candidate(
 
     Args:
         beta_k: Candidate beta value
-        P_hat: Estimated CCP network
-        P_hat_eval: Pre-computed P_hat(S) on grid
+        P_hat: Estimated CCP network (predicts P(a=0|s))
+        P_hat_eval: Pre-computed P(a=1|s) = 1 - P_hat(S) on grid
         gamma: Estimated gamma
         delta: Discount factor
         gamma_E: Euler-Mascheroni constant
@@ -408,30 +398,33 @@ def EstimateCCP(
     hyperparameters: Dict,
     num_epochs: int,
     learning_rate: float
-) -> DecreasingCCPNetwork:
+) -> IncreasingCCPNetwork:
     """
     Procedure EstimateCCP(...) -> Network
 
-    Estimate conditional choice probability as monotonically DECREASING function of state.
+    Estimate conditional choice probability by predicting P(a=0|s) as INCREASING function.
+
+    We want P(a=1|s) DECREASING in s. Instead of directly predicting this, we predict
+    P(a=0|s) which is INCREASING in s, then compute P(a=1|s) = 1 - P(a=0|s).
 
     Uses maximum likelihood estimation with binary cross-entropy loss.
-    The network outputs P(a=1|s) in [0,1], DECREASING in s (higher capital → lower investment prob).
+    The network outputs P(a=0|s) in [0,1], INCREASING in s (higher capital → higher prob of not investing).
 
     Args:
         states: Array of shape (M, T) with observed states
-        actions: Array of shape (M, T) with observed actions
+        actions: Array of shape (M, T) with observed actions (1 = invest, 0 = not invest)
         hyperparameters: Dict containing 'hidden_sizes'
         num_epochs: Training epochs
         learning_rate: Learning rate
 
     Returns:
-        P_hat: Trained monotonic network for CCP
+        P_hat_0: Trained monotonic network for P(a=0|s)
     """
-    # Initialize monotonic network
-    P_hat = InitializeDecreasingCCPNetwork(hyperparameters=hyperparameters)
+    # Initialize monotonic increasing network
+    P_hat_0 = InitializeIncreasingCCPNetwork(hyperparameters=hyperparameters)
 
     # Create optimizer
-    optimizer = torch.optim.Adam(P_hat.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(P_hat_0.parameters(), lr=learning_rate)
 
     # Convert data to tensors
     M, T = states.shape
@@ -441,40 +434,41 @@ def EstimateCCP(
     states_tensor = torch.tensor(states_flat, dtype=torch.float32).reshape(-1, 1)
     actions_tensor = torch.tensor(actions_flat, dtype=torch.float32)
 
+    # Convert to indicator 1{a=0}
+    actions_0_tensor = 1 - actions_tensor
+
     # Training loop
     for epoch in range(num_epochs):
         optimizer.zero_grad()
 
-        # Forward pass: predict P(a=1|s)
-        p_hat = P_hat(states_tensor).squeeze()
+        # Forward pass: predict P(a=0|s)
+        p_hat_0 = P_hat_0(states_tensor).squeeze()
 
-        # Binary cross-entropy loss
-        loss = ComputeBinaryCrossEntropy(actions=actions_tensor, probabilities=p_hat)
+        # Binary cross-entropy loss on P(a=0|s)
+        loss = ComputeBinaryCrossEntropy(actions=actions_0_tensor, probabilities=p_hat_0)
 
         # Backward pass
         loss.backward()
         optimizer.step()
 
-    return P_hat
+    return P_hat_0
 
 
-def InitializeDecreasingCCPNetwork(hyperparameters: Dict) -> DecreasingCCPNetwork:
+def InitializeIncreasingCCPNetwork(hyperparameters: Dict) -> IncreasingCCPNetwork:
     """
-    Initialize a monotonically DECREASING CCP network with sigmoid output.
+    Initialize a monotonically INCREASING CCP network with sigmoid output.
 
-    The network outputs P(a=1|s) in [0,1] range, monotonically DECREASING in s.
-    Higher capital stock → Lower probability of investing (a=1).
-
-    Implementation: Negates input before passing to monotonic network.
+    The network outputs P(a=0|s) in [0,1] range, monotonically INCREASING in s.
+    Higher capital stock → Higher probability of NOT investing (a=0).
 
     Args:
         hyperparameters: Dict containing 'hidden_sizes'
 
     Returns:
-        network: Initialized decreasing CCP network with sigmoid output
+        network: Initialized increasing CCP network with sigmoid output
     """
     hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
-    network = DecreasingCCPNetwork(hidden_sizes=hidden_sizes)
+    network = IncreasingCCPNetwork(hidden_sizes=hidden_sizes)
     return network
 
 
@@ -525,7 +519,7 @@ def SolveValueFunctionGivenCCP(
     This is the "critic" step in the actor-critic framework.
 
     Args:
-        P_hat: Estimated CCP network
+        P_hat: Estimated CCP network (predicts P(a=0|s))
         beta: Candidate beta value
         gamma: Estimated gamma value
         delta: Discount factor
@@ -584,7 +578,7 @@ def SolveLinearBellman(
         v^(a) - delta * T^(a) * [(1-p)*v^(0) + p*v^(1)] = r^(a) + delta * gamma_E
 
     Args:
-        P_hat: Estimated CCP network
+        P_hat: Estimated CCP network (predicts P(a=0|s))
         beta: Reward parameter
         gamma: Depreciation parameter
         delta: Discount factor
@@ -600,8 +594,10 @@ def SolveLinearBellman(
     S_np = S.detach().cpu().numpy().flatten()
 
     # Evaluate CCP on grid
+    # P_hat predicts P(a=0|s), convert to P(a=1|s) = 1 - P(a=0|s)
     with torch.no_grad():
-        P_eval = P_hat(S).detach().cpu().numpy().flatten()  # P(a=1|s)
+        P_0_eval = P_hat(S).detach().cpu().numpy().flatten()  # P(a=0|s)
+        P_eval = 1 - P_0_eval  # Convert to P(a=1|s)
 
     # Build transition matrices and reward vectors for both actions
     # We'll solve the coupled system for both v^(0) and v^(1) simultaneously

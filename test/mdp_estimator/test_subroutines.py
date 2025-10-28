@@ -4,7 +4,7 @@ Unit tests for EstimateCCP and related subroutines.
 These tests verify the CCP estimation procedure based on pseudo code:
 - Network returns proper type and shape
 - Network output is in [0,1] range (valid probability)
-- Network is monotonically DECREASING in state (higher s → lower P(a=1|s))
+- Network predicts P(a=0|s) which is monotonically INCREASING in state (higher s → higher P(a=0|s))
 - Training reduces loss over epochs
 """
 
@@ -15,20 +15,20 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
 import numpy as np
 import torch
 import pytest
-from mdp_estimator import EstimateCCP, InitializeDecreasingCCPNetwork, DecreasingCCPNetwork
+from mdp_estimator import EstimateCCP, InitializeIncreasingCCPNetwork, IncreasingCCPNetwork
 from mdp_simulator import SimulateMDP
 from mdp_solver import InitializeNetworks
 
 
-def test_decreasing_ccp_network_instantiation():
+def test_increasing_ccp_network_instantiation():
     """Network should instantiate with hidden_sizes parameter."""
-    network = DecreasingCCPNetwork(hidden_sizes=[16, 16])
-    assert isinstance(network, DecreasingCCPNetwork)
+    network = IncreasingCCPNetwork(hidden_sizes=[16, 16])
+    assert isinstance(network, IncreasingCCPNetwork)
 
 
-def test_decreasing_ccp_network_forward_returns_tensor():
+def test_increasing_ccp_network_forward_returns_tensor():
     """Forward pass should return tensor of correct shape."""
-    network = DecreasingCCPNetwork(hidden_sizes=[16, 16])
+    network = IncreasingCCPNetwork(hidden_sizes=[16, 16])
     states = torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float32)
 
     output = network(states)
@@ -37,9 +37,9 @@ def test_decreasing_ccp_network_forward_returns_tensor():
     assert output.shape == (3, 1)
 
 
-def test_decreasing_ccp_network_output_in_valid_range():
+def test_increasing_ccp_network_output_in_valid_range():
     """Network output should be in [0,1] (valid probability range)."""
-    network = DecreasingCCPNetwork(hidden_sizes=[16, 16])
+    network = IncreasingCCPNetwork(hidden_sizes=[16, 16])
     states = torch.linspace(0.0, 5.0, 50).reshape(-1, 1)
 
     with torch.no_grad():
@@ -49,9 +49,9 @@ def test_decreasing_ccp_network_output_in_valid_range():
     assert torch.all(output <= 1.0)
 
 
-def test_decreasing_ccp_network_weight_constraints():
-    """First layer should use negative weights, remaining layers positive weights."""
-    network = DecreasingCCPNetwork(hidden_sizes=[16, 16])
+def test_increasing_ccp_network_weight_constraints():
+    """All layers should use positive weights (w_i ≥ 0) for increasing monotonicity."""
+    network = IncreasingCCPNetwork(hidden_sizes=[16, 16])
 
     # Create test input
     states_test = torch.tensor([[1.0], [2.0], [3.0]], dtype=torch.float32)
@@ -60,16 +60,8 @@ def test_decreasing_ccp_network_weight_constraints():
     with torch.no_grad():
         output = network(states_test)
 
-    # Verify first layer has negative weights (w₁ ≤ 0)
-    first_layer = network.layers[0]
-    weight_first = -torch.nn.functional.softplus(first_layer.weight)
-    assert torch.all(weight_first <= 0), \
-        "First layer weights should be non-positive (w₁ ≤ 0)"
-    assert torch.all(weight_first <= 1e-6), \
-        "First layer weights should be negative or near-zero"
-
-    # Verify remaining layers have positive weights (wᵢ ≥ 0)
-    for i, layer in enumerate(network.layers[1:], start=1):
+    # Verify all layers have positive weights (w_i ≥ 0)
+    for i, layer in enumerate(network.layers):
         weight = torch.nn.functional.softplus(layer.weight)
         assert torch.all(weight >= 0), \
             f"Layer {i} weights should be non-negative (w_{i} ≥ 0)"
@@ -77,14 +69,14 @@ def test_decreasing_ccp_network_weight_constraints():
             f"Layer {i} weights should be positive or near-zero"
 
 
-def test_decreasing_ccp_network_monotonically_decreasing():
-    """Network should be strictly DECREASING for s >= 0 with output in [0,1]."""
-    network = DecreasingCCPNetwork(hidden_sizes=[32, 32])
+def test_increasing_ccp_network_monotonically_increasing():
+    """Network should be strictly INCREASING for s >= 0 with output in [0,1]."""
+    network = IncreasingCCPNetwork(hidden_sizes=[32, 32])
 
     # Train briefly to ensure weights are non-trivial
     optimizer = torch.optim.Adam(network.parameters(), lr=1e-3)
     states_train = torch.linspace(0.0, 5.0, 100).reshape(-1, 1)
-    actions_train = torch.ones(100)  # Dummy training
+    actions_train = torch.zeros(100)  # Train to predict P(a=0|s)
 
     for _ in range(10):
         optimizer.zero_grad()
@@ -105,15 +97,15 @@ def test_decreasing_ccp_network_monotonically_decreasing():
     assert torch.all(probs <= 1.0), \
         f"All probabilities should be <= 1, but max={probs.max():.4f}"
 
-    # Check strict monotonic decrease: P(s_i) >= P(s_j) for all s_i < s_j
+    # Check strict monotonic increase: P(s_i) <= P(s_j) for all s_i < s_j
     for i in range(len(probs) - 1):
-        assert probs[i].item() >= probs[i+1].item() - 1e-6, \
-            f"Not decreasing at i={i}: P(s={states_test[i].item():.2f})={probs[i]:.4f} < P(s={states_test[i+1].item():.2f})={probs[i+1]:.4f}"
+        assert probs[i].item() <= probs[i+1].item() + 1e-6, \
+            f"Not increasing at i={i}: P(s={states_test[i].item():.2f})={probs[i]:.4f} > P(s={states_test[i+1].item():.2f})={probs[i+1]:.4f}"
 
 
-def test_decreasing_ccp_network_untrained_properties():
-    """Untrained network should satisfy output in [0,1] and decreasing for s >= 0."""
-    network = DecreasingCCPNetwork(hidden_sizes=[32, 32])
+def test_increasing_ccp_network_untrained_properties():
+    """Untrained network should satisfy output in [0,1] and increasing for s >= 0."""
+    network = IncreasingCCPNetwork(hidden_sizes=[32, 32])
 
     # Test on positive domain s >= 0 without any training
     states_test = torch.linspace(0.0, 10.0, 50).reshape(-1, 1)
@@ -127,30 +119,30 @@ def test_decreasing_ccp_network_untrained_properties():
     assert torch.all(probs <= 1.0), \
         f"Untrained network: all probabilities should be <= 1, but max={probs.max():.4f}"
 
-    # Check monotonic decrease holds even without training
+    # Check monotonic increase holds even without training
     violations = 0
     for i in range(len(probs) - 1):
-        if probs[i].item() < probs[i+1].item() - 1e-6:
+        if probs[i].item() > probs[i+1].item() + 1e-6:
             violations += 1
 
     assert violations == 0, \
-        f"Untrained network: found {violations} violations of monotonic decrease out of {len(probs)-1} pairs"
+        f"Untrained network: found {violations} violations of monotonic increase out of {len(probs)-1} pairs"
 
 
-def test_initialize_decreasing_ccp_network_returns_network():
-    """Should return DecreasingCCPNetwork instance."""
+def test_initialize_increasing_ccp_network_returns_network():
+    """Should return IncreasingCCPNetwork instance."""
     hyperparameters = {'hidden_sizes': [16, 16]}
 
-    network = InitializeDecreasingCCPNetwork(hyperparameters=hyperparameters)
+    network = InitializeIncreasingCCPNetwork(hyperparameters=hyperparameters)
 
-    assert isinstance(network, DecreasingCCPNetwork)
+    assert isinstance(network, IncreasingCCPNetwork)
 
 
-def test_initialize_decreasing_ccp_network_respects_hyperparameters():
+def test_initialize_increasing_ccp_network_respects_hyperparameters():
     """Network should use hidden_sizes from hyperparameters."""
     hyperparameters = {'hidden_sizes': [8, 8]}
 
-    network = InitializeDecreasingCCPNetwork(hyperparameters=hyperparameters)
+    network = InitializeIncreasingCCPNetwork(hyperparameters=hyperparameters)
 
     # Network should be created successfully
     assert network is not None
@@ -162,7 +154,7 @@ def test_initialize_decreasing_ccp_network_respects_hyperparameters():
 
 
 def test_estimate_ccp_returns_network():
-    """Should return a trained DecreasingCCPNetwork."""
+    """Should return a trained IncreasingCCPNetwork that predicts P(a=0|s)."""
     # Generate simple test data
     states = np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]])
     actions = np.array([[1, 0, 0], [1, 1, 0]])
@@ -176,7 +168,7 @@ def test_estimate_ccp_returns_network():
         learning_rate=1e-3
     )
 
-    assert isinstance(network, DecreasingCCPNetwork)
+    assert isinstance(network, IncreasingCCPNetwork)
 
 
 def test_estimate_ccp_network_outputs_valid_probabilities():
@@ -202,9 +194,9 @@ def test_estimate_ccp_network_outputs_valid_probabilities():
     assert torch.all(probs <= 1.0)
 
 
-def test_estimate_ccp_trained_network_is_decreasing():
-    """Trained network should be monotonically DECREASING."""
-    # Generate data where high states → low actions (decreasing pattern)
+def test_estimate_ccp_trained_network_is_increasing():
+    """Trained network should be monotonically INCREASING (predicts P(a=0|s))."""
+    # Generate data where high states → low actions (P(a=0|s) increasing pattern)
     hyperparameters = {'hidden_sizes': [16, 16]}
     v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
@@ -228,22 +220,23 @@ def test_estimate_ccp_trained_network_is_decreasing():
         learning_rate=1e-3
     )
 
-    # Test monotonicity on grid
+    # Test monotonicity on grid (network predicts P(a=0|s))
     test_states = torch.linspace(0.0, 5.0, 50).reshape(-1, 1)
     with torch.no_grad():
-        probs = network(test_states).squeeze()
+        probs_a0 = network(test_states).squeeze()
 
-    # Check that probabilities are non-increasing
-    for i in range(len(probs) - 1):
-        assert probs[i].item() >= probs[i+1].item() - 1e-6, \
-            f"Not decreasing: P(s[{i}])={probs[i]:.4f} < P(s[{i+1}])={probs[i+1]:.4f}"
+    # Check that P(a=0|s) probabilities are non-decreasing (increasing)
+    for i in range(len(probs_a0) - 1):
+        assert probs_a0[i].item() <= probs_a0[i+1].item() + 1e-6, \
+            f"Not increasing: P(a=0|s[{i}])={probs_a0[i]:.4f} > P(a=0|s[{i+1}])={probs_a0[i+1]:.4f}"
 
 
 def test_estimate_ccp_learns_from_data():
-    """Network should fit the observed state-action pattern."""
+    """Network should fit the observed state-action pattern (predicts P(a=0|s))."""
     # Create data where low states → action 1, high states → action 0
+    # This means P(a=0|s) should be LOW at low s, HIGH at high s (increasing)
     states = np.array([[0.5, 1.0, 3.0, 4.0]] * 20)  # Repeat for more data
-    actions = np.array([[1, 1, 0, 0]] * 20)  # Low s→1, High s→0
+    actions = np.array([[1, 1, 0, 0]] * 20)  # Low s→a=1, High s→a=0
     hyperparameters = {'hidden_sizes': [16, 16]}
 
     network = EstimateCCP(
@@ -254,11 +247,11 @@ def test_estimate_ccp_learns_from_data():
         learning_rate=1e-2
     )
 
-    # Network should predict high prob for low states, low prob for high states
+    # Network predicts P(a=0|s), should be low for low states, high for high states
     with torch.no_grad():
-        prob_low = network(torch.tensor([[0.5]], dtype=torch.float32)).item()
-        prob_high = network(torch.tensor([[4.0]], dtype=torch.float32)).item()
+        prob_a0_low = network(torch.tensor([[0.5]], dtype=torch.float32)).item()
+        prob_a0_high = network(torch.tensor([[4.0]], dtype=torch.float32)).item()
 
-    # Lower state should have higher probability (decreasing pattern)
-    assert prob_low > prob_high, \
-        f"Expected P(s=0.5) > P(s=4.0), got {prob_low:.4f} vs {prob_high:.4f}"
+    # Higher state should have higher P(a=0|s) (increasing pattern)
+    assert prob_a0_low < prob_a0_high, \
+        f"Expected P(a=0|s=0.5) < P(a=0|s=4.0), got {prob_a0_low:.4f} vs {prob_a0_high:.4f}"
