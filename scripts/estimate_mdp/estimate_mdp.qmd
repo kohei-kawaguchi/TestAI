@@ -19,6 +19,14 @@ sys.path.insert(0, '../../src')
 import json
 from pathlib import Path
 import numpy as np
+import torch
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Import MDP modules
+from mdp_estimator import EstimateMDP, EstimateCCP
+from mdp_solver import MonotonicNetwork, ComputeChoiceProbability, GenerateStateGrid, SolveValueIteration
+from config_mdp import get_estimator_config
 
 # Load simulation results and configuration
 sim_dir = Path('../../output/simulate_mdp')
@@ -410,11 +418,6 @@ The following functions are imported from solve_mdp and reused directly:
 Before running the full estimation, we diagnose the quality of CCP estimation by comparing the estimated CCP (from observed choices) with the true CCP (from the solver's value functions).
 
 ```{python}
-import torch
-import matplotlib.pyplot as plt
-from mdp_estimator import EstimateCCP
-from mdp_solver import MonotonicNetwork, ComputeChoiceProbability, GenerateStateGrid
-
 # Load solver configuration
 solver_dir = Path('../../output/solve_mdp')
 with open(solver_dir / 'config.json', 'r', encoding='utf-8') as f:
@@ -517,12 +520,7 @@ print("If CCP errors are SMALL: CCP estimation is good; beta estimation issues a
 ## Run Estimation
 
 ```{python}
-import torch
-import matplotlib.pyplot as plt
-
-from mdp_estimator import EstimateMDP
-from mdp_solver import MonotonicNetwork, ComputeChoiceProbability
-from config_mdp import get_estimator_config
+#| eval: false
 
 # Load solver configuration from solver output (for estimation hyperparameters)
 solver_dir = Path('../../output/solve_mdp')
@@ -602,6 +600,8 @@ print(f"  Distance at true beta index: {distances[min_idx]:.6f}")
 ## Save Estimation Results
 
 ```{python}
+#| eval: false
+
 # Save estimation results
 output_dir = Path('../../output/estimate_mdp')
 output_dir.mkdir(parents=True, exist_ok=True)
@@ -629,6 +629,8 @@ print(f"Saved estimation results to {output_dir.resolve()}")
 ## Compare Estimated and True Parameters
 
 ```{python}
+#| eval: false
+
 # Create comparison table
 comparison_data = {
     'Parameter': ['gamma', 'beta'],
@@ -641,7 +643,6 @@ comparison_data = {
     ]
 }
 
-import pandas as pd
 df_comparison = pd.DataFrame(comparison_data)
 print("\nParameter Estimation Comparison:")
 print(df_comparison.to_string(index=False))
@@ -652,6 +653,8 @@ print(df_comparison.to_string(index=False))
 Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.
 
 ```{python}
+#| eval: false
+
 # Load true value functions from solver
 solver_dir = Path('../../output/solve_mdp')
 if not solver_dir.exists():
@@ -673,6 +676,8 @@ print("Loaded true value functions from solver")
 ```
 
 ```{python}
+#| eval: false
+
 from mdp_solver import GenerateStateGrid, SolveValueIteration
 
 # Solve for estimated value functions using estimated parameters
@@ -697,6 +702,8 @@ print("Solved value functions under estimated parameters")
 ```
 
 ```{python}
+#| eval: false
+
 # Generate evaluation grid
 S_eval = GenerateStateGrid(N=N, state_range=state_range)
 
@@ -754,6 +761,8 @@ print(f"\nComputed equilibrium objects on grid of {N} points")
 ```
 
 ```{python}
+#| eval: false
+
 # Create comparison plots
 fig, axes = plt.subplots(2, 2, figsize=(14, 12))
 
