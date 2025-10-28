@@ -1,0 +1,125 @@
+---
+title: "Estimating Markov Decision Processes"
+format:
+  html:
+    toc: true
+    code-fold: false
+jupyter: python3
+execute:
+  daemon: false
+---
+
+## Overview
+
+This document loads the configuration and simulated data from the previous steps to estimate the MDP parameters.
+
+## Load Configuration and Simulated Data
+
+```{python}
+import sys
+sys.path.insert(0, '..')
+sys.path.insert(0, '../../src')
+
+import json
+from pathlib import Path
+
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+
+# Load configuration and simulated data from simulator output
+artifact_dir = Path('../../output/simulate_mdp')
+if not artifact_dir.exists():
+    raise FileNotFoundError(
+        f"Expected simulation artifacts in {artifact_dir}. Run simulate_mdp.qmd first."
+    )
+
+# Load configuration from simulator output (as data from previous step)
+with open(artifact_dir / 'config.json', 'r', encoding='utf-8') as config_file:
+    config = json.load(config_file)
+
+model_config = config['model']
+simulator_config = config['simulator']
+
+# Extract model parameters (true values used for simulation)
+beta = model_config['beta']
+gamma = model_config['gamma']
+delta = model_config['delta']
+gamma_E = model_config['gamma_E']
+
+# Extract simulator parameters
+M = simulator_config['M']
+T = simulator_config['T']
+seed = simulator_config['seed']
+
+print(f"Loaded configuration:")
+print(f"  Model parameters: β={beta}, γ={gamma}, δ={delta}")
+print(f"  Simulation: M={M} paths, T={T} periods, seed={seed}")
+
+# Load simulated data
+simulation_data = np.load(artifact_dir / 'simulation_results.npz')
+states = simulation_data['states']
+actions = simulation_data['actions']
+rewards = simulation_data['rewards']
+state_range = tuple(simulation_data['state_range'])
+
+print(f"\nLoaded simulated data:")
+print(f"  States shape: {states.shape}")
+print(f"  Actions shape: {actions.shape}")
+print(f"  Rewards shape: {rewards.shape}")
+print(f"  State range: {state_range}")
+```
+
+## Data Summary
+
+```{python}
+# Basic summary statistics
+print("\nData Summary Statistics:")
+print(f"\nStates:")
+print(f"  Mean: {states.mean():.4f}")
+print(f"  Std: {states.std():.4f}")
+print(f"  Min: {states.min():.4f}")
+print(f"  Max: {states.max():.4f}")
+
+print(f"\nActions:")
+print(f"  Fraction a=1: {actions.mean():.4f}")
+print(f"  Total observations: {actions.size}")
+
+print(f"\nRewards:")
+print(f"  Mean: {rewards.mean():.4f}")
+print(f"  Std: {rewards.std():.4f}")
+print(f"  Min: {rewards.min():.4f}")
+print(f"  Max: {rewards.max():.4f}")
+
+# Plot data distributions
+fig, axes = plt.subplots(1, 3, figsize=(15, 4))
+
+# States distribution
+ax = axes[0]
+ax.hist(states.flatten(), bins=50, alpha=0.7, edgecolor='black')
+ax.set_xlabel('State value')
+ax.set_ylabel('Frequency')
+ax.set_title('Distribution of States')
+ax.grid(True, alpha=0.3)
+
+# Actions distribution
+ax = axes[1]
+action_counts = np.bincount(actions.flatten().astype(int))
+ax.bar([0, 1], action_counts, alpha=0.7, edgecolor='black')
+ax.set_xlabel('Action')
+ax.set_ylabel('Count')
+ax.set_title('Distribution of Actions')
+ax.set_xticks([0, 1])
+ax.grid(True, alpha=0.3)
+
+# Rewards distribution
+ax = axes[2]
+ax.hist(rewards.flatten(), bins=50, alpha=0.7, edgecolor='black')
+ax.set_xlabel('Reward value')
+ax.set_ylabel('Frequency')
+ax.set_title('Distribution of Rewards')
+ax.grid(True, alpha=0.3)
+
+fig.tight_layout()
+plt.show()
+```
