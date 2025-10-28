@@ -292,6 +292,8 @@ This pseudo code is designed for direct implementation:
 
    tolerance: float $\leftarrow$ optimization_config['tolerance']
 
+   initial_beta: float $\leftarrow$ optimization_config['initial_beta']
+
 3. Maximize log-likelihood over $\beta$ using numerical optimization:
 
    result: OptimizationResult $\leftarrow$ `scipy.optimize.minimize`(

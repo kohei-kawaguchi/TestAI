@@ -148,7 +148,7 @@ window.Quarto = {
 </section>
 <section id="load-configuration-and-simulated-data" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulated-data">Load Configuration and Simulated Data</h2>
-<div id="09393181" class="cell" data-execution_count="1">
+<div id="3a175a4a" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -216,7 +216,7 @@ Loaded simulated data:
 </section>
 <section id="data-summary" class="level2">
 <h2 class="anchored" data-anchor-id="data-summary">Data Summary</h2>
-<div id="2c6ffb14" class="cell" data-execution_count="2">
+<div id="dee94365" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Basic summary statistics</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Data Summary Statistics:"</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">States:"</span>)</span>
@@ -413,7 +413,8 @@ Algorithm: Nested Fixed Point Estimation
 <li><p>Extract optimization parameters:</p>
 <p>beta_bounds: tuple[float, float] <span class="math inline">\(\leftarrow\)</span> optimization_config[‘beta_bounds’]</p>
 <p>method: str <span class="math inline">\(\leftarrow\)</span> optimization_config[‘method’]</p>
-<p>tolerance: float <span class="math inline">\(\leftarrow\)</span> optimization_config[‘tolerance’]</p></li>
+<p>tolerance: float <span class="math inline">\(\leftarrow\)</span> optimization_config[‘tolerance’]</p>
+<p>initial_beta: float <span class="math inline">\(\leftarrow\)</span> optimization_config[‘initial_beta’]</p></li>
 <li><p>Maximize log-likelihood over <span class="math inline">\(\beta\)</span> using numerical optimization:</p>
 <p>result: OptimizationResult <span class="math inline">\(\leftarrow\)</span> <code>scipy.optimize.minimize</code>(</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;fun=lambda <span class="math inline">\(\beta\)</span>: <span class="math inline">\(-\)</span><code>LogLikelihood</code>(<span class="math inline">\(\beta\)</span>),</p>
