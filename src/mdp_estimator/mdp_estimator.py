@@ -27,6 +27,43 @@ from mdp_solver import (
 
 
 # ============================================================================
+# CCP Network with Sigmoid Output
+# ============================================================================
+
+class MonotonicCCPNetwork(nn.Module):
+    """
+    Monotonic network for CCP estimation with sigmoid output layer.
+
+    Wraps MonotonicNetwork and applies sigmoid to ensure output is in [0,1],
+    since CCP represents P(a=1|s).
+    """
+
+    def __init__(self, hidden_sizes: list = [32, 32]):
+        """
+        Initialize monotonic CCP network.
+
+        Args:
+            hidden_sizes: List of hidden layer sizes
+        """
+        super().__init__()
+        self.base_network = MonotonicNetwork(hidden_sizes=hidden_sizes)
+
+    def forward(self, s: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass with sigmoid output to ensure probabilities in [0,1].
+
+        Args:
+            s: State tensor of shape (N, 1)
+
+        Returns:
+            Probability tensor of shape (N, 1) with values in [0,1]
+        """
+        logits = self.base_network(s)
+        probabilities = torch.sigmoid(logits)
+        return probabilities
+
+
+# ============================================================================
 # Main Algorithm
 # ============================================================================
 
@@ -321,14 +358,14 @@ def EstimateCCP(
     hyperparameters: Dict,
     num_epochs: int,
     learning_rate: float
-) -> MonotonicNetwork:
+) -> MonotonicCCPNetwork:
     """
     Procedure EstimateCCP(...) -> Network
 
     Estimate conditional choice probability as monotonic function of state.
 
     Uses maximum likelihood estimation with binary cross-entropy loss.
-    The network outputs P(a=1|s).
+    The network outputs P(a=1|s) in [0,1] using sigmoid activation.
 
     Args:
         states: Array of shape (M, T) with observed states
@@ -371,18 +408,20 @@ def EstimateCCP(
     return P_hat
 
 
-def InitializeMonotonicNetwork(hyperparameters: Dict) -> MonotonicNetwork:
+def InitializeMonotonicNetwork(hyperparameters: Dict) -> MonotonicCCPNetwork:
     """
-    Initialize a monotonic network for CCP estimation.
+    Initialize a monotonic CCP network with sigmoid output.
+
+    The network outputs P(a=1|s) in [0,1] range using sigmoid activation.
 
     Args:
         hyperparameters: Dict containing 'hidden_sizes'
 
     Returns:
-        network: Initialized monotonic network
+        network: Initialized monotonic CCP network with sigmoid output
     """
     hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
-    network = MonotonicNetwork(hidden_sizes=hidden_sizes)
+    network = MonotonicCCPNetwork(hidden_sizes=hidden_sizes)
     return network
 
 

@@ -251,7 +251,7 @@ This pseudo code is designed for direct implementation:
 
 **Procedure** `EstimateCCP`(states: Array[$M \times T$], actions: Array[$M \times T$], hyperparameters: dict, num_epochs: int, learning_rate: float) $\to$ Network
 
-1. $\hat{P}$: Network $\leftarrow$ `InitializeMonotonicNetwork`(hyperparameters)
+1. $\hat{P}$: Network $\leftarrow$ `InitializeMonotonicNetwork`(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// Network output layer uses sigmoid: $\sigma(z) = \frac{1}{1+e^{-z}}$ to ensure output $\in [0,1]$
 
 2. optimizer: Optimizer $\leftarrow$ `CreateOptimizer`($\hat{P}$, learning_rate)
 
