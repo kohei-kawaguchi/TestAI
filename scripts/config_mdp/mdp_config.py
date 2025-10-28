@@ -40,6 +40,7 @@ _SOLVER_CONFIG: Dict[str, Any] = {
     "epsilon_tol": 1e-4,  # Convergence tolerance
     "num_epochs": 50,   # Training epochs per iteration
     "learning_rate": 1e-3,  # Learning rate for network training
+    "verbose": False,   # Print progress during solving (False for nested estimation)
 }
 
 # Comparative statics grids

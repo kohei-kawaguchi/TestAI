@@ -140,7 +140,7 @@ def EstimateBeta(
             epsilon_tol=solver_config['epsilon_tol'],
             num_epochs=solver_config['num_epochs'],
             learning_rate=solver_config['learning_rate'],
-            verbose=False  # Suppress output during optimization
+            verbose=solver_config.get('verbose', False)
         )
 
         # Step 1b: Initialize log-likelihood
@@ -172,7 +172,7 @@ def EstimateBeta(
     beta_bounds = optimization_config['beta_bounds']
     method = optimization_config['method']
     tolerance = optimization_config['tolerance']
-    initial_beta = optimization_config.get('initial_beta', 1.0)
+    initial_beta = optimization_config['initial_beta']
 
     # Step 3: Maximize log-likelihood over beta using numerical optimization
     # Note: scipy.optimize.minimize minimizes, so we negate the log-likelihood
