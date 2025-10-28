@@ -371,12 +371,14 @@ The following functions are imported from solve_mdp and reused directly to ensur
 - Step 2 is also $\sqrt{MT}$-consistent but asymptotic variance accounts for estimation error in $\hat{\gamma}$
 - Standard errors can be computed using the outer product of the gradient (OPG) or bootstrapping
 
-## Implementation
+## Diagnostic: Likelihood Around True Parameter
 
-### Load Estimator and Configuration
+Before running the full estimation (which is computationally expensive), let's verify that the likelihood function is correctly specified by evaluating it around the true parameter values.
+
+### Load Estimator Functions
 
 ```{python}
-from mdp_estimator import EstimateMDP, EstimateGamma, EstimateBeta
+from mdp_estimator import EstimateGamma
 from mdp_solver import SolveValueIteration, ComputeChoiceProbability
 
 # Load solver config from solve_mdp output (reused for nested estimation)
@@ -386,30 +388,150 @@ with open(solve_artifact_dir / 'config.json', 'r', encoding='utf-8') as f:
 
 solver_config = solve_config['solver']
 
-# Load estimator config from Python module
-sys.path.insert(0, '../config_mdp')
-from mdp_config import get_estimator_config
-
-estimator_config = get_estimator_config()
-optimization_config = estimator_config['optimization_config']
-
 print("Solver configuration (from solve_mdp output):")
 print(f"  N: {solver_config['N']}")
 print(f"  State range: {solver_config['state_range']}")
-print(f"  Max iter: {solver_config['max_iter']}")
-print(f"  Tolerance: {solver_config['epsilon_tol']}")
-
-print("\nEstimator configuration:")
-print(f"  Beta bounds: {optimization_config['beta_bounds']}")
-print(f"  Method: {optimization_config['method']}")
-print(f"  Tolerance: {optimization_config['tolerance']}")
-print(f"  Initial beta: {optimization_config['initial_beta']}")
 ```
+
+### Estimate Gamma (OLS - Fast)
+
+```{python}
+# Step 1: Estimate gamma using OLS (closed-form, fast)
+gamma_hat = EstimateGamma(states=states, actions=actions)
+
+print("\nStep 1 Results (OLS Estimation of γ):")
+print(f"  True γ: {gamma:.6f}")
+print(f"  Estimated γ̂: {gamma_hat:.6f}")
+print(f"  Error: {gamma_hat - gamma:.6f}")
+print(f"  Relative error: {100*(gamma_hat - gamma)/gamma:.2f}%")
+```
+
+### Evaluate Likelihood Around True Beta
+
+```{python}
+import time
+
+print("\n" + "="*70)
+print("LIKELIHOOD DIAGNOSTIC: EVALUATING AROUND TRUE β")
+print("="*70)
+
+# Define grid around true beta
+beta_true = beta
+beta_grid = np.linspace(beta_true - 0.5, beta_true + 0.5, 11)
+
+# Compute log-likelihood for each beta value
+log_likelihoods = []
+
+print(f"\nEvaluating log-likelihood on grid of {len(beta_grid)} β values...")
+print(f"Using estimated γ̂ = {gamma_hat:.4f}")
+print(f"This requires solving the MDP {len(beta_grid)} times...\n")
+
+start_time = time.time()
+
+for i, beta_val in enumerate(beta_grid):
+    print(f"  [{i+1:2d}/{len(beta_grid)}] β = {beta_val:.4f}...", end=" ")
+
+    # Solve MDP for this beta (using estimated gamma)
+    v0, v1, _ = SolveValueIteration(
+        beta=beta_val,
+        gamma=gamma_hat,
+        delta=delta,
+        gamma_E=gamma_E,
+        hyperparameters=solver_config['hyperparameters'],
+        N=solver_config['N'],
+        state_range=tuple(solver_config['state_range']),
+        max_iter=solver_config['max_iter'],
+        epsilon_tol=solver_config['epsilon_tol'],
+        num_epochs=solver_config['num_epochs'],
+        learning_rate=solver_config['learning_rate'],
+        verbose=False
+    )
+
+    # Compute log-likelihood
+    log_likelihood = 0.0
+    for m in range(states.shape[0]):
+        for t in range(states.shape[1]):
+            s_mt = states[m, t]
+            a_mt = actions[m, t]
+
+            P_0, P_1 = ComputeChoiceProbability(
+                s=float(s_mt),
+                v_theta_0=v0,
+                v_theta_1=v1
+            )
+
+            if a_mt == 0:
+                log_likelihood += np.log(P_0)
+            else:
+                log_likelihood += np.log(P_1)
+
+    log_likelihoods.append(log_likelihood)
+    print(f"ℓ = {log_likelihood:.2f}")
+
+log_likelihoods = np.array(log_likelihoods)
+elapsed_time = time.time() - start_time
+
+# Find maximum
+max_idx = np.argmax(log_likelihoods)
+beta_max_likelihood = beta_grid[max_idx]
+
+print(f"\nCompleted in {elapsed_time:.2f} seconds")
+print(f"\nLikelihood Profile Results:")
+print(f"  True β: {beta_true:.4f}")
+print(f"  Maximum at β: {beta_max_likelihood:.4f}")
+print(f"  Difference: {abs(beta_true - beta_max_likelihood):.4f}")
+```
+
+### Plot Likelihood Profile
+
+```{python}
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+
+# Plot log-likelihood profile
+ax.plot(beta_grid, log_likelihoods, 'b-o', linewidth=2.5, markersize=6, label='Log-likelihood')
+
+# Mark true parameter
+ax.axvline(x=beta_true, color='green', linestyle='--', linewidth=2,
+           label=f'True β = {beta_true:.3f}')
+
+# Mark maximum of likelihood profile
+ax.plot(beta_max_likelihood, log_likelihoods[max_idx], 'r*',
+        markersize=20, label=f'Maximum at β = {beta_max_likelihood:.3f}')
+
+ax.set_xlabel('β (Reward Parameter)', fontsize=13)
+ax.set_ylabel('Log-Likelihood', fontsize=13)
+ax.set_title('Log-Likelihood Profile Around True Parameter', fontsize=15)
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+
+fig.tight_layout()
+plt.show()
+
+# Verification
+print("\nVerification:")
+if abs(beta_true - beta_max_likelihood) < 0.1:
+    print("  ✓ Likelihood is maximized at or near the true parameter")
+    print("  ✓ Likelihood function is correctly specified")
+else:
+    print("  ⚠ Likelihood maximum differs from true parameter")
+    print(f"    This may indicate an issue with the likelihood specification")
+```
+
+## Full Estimation (Not Evaluated)
+
+The code below shows how to run the full nested fixed point estimation. This is computationally expensive and is set to `eval: false` for this report.
 
 ### Run Nested Fixed Point Estimation
 
 ```{python}
+#| eval: false
+
 import time
+from mdp_estimator import EstimateMDP
+from mdp_config import get_estimator_config
+
+estimator_config = get_estimator_config()
+optimization_config = estimator_config['optimization_config']
 
 print("\n" + "="*70)
 print("RUNNING NESTED FIXED POINT ESTIMATION")
@@ -438,6 +560,8 @@ print("="*70)
 ### Compare Estimated vs True Parameters
 
 ```{python}
+#| eval: false
+
 # True parameters (used for simulation)
 beta_true = beta
 gamma_true = gamma
@@ -460,6 +584,8 @@ print(f"  γ: {gamma_rel_error:.4%}")
 ### Solve MDP with Estimated Parameters
 
 ```{python}
+#| eval: false
+
 print("\n" + "="*70)
 print("SOLVING MDP WITH ESTIMATED PARAMETERS")
 print("="*70)
@@ -486,6 +612,8 @@ print(f"\nEstimated model converged in {len(history_est['iterations'])} iteratio
 ### Solve MDP with True Parameters (for comparison)
 
 ```{python}
+#| eval: false
+
 print("\n" + "="*70)
 print("SOLVING MDP WITH TRUE PARAMETERS")
 print("="*70)
@@ -514,6 +642,8 @@ print(f"\nTrue model converged in {len(history_true['iterations'])} iterations")
 #### Choice Probabilities (CCP)
 
 ```{python}
+#| eval: false
+
 # Evaluate CCPs on a grid of states
 state_grid = np.linspace(state_range[0], state_range[1], 50)
 
@@ -576,6 +706,8 @@ plt.show()
 #### Value Functions
 
 ```{python}
+#| eval: false
+
 # Compute value functions on state grid
 with torch.no_grad():
     state_grid_tensor = torch.tensor(state_grid).reshape(-1, 1).float()
@@ -645,11 +777,13 @@ fig.tight_layout()
 plt.show()
 ```
 
-## Likelihood Profile Around True Parameter
+## Likelihood Profile Around True Parameter (Old Section - Not Evaluated)
 
-To verify that the likelihood is maximized at the true parameter, we compute the log-likelihood for a grid of β values around the true value, holding γ at its estimated value.
+This section is kept for reference but set to `eval: false` since we already computed the likelihood profile above.
 
 ```{python}
+#| eval: false
+
 print("\n" + "="*70)
 print("COMPUTING LIKELIHOOD PROFILE")
 print("="*70)
@@ -714,9 +848,11 @@ print(f"True β = {beta_true:.4f}")
 print(f"Estimated β = {beta_hat:.4f}")
 ```
 
-### Plot Likelihood Profile
+### Plot Likelihood Profile (Old - Not Evaluated)
 
 ```{python}
+#| eval: false
+
 fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
 # Plot log-likelihood profile
@@ -755,9 +891,11 @@ else:
     print("  ⚠ Estimated parameter differs from likelihood maximum")
 ```
 
-## Summary
+## Summary (Not Evaluated)
 
 ```{python}
+#| eval: false
+
 print("\n" + "="*70)
 print("ESTIMATION SUMMARY")
 print("="*70)
