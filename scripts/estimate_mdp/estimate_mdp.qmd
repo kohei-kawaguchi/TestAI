@@ -521,6 +521,148 @@ print("If CCP errors are LARGE: The CCP estimation is poor.")
 print("If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isolated.")
 ```
 
+## DIAGNOSTIC: Value Functions Given CCP
+
+Now we test whether the value function estimation step works correctly. Given the estimated CCP, we solve for value functions using the true parameters (beta, gamma) and compare with the true value functions from the solver.
+
+If this diagnostic shows large errors, it indicates issues with the value function solver given CCP (Step 2b of estimation). If errors are small, any estimation issues are isolated to the beta search step.
+
+```{python}
+from mdp_estimator import SolveValueFunctionGivenCCP
+
+# Load solver configuration and true value functions
+solver_dir = Path('../../output/solve_mdp')
+with open(solver_dir / 'config.json', 'r', encoding='utf-8') as f:
+    solver_output = json.load(f)
+
+solver_config = solver_output['solver']
+hyperparameters = solver_config['hyperparameters']
+N = solver_config['N']
+state_range = solver_config['state_range']
+epsilon_tol = solver_config['epsilon_tol']
+max_iter = solver_config['max_iter']
+
+print(f"\n=== DIAGNOSTIC: Value Functions Given CCP ===")
+print(f"Testing: Can we recover true V given estimated CCP and true (beta, gamma)?")
+
+# Load true value functions from solver
+from mdp_solver import MonotonicNetwork
+v_theta_0_true = MonotonicNetwork(hidden_sizes=hyperparameters['hidden_sizes'])
+v_theta_1_true = MonotonicNetwork(hidden_sizes=hyperparameters['hidden_sizes'])
+v_theta_0_true.load_state_dict(torch.load(solver_dir / 'v_theta_0.pt', map_location='cpu'))
+v_theta_1_true.load_state_dict(torch.load(solver_dir / 'v_theta_1.pt', map_location='cpu'))
+v_theta_0_true.eval()
+v_theta_1_true.eval()
+
+# Generate evaluation grid first
+from mdp_solver import GenerateStateGrid
+S_eval = GenerateStateGrid(N=N, state_range=state_range)
+
+# Solve for value functions given estimated CCP and TRUE parameters
+print(f"\nSolving for value functions given:")
+print(f"  Estimated CCP (from data)")
+print(f"  True beta = {beta_true:.4f}")
+print(f"  True gamma = {gamma_true:.4f}")
+
+# Get num_epochs and learning_rate from solver config
+num_epochs_solver = solver_config['num_epochs']
+learning_rate_solver = solver_config['learning_rate']
+
+v_theta_0_from_ccp, v_theta_1_from_ccp = SolveValueFunctionGivenCCP(
+    P_hat=P_hat_network,
+    beta=beta_true,
+    gamma=gamma_true,
+    delta=delta,
+    gamma_E=gamma_E,
+    hyperparameters=hyperparameters,
+    S=S_eval,
+    max_iter=max_iter,
+    epsilon_tol=epsilon_tol,
+    num_epochs=num_epochs_solver,
+    learning_rate=learning_rate_solver
+)
+
+# Evaluate all value functions on grid
+with torch.no_grad():
+    v0_true_eval = v_theta_0_true(S_eval).numpy().flatten()
+    v1_true_eval = v_theta_1_true(S_eval).numpy().flatten()
+    v0_from_ccp_eval = v_theta_0_from_ccp(S_eval).numpy().flatten()
+    v1_from_ccp_eval = v_theta_1_from_ccp(S_eval).numpy().flatten()
+
+# Compute errors
+v0_diff = np.abs(v0_from_ccp_eval - v0_true_eval)
+v1_diff = np.abs(v1_from_ccp_eval - v1_true_eval)
+
+print(f"\n=== Value Function Comparison ===")
+print(f"V_0 errors (given CCP vs true):")
+print(f"  Mean absolute error: {v0_diff.mean():.6f}")
+print(f"  Max absolute error:  {v0_diff.max():.6f}")
+print(f"  RMSE: {np.sqrt((v0_diff**2).mean()):.6f}")
+
+print(f"\nV_1 errors (given CCP vs true):")
+print(f"  Mean absolute error: {v1_diff.mean():.6f}")
+print(f"  Max absolute error:  {v1_diff.max():.6f}")
+print(f"  RMSE: {np.sqrt((v1_diff**2).mean()):.6f}")
+
+# Plot comparison
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+s_grid = S_eval.numpy().flatten()
+
+# Plot V_0
+ax = axes[0, 0]
+ax.plot(s_grid, v0_true_eval, 'g-', linewidth=2, label='True V_0', alpha=0.8)
+ax.plot(s_grid, v0_from_ccp_eval, 'r--', linewidth=2, label='V_0 from CCP', alpha=0.8)
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Value', fontsize=12)
+ax.set_title('V_0: Given CCP vs True', fontsize=14, fontweight='bold')
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+
+# Plot V_1
+ax = axes[0, 1]
+ax.plot(s_grid, v1_true_eval, 'g-', linewidth=2, label='True V_1', alpha=0.8)
+ax.plot(s_grid, v1_from_ccp_eval, 'r--', linewidth=2, label='V_1 from CCP', alpha=0.8)
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Value', fontsize=12)
+ax.set_title('V_1: Given CCP vs True', fontsize=14, fontweight='bold')
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+
+# Scatter plot V_0
+ax = axes[1, 0]
+ax.scatter(v0_true_eval, v0_from_ccp_eval, alpha=0.6, s=30)
+min_v0 = min(v0_true_eval.min(), v0_from_ccp_eval.min())
+max_v0 = max(v0_true_eval.max(), v0_from_ccp_eval.max())
+ax.plot([min_v0, max_v0], [min_v0, max_v0], 'k--', linewidth=2, label='45° line')
+ax.set_xlabel('True V_0', fontsize=12)
+ax.set_ylabel('V_0 from CCP', fontsize=12)
+ax.set_title('V_0: From CCP vs True', fontsize=14, fontweight='bold')
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+ax.set_aspect('equal', adjustable='box')
+
+# Scatter plot V_1
+ax = axes[1, 1]
+ax.scatter(v1_true_eval, v1_from_ccp_eval, alpha=0.6, s=30)
+min_v1 = min(v1_true_eval.min(), v1_from_ccp_eval.min())
+max_v1 = max(v1_true_eval.max(), v1_from_ccp_eval.max())
+ax.plot([min_v1, max_v1], [min_v1, max_v1], 'k--', linewidth=2, label='45° line')
+ax.set_xlabel('True V_1', fontsize=12)
+ax.set_ylabel('V_1 from CCP', fontsize=12)
+ax.set_title('V_1: From CCP vs True', fontsize=14, fontweight='bold')
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+ax.set_aspect('equal', adjustable='box')
+
+plt.tight_layout()
+plt.show()
+
+print("\n=== Interpretation ===")
+print("If value function errors are LARGE: The value function solver given CCP has issues.")
+print("If value function errors are SMALL: The value function step works correctly;")
+print("  any estimation error is from CCP estimation or beta search.")
+```
+
 ## Run Estimation
 
 ```{python}
