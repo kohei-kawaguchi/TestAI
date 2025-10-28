@@ -183,7 +183,7 @@ window.Quarto = {
 
 <section id="load-configuration-and-simulation-results" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulation-results">Load Configuration and Simulation Results</h2>
-<div id="15b8a5de" class="cell" data-execution_count="1">
+<div id="09dfdef0" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -258,7 +258,7 @@ True parameters: beta=1.0, gamma=0.1</code></pre>
 <section id="step-2a-estimate-conditional-choice-probability-ccp" class="level4">
 <h4 class="anchored" data-anchor-id="step-2a-estimate-conditional-choice-probability-ccp">Step 2a: Estimate Conditional Choice Probability (CCP)</h4>
 <p>Estimate the choice probability as a function of state: <span class="math display">\[\hat{P}(a=1|s) = f_\theta(s)\]</span></p>
-<p>where <span class="math inline">\(f_\theta\)</span> is a neural network that is: - Continuous in <span class="math inline">\(s\)</span> - <strong>Monotonically DECREASING in <span class="math inline">\(s\)</span></strong> (enforced by architecture) - Higher capital stock → Lower investment probability - Implemented by negating input: <span class="math inline">\(\hat{P}(s) = \sigma(g(-s))\)</span> where <span class="math inline">\(g\)</span> is monotonic increasing</p>
+<p>where <span class="math inline">\(f_\theta\)</span> is a neural network that is: - Continuous in <span class="math inline">\(s\)</span> - <strong>Monotonically DECREASING in <span class="math inline">\(s\)</span></strong> (enforced by architecture) - Higher capital stock → Lower investment probability - <strong>First layer</strong>: weights <span class="math inline">\(w_1 \leq 0\)</span> via <span class="math inline">\(-\text{softplus}(w_1)\)</span> to flip sign - <strong>Remaining layers</strong>: weights <span class="math inline">\(w_i \geq 0\)</span> via <span class="math inline">\(\text{softplus}(w_i)\)</span> to preserve monotonicity - Composition: positive input → negative (layer 1) → monotonic increasing (layers 2+) → overall decreasing - Output layer applies sigmoid: <span class="math inline">\(\hat{P}(s) = \sigma(g(s))\)</span> where <span class="math inline">\(g\)</span> is monotonic decreasing</p>
 <p>This is estimated by maximum likelihood using the observed state-action pairs.</p>
 </section>
 <section id="step-2b-solve-for-value-functions-given-ccp-and-candidate-beta" class="level4">
@@ -391,7 +391,7 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <h3 class="anchored" data-anchor-id="subroutines-for-step-2a-estimate-ccp">Subroutines for Step 2a: Estimate CCP</h3>
 <p><strong>Procedure</strong> <code>EstimateCCP</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], hyperparameters: dict, num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> Network</p>
 <ol type="1">
-<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeDecreasingCCPNetwork</code>(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// DECREASING in <span class="math inline">\(s\)</span>: wraps monotonic network with input negation <span class="math inline">\(\hat{P}(s) = \sigma(g(-s))\)</span>, output <span class="math inline">\(\in [0,1]\)</span></p></li>
+<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeDecreasingCCPNetwork</code>(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// DECREASING: layer 1 weights <span class="math inline">\(w_1 \leq 0\)</span>, remaining <span class="math inline">\(w_i \geq 0\)</span>, sigmoid output <span class="math inline">\(\in [0,1]\)</span></p></li>
 <li><p>optimizer: Optimizer <span class="math inline">\(\leftarrow\)</span> <code>CreateOptimizer</code>(<span class="math inline">\(\hat{P}\)</span>, learning_rate)</p></li>
 <li><p>For epoch: int = 1 to num_epochs:</p>
 <ol type="a">
@@ -507,7 +507,7 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <p><strong>Key Implementation Details:</strong></p>
 <ul>
 <li><strong>Shared configuration</strong>: Load <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span> from the same config used in solve_mdp</li>
-<li><strong>Monotonic network for CCP</strong>: The CCP network <span class="math inline">\(\hat{P}\)</span> uses monotonic architecture to ensure <span class="math inline">\(\hat{P}(a=1|s)\)</span> is <strong>DECREASING in <span class="math inline">\(s\)</span></strong> (higher capital → lower investment probability). <strong>Implementation</strong>: Negate input before passing to monotonic network: <span class="math inline">\(\hat{P}(s) = \sigma(g(-s))\)</span> where <span class="math inline">\(g\)</span> is monotonic increasing and <span class="math inline">\(\sigma\)</span> is sigmoid to constrain output to <span class="math inline">\([0,1]\)</span></li>
+<li><strong>Monotonic network for CCP</strong>: The CCP network <span class="math inline">\(\hat{P}\)</span> uses monotonic architecture to ensure <span class="math inline">\(\hat{P}(a=1|s)\)</span> is <strong>DECREASING in <span class="math inline">\(s\)</span></strong> (higher capital → lower investment probability). <strong>Implementation</strong>: First layer uses negative weights <span class="math inline">\(w_1 = -\text{softplus}(\tilde{w}_1)\)</span> to flip sign. Remaining layers use positive weights <span class="math inline">\(w_i = \text{softplus}(\tilde{w}_i)\)</span> to preserve monotonicity. This achieves: positive input <span class="math inline">\(s\)</span> → negative (layer 1) → monotonic increasing through remaining layers → overall decreasing. Output layer applies sigmoid <span class="math inline">\(\sigma\)</span> to constrain to <span class="math inline">\([0,1]\)</span></li>
 <li><strong>Nested fixed-point</strong>: The outer loop searches over <span class="math inline">\(\beta\)</span> candidates, inner loop solves value functions for each <span class="math inline">\(\beta\)</span></li>
 <li><strong>Binary cross-entropy loss</strong>: For CCP estimation, use <span class="math inline">\(-[a \log(\hat{p}) + (1-a) \log(1-\hat{p})]\)</span></li>
 <li><strong>Grid search for <span class="math inline">\(\beta\)</span></strong>: Can be replaced with gradient-free optimization methods like Nelder-Mead</li>
@@ -516,7 +516,7 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <section id="diagnostic-compare-estimated-ccp-with-true-ccp" class="level2">
 <h2 class="anchored" data-anchor-id="diagnostic-compare-estimated-ccp-with-true-ccp">Diagnostic: Compare Estimated CCP with True CCP</h2>
 <p>Before running the full estimation, we diagnose the quality of CCP estimation by comparing the estimated CCP (from observed choices) with the true CCP (from the solver’s value functions).</p>
-<div id="6989494d" class="cell" data-execution_count="2">
+<div id="f0f7334f" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -625,9 +625,9 @@ Loading true value functions from solver...
 Comparing: Estimated CCP (from data) vs. True CCP (from solver)
 
 P(a=1|s) errors:
-  Mean absolute error: 0.550636
-  Max absolute error:  0.788139
-  Root mean squared error: 0.558068</code></pre>
+  Mean absolute error: 0.544826
+  Max absolute error:  0.771138
+  Root mean squared error: 0.552815</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -646,7 +646,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 </section>
 <section id="run-estimation" class="level2">
 <h2 class="anchored" data-anchor-id="run-estimation">Run Estimation</h2>
-<div id="174d756e" class="cell" data-execution_count="3">
+<div id="a4f56944" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration from solver output (for estimation hyperparameters)</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -724,7 +724,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 </section>
 <section id="save-estimation-results" class="level2">
 <h2 class="anchored" data-anchor-id="save-estimation-results">Save Estimation Results</h2>
-<div id="4978c790" class="cell" data-execution_count="4">
+<div id="ee449b3f" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimation results</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/estimate_mdp'</span>)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
@@ -751,7 +751,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 </section>
 <section id="compare-estimated-and-true-parameters" class="level2">
 <h2 class="anchored" data-anchor-id="compare-estimated-and-true-parameters">Compare Estimated and True Parameters</h2>
-<div id="57652874" class="cell" data-execution_count="5">
+<div id="3351f6f4" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison table</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>comparison_data <span class="op">=</span> {</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Parameter'</span>: [<span class="st">'gamma'</span>, <span class="st">'beta'</span>],</span>
@@ -772,7 +772,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <section id="compare-equilibrium-objects" class="level2">
 <h2 class="anchored" data-anchor-id="compare-equilibrium-objects">Compare Equilibrium Objects</h2>
 <p>Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.</p>
-<div id="7eec2ad0" class="cell" data-execution_count="6">
+<div id="3872143b" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> solver_dir.exists():</span>
@@ -792,7 +792,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Loaded true value functions from solver"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="844311d9" class="cell" data-execution_count="7">
+<div id="a3332d22" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> GenerateStateGrid, SolveValueIteration</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve for estimated value functions using estimated parameters</span></span>
@@ -815,7 +815,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Solved value functions under estimated parameters"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="b2827b6f" class="cell" data-execution_count="8">
+<div id="1c5c72ab" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -871,7 +871,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Computed equilibrium objects on grid of </span><span class="sc">{</span>N<span class="sc">}</span><span class="ss"> points"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="6ca4c657" class="cell" data-execution_count="9">
+<div id="9f9e8447" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison plots</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">12</span>))</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
