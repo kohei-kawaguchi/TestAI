@@ -62,8 +62,8 @@ _ESTIMATOR_CONFIG: Dict[str, Any] = {
     "optimization_config": {
         "beta_bounds": (0.1, 3.0),  # Bounds for beta optimization
         "method": "L-BFGS-B",        # Optimization method (supports bounds)
-        "tolerance": 1e-6,           # Convergence tolerance for optimizer
-        "initial_beta": 1.0,         # Initial guess for beta
+        "tolerance": 1e-4,           # Convergence tolerance for optimizer
+        "initial_beta": 1.0,         # Initial guess for beta (at true value for fast convergence)
     },
     # Solver configuration is reused from SOLVER_CONFIG
     # (passed to nested fixed point at each likelihood evaluation)

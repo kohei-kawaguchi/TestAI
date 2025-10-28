@@ -524,7 +524,7 @@ The code below shows how to run the full nested fixed point estimation. This is 
 ### Run Nested Fixed Point Estimation
 
 ```{python}
-#| eval: false
+
 
 import time
 from mdp_estimator import EstimateMDP
@@ -560,7 +560,7 @@ print("="*70)
 ### Compare Estimated vs True Parameters
 
 ```{python}
-#| eval: false
+
 
 # True parameters (used for simulation)
 beta_true = beta
@@ -584,7 +584,7 @@ print(f"  γ: {gamma_rel_error:.4%}")
 ### Solve MDP with Estimated Parameters
 
 ```{python}
-#| eval: false
+
 
 print("\n" + "="*70)
 print("SOLVING MDP WITH ESTIMATED PARAMETERS")
@@ -612,7 +612,7 @@ print(f"\nEstimated model converged in {len(history_est['iterations'])} iteratio
 ### Solve MDP with True Parameters (for comparison)
 
 ```{python}
-#| eval: false
+
 
 print("\n" + "="*70)
 print("SOLVING MDP WITH TRUE PARAMETERS")
@@ -642,7 +642,7 @@ print(f"\nTrue model converged in {len(history_true['iterations'])} iterations")
 #### Choice Probabilities (CCP)
 
 ```{python}
-#| eval: false
+
 
 # Evaluate CCPs on a grid of states
 state_grid = np.linspace(state_range[0], state_range[1], 50)
@@ -706,7 +706,7 @@ plt.show()
 #### Value Functions
 
 ```{python}
-#| eval: false
+
 
 # Compute value functions on state grid
 with torch.no_grad():
@@ -782,7 +782,7 @@ plt.show()
 This section is kept for reference but set to `eval: false` since we already computed the likelihood profile above.
 
 ```{python}
-#| eval: false
+
 
 print("\n" + "="*70)
 print("COMPUTING LIKELIHOOD PROFILE")
@@ -851,7 +851,7 @@ print(f"Estimated β = {beta_hat:.4f}")
 ### Plot Likelihood Profile (Old - Not Evaluated)
 
 ```{python}
-#| eval: false
+
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
@@ -894,7 +894,7 @@ else:
 ## Summary (Not Evaluated)
 
 ```{python}
-#| eval: false
+
 
 print("\n" + "="*70)
 print("ESTIMATION SUMMARY")
