@@ -49,8 +49,8 @@ def test_decreasing_ccp_network_output_in_valid_range():
     assert torch.all(output <= 1.0)
 
 
-def test_decreasing_ccp_network_uses_negative_weights():
-    """Network should use negative weights (w <= 0) via -softplus(w)."""
+def test_decreasing_ccp_network_weight_constraints():
+    """First layer should use negative weights, remaining layers positive weights."""
     network = DecreasingCCPNetwork(hidden_sizes=[16, 16])
 
     # Create test input
@@ -60,18 +60,25 @@ def test_decreasing_ccp_network_uses_negative_weights():
     with torch.no_grad():
         output = network(states_test)
 
-    # Verify all effective weights are non-positive
-    for layer in network.layers:
-        # Effective weight is -softplus(layer.weight)
-        effective_weight = -torch.nn.functional.softplus(layer.weight)
-        assert torch.all(effective_weight <= 0), \
-            "All weights should be non-positive (w <= 0)"
-        assert torch.all(effective_weight <= 1e-6), \
-            "Effective weights should be negative or near-zero"
+    # Verify first layer has negative weights (w₁ ≤ 0)
+    first_layer = network.layers[0]
+    weight_first = -torch.nn.functional.softplus(first_layer.weight)
+    assert torch.all(weight_first <= 0), \
+        "First layer weights should be non-positive (w₁ ≤ 0)"
+    assert torch.all(weight_first <= 1e-6), \
+        "First layer weights should be negative or near-zero"
+
+    # Verify remaining layers have positive weights (wᵢ ≥ 0)
+    for i, layer in enumerate(network.layers[1:], start=1):
+        weight = torch.nn.functional.softplus(layer.weight)
+        assert torch.all(weight >= 0), \
+            f"Layer {i} weights should be non-negative (w_{i} ≥ 0)"
+        assert torch.all(weight >= -1e-6), \
+            f"Layer {i} weights should be positive or near-zero"
 
 
 def test_decreasing_ccp_network_monotonically_decreasing():
-    """Network should be monotonically DECREASING in state."""
+    """Network should be strictly DECREASING for s >= 0 with output in [0,1]."""
     network = DecreasingCCPNetwork(hidden_sizes=[32, 32])
 
     # Train briefly to ensure weights are non-trivial
@@ -86,16 +93,48 @@ def test_decreasing_ccp_network_monotonically_decreasing():
         loss.backward()
         optimizer.step()
 
-    # Test monotonicity: P(s_i) >= P(s_j) for s_i < s_j
-    states_test = torch.linspace(0.0, 5.0, 50).reshape(-1, 1)
+    # Test on positive domain s >= 0
+    states_test = torch.linspace(0.0, 10.0, 100).reshape(-1, 1)
 
     with torch.no_grad():
         probs = network(states_test).squeeze()
 
-    # Check that probabilities are non-increasing
+    # Check output is in [0, 1]
+    assert torch.all(probs >= 0.0), \
+        f"All probabilities should be >= 0, but min={probs.min():.4f}"
+    assert torch.all(probs <= 1.0), \
+        f"All probabilities should be <= 1, but max={probs.max():.4f}"
+
+    # Check strict monotonic decrease: P(s_i) >= P(s_j) for all s_i < s_j
     for i in range(len(probs) - 1):
         assert probs[i].item() >= probs[i+1].item() - 1e-6, \
-            f"Not decreasing: P(s[{i}])={probs[i]:.4f} < P(s[{i+1}])={probs[i+1]:.4f}"
+            f"Not decreasing at i={i}: P(s={states_test[i].item():.2f})={probs[i]:.4f} < P(s={states_test[i+1].item():.2f})={probs[i+1]:.4f}"
+
+
+def test_decreasing_ccp_network_untrained_properties():
+    """Untrained network should satisfy output in [0,1] and decreasing for s >= 0."""
+    network = DecreasingCCPNetwork(hidden_sizes=[32, 32])
+
+    # Test on positive domain s >= 0 without any training
+    states_test = torch.linspace(0.0, 10.0, 50).reshape(-1, 1)
+
+    with torch.no_grad():
+        probs = network(states_test).squeeze()
+
+    # Check output is in [0, 1] even without training
+    assert torch.all(probs >= 0.0), \
+        f"Untrained network: all probabilities should be >= 0, but min={probs.min():.4f}"
+    assert torch.all(probs <= 1.0), \
+        f"Untrained network: all probabilities should be <= 1, but max={probs.max():.4f}"
+
+    # Check monotonic decrease holds even without training
+    violations = 0
+    for i in range(len(probs) - 1):
+        if probs[i].item() < probs[i+1].item() - 1e-6:
+            violations += 1
+
+    assert violations == 0, \
+        f"Untrained network: found {violations} violations of monotonic decrease out of {len(probs)-1} pairs"
 
 
 def test_initialize_decreasing_ccp_network_returns_network():
