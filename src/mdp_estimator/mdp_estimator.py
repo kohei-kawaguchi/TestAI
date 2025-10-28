@@ -15,17 +15,14 @@ import numpy as np
 from typing import Tuple, Dict
 import sys
 sys.path.insert(0, '..')
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from mdp_solver import (
     MonotonicNetwork,
     InitializeNetworks,
     GenerateStateGrid,
-    ComputeNextState,
     ComputeMeanReward,
-    ComputeLoss,
-    UpdateNetworks,
-    CheckConvergence
+    ComputeNextState
 )
 
 
@@ -204,9 +201,9 @@ def EstimateBeta(
     # Parallel evaluation of beta candidates
     distances = [None] * K
 
-    # Use ProcessPoolExecutor for CPU-based parallelization
-    # Note: PyTorch works better with multiprocessing than threading for CPU
-    with ProcessPoolExecutor(max_workers=min(K, 4)) as executor:
+    # Use ThreadPoolExecutor for notebook/Quarto compatibility
+    # ProcessPoolExecutor has issues with __main__ module in notebooks
+    with ThreadPoolExecutor(max_workers=min(K, 4)) as executor:
         # Submit all beta evaluations
         future_to_k = {
             executor.submit(
@@ -424,7 +421,7 @@ def SolveValueFunctionGivenCCP(
     """
     Procedure SolveValueFunctionGivenCCP(...) -> (Network, Network)
 
-    Solve value functions that are consistent with estimated CCP.
+    Solve value functions via linear system, then fit networks.
 
     This is the "critic" step in the actor-critic framework.
 
@@ -436,9 +433,142 @@ def SolveValueFunctionGivenCCP(
         gamma_E: Euler-Mascheroni constant
         hyperparameters: Dict containing 'hidden_sizes'
         S: State grid tensor of shape (N, 1)
-        max_iter: Maximum iterations
-        epsilon_tol: Convergence tolerance
-        num_epochs: Training epochs per iteration
+        max_iter: Maximum iterations (unused, kept for compatibility)
+        epsilon_tol: Convergence tolerance (unused, kept for compatibility)
+        num_epochs: Training epochs for network fitting
+        learning_rate: Learning rate for network fitting
+
+    Returns:
+        Tuple of (v_theta_0, v_theta_1): Trained value networks
+    """
+    # Step 1: Solve linear Bellman equation on grid
+    v_0, v_1 = SolveLinearBellman(
+        P_hat=P_hat,
+        beta=beta,
+        gamma=gamma,
+        delta=delta,
+        gamma_E=gamma_E,
+        S=S
+    )
+
+    # Step 2: Fit networks to grid values via supervised learning
+    v_theta_0, v_theta_1 = FitNetworksToValues(
+        S=S,
+        v_0=v_0,
+        v_1=v_1,
+        hyperparameters=hyperparameters,
+        num_epochs=num_epochs,
+        learning_rate=learning_rate
+    )
+
+    return v_theta_0, v_theta_1
+
+
+def SolveLinearBellman(
+    P_hat: MonotonicNetwork,
+    beta: float,
+    gamma: float,
+    delta: float,
+    gamma_E: float,
+    S: torch.Tensor
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Procedure SolveLinearBellman(...) -> (Array[N], Array[N])
+
+    Solve Bellman equation as linear system: (I - delta*T)v = r
+
+    For each action a, we have:
+        v^(a) = r^(a) + delta * T^(a) * v
+    where v = [(1-p)*v^(0) + p*v^(1)] + gamma_E
+
+    Rearranging:
+        v^(a) - delta * T^(a) * [(1-p)*v^(0) + p*v^(1)] = r^(a) + delta * gamma_E
+
+    Args:
+        P_hat: Estimated CCP network
+        beta: Reward parameter
+        gamma: Depreciation parameter
+        delta: Discount factor
+        gamma_E: Euler-Mascheroni constant
+        S: State grid tensor of shape (N, 1)
+
+    Returns:
+        Tuple of (v_0, v_1): Value functions on grid as numpy arrays
+    """
+    N = S.shape[0]
+
+    # Convert S to numpy for indexing
+    S_np = S.detach().cpu().numpy().flatten()
+
+    # Evaluate CCP on grid
+    with torch.no_grad():
+        P_eval = P_hat(S).detach().cpu().numpy().flatten()  # P(a=1|s)
+
+    # Build transition matrices and reward vectors for both actions
+    # We'll solve the coupled system for both v^(0) and v^(1) simultaneously
+
+    # Initialize system: [v^(0); v^(1)] of size 2N
+    A = np.eye(2 * N)  # Will become (I - delta*T)
+    b = np.zeros(2 * N)  # Will become r + delta*gamma_E
+
+    for a in [0, 1]:
+        # Row offset for this action
+        row_offset = a * N
+
+        for i in range(N):
+            s_i_tensor = S[i:i+1]  # Keep as tensor for shared functions
+
+            # Compute reward using shared function
+            r_i_tensor = ComputeMeanReward(s=s_i_tensor, a=a, beta=beta)
+            r_i = r_i_tensor.item()
+            b[row_offset + i] = r_i + delta * gamma_E
+
+            # Compute next state using shared function
+            s_prime_i_tensor = ComputeNextState(s=s_i_tensor, a=a, gamma=gamma)
+            s_prime_i = s_prime_i_tensor.item()
+
+            # Find nearest grid point (simple nearest neighbor)
+            j = np.argmin(np.abs(S_np - s_prime_i))
+
+            # Get transition probability
+            p_j = P_eval[j]  # P(a=1|s'_i)
+
+            # Build transition: E[v|s'] = (1-p)*v^(0) + p*v^(1)
+            # Subtract delta * T from left side (I - delta*T)
+            A[row_offset + i, 0 * N + j] -= delta * (1 - p_j)  # v^(0) component
+            A[row_offset + i, 1 * N + j] -= delta * p_j        # v^(1) component
+
+    # Solve linear system: A * v = b
+    v_combined = np.linalg.solve(A, b)
+
+    # Extract v^(0) and v^(1)
+    v_0 = v_combined[0:N]
+    v_1 = v_combined[N:2*N]
+
+    return v_0, v_1
+
+
+def FitNetworksToValues(
+    S: torch.Tensor,
+    v_0: np.ndarray,
+    v_1: np.ndarray,
+    hyperparameters: Dict,
+    num_epochs: int,
+    learning_rate: float
+) -> Tuple[MonotonicNetwork, MonotonicNetwork]:
+    """
+    Procedure FitNetworksToValues(...) -> (Network, Network)
+
+    Train neural networks to approximate grid-solved value functions.
+
+    Uses supervised learning with MSE loss.
+
+    Args:
+        S: State grid tensor of shape (N, 1)
+        v_0: Value function for action 0 on grid (numpy array)
+        v_1: Value function for action 1 on grid (numpy array)
+        hyperparameters: Dict containing 'hidden_sizes'
+        num_epochs: Training epochs
         learning_rate: Learning rate
 
     Returns:
@@ -447,103 +577,30 @@ def SolveValueFunctionGivenCCP(
     # Initialize networks
     v_theta_0, v_theta_1 = InitializeNetworks(hyperparameters=hyperparameters)
 
+    # Convert targets to tensors
+    targets = torch.tensor(np.stack([v_0, v_1], axis=1), dtype=torch.float32)
+
     # Create optimizer
     params = list(v_theta_0.parameters()) + list(v_theta_1.parameters())
     optimizer = torch.optim.Adam(params, lr=learning_rate)
 
-    # Value iteration loop
-    for iteration in range(max_iter):
-        # Compute Bellman targets given CCP
-        targets = ComputeBellmanTargetsGivenCCP(
-            S=S,
-            P_hat=P_hat,
-            v_theta_0=v_theta_0,
-            v_theta_1=v_theta_1,
-            beta=beta,
-            gamma=gamma,
-            delta=delta,
-            gamma_E=gamma_E
-        )
+    # Training loop (supervised learning)
+    for epoch in range(num_epochs):
+        optimizer.zero_grad()
 
-        # Update networks
-        v_theta_0, v_theta_1 = UpdateNetworks(
-            S=S,
-            targets=targets,
-            v_theta_0=v_theta_0,
-            v_theta_1=v_theta_1,
-            num_epochs=num_epochs,
-            optimizer=optimizer
-        )
+        # Forward pass
+        pred_0 = v_theta_0(S)
+        pred_1 = v_theta_1(S)
+        pred = torch.cat([pred_0, pred_1], dim=1)
 
-        # Check convergence
-        max_error = CheckConvergence(
-            S=S,
-            targets=targets,
-            v_theta_0=v_theta_0,
-            v_theta_1=v_theta_1
-        )
+        # MSE loss
+        loss = torch.mean((pred - targets) ** 2)
 
-        if max_error < epsilon_tol:
-            break
+        # Backward pass
+        loss.backward()
+        optimizer.step()
 
     return v_theta_0, v_theta_1
-
-
-def ComputeBellmanTargetsGivenCCP(
-    S: torch.Tensor,
-    P_hat: MonotonicNetwork,
-    v_theta_0: MonotonicNetwork,
-    v_theta_1: MonotonicNetwork,
-    beta: float,
-    gamma: float,
-    delta: float,
-    gamma_E: float
-) -> torch.Tensor:
-    """
-    Procedure ComputeBellmanTargetsGivenCCP(...) -> Tensor[N×2]
-
-    Compute Bellman targets using estimated policy probabilities.
-
-    Instead of using the optimal policy (via LogSumExp), we use the
-    estimated policy from the CCP network.
-
-    Args:
-        S: State grid tensor of shape (N, 1)
-        P_hat: Estimated CCP network
-        v_theta_0: Value network for action 0
-        v_theta_1: Value network for action 1
-        beta: Reward parameter
-        gamma: Depreciation parameter
-        delta: Discount factor
-        gamma_E: Euler-Mascheroni constant
-
-    Returns:
-        targets: Tensor of shape (N, 2) with Bellman targets
-    """
-    targets_list = []
-
-    with torch.no_grad():
-        for a in [0, 1]:
-            # Next state
-            s_prime_i = ComputeNextState(s=S, a=a, gamma=gamma)
-
-            # Estimated policy probability P(a=1|s')
-            p_hat_i = P_hat(s_prime_i)
-
-            # Value functions at next state
-            v_0 = v_theta_0(s_prime_i)
-            v_1 = v_theta_1(s_prime_i)
-
-            # Expected value under estimated policy
-            EV_i = (1 - p_hat_i) * v_0 + p_hat_i * v_1 + gamma_E
-
-            # Bellman target
-            y_i_a = ComputeMeanReward(s=S, a=a, beta=beta) + delta * EV_i
-            targets_list.append(y_i_a)
-
-    # Stack into (N, 2) tensor
-    targets = torch.cat(targets_list, dim=1)
-    return targets
 
 
 # ============================================================================
