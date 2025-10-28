@@ -183,7 +183,7 @@ window.Quarto = {
 
 <section id="load-configuration-and-simulation-results" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulation-results">Load Configuration and Simulation Results</h2>
-<div id="09dfdef0" class="cell" data-execution_count="1">
+<div id="6c0c7765" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -257,8 +257,10 @@ True parameters: beta=1.0, gamma=0.1</code></pre>
 <p>Since rewards are not observed, we use a revealed preference approach based on the optimality of observed actions. This follows an actor-critic style method:</p>
 <section id="step-2a-estimate-conditional-choice-probability-ccp" class="level4">
 <h4 class="anchored" data-anchor-id="step-2a-estimate-conditional-choice-probability-ccp">Step 2a: Estimate Conditional Choice Probability (CCP)</h4>
-<p>Estimate the choice probability as a function of state: <span class="math display">\[\hat{P}(a=1|s) = f_\theta(s)\]</span></p>
-<p>where <span class="math inline">\(f_\theta\)</span> is a neural network that is: - Continuous in <span class="math inline">\(s\)</span> - <strong>Monotonically DECREASING in <span class="math inline">\(s\)</span></strong> (enforced by architecture) - Higher capital stock → Lower investment probability - <strong>First layer</strong>: weights <span class="math inline">\(w_1 \leq 0\)</span> via <span class="math inline">\(-\text{softplus}(w_1)\)</span> to flip sign - <strong>Remaining layers</strong>: weights <span class="math inline">\(w_i \geq 0\)</span> via <span class="math inline">\(\text{softplus}(w_i)\)</span> to preserve monotonicity - Composition: positive input → negative (layer 1) → monotonic increasing (layers 2+) → overall decreasing - Output layer applies sigmoid: <span class="math inline">\(\hat{P}(s) = \sigma(g(s))\)</span> where <span class="math inline">\(g\)</span> is monotonic decreasing</p>
+<p>Estimate the choice probability as a function of state. Since <span class="math inline">\(P(a=1|s)\)</span> is <strong>decreasing</strong> in <span class="math inline">\(s\)</span> (higher capital → lower investment), we instead estimate <span class="math inline">\(P(a=0|s)\)</span> which is <strong>increasing</strong> in <span class="math inline">\(s\)</span>:</p>
+<p><span class="math display">\[\hat{P}(a=0|s) = \sigma(g_\theta(s))\]</span> <span class="math display">\[\hat{P}(a=1|s) = 1 - \hat{P}(a=0|s)\]</span></p>
+<p>where <span class="math inline">\(g_\theta\)</span> is a neural network that is: - Continuous in <span class="math inline">\(s\)</span> - <strong>Monotonically INCREASING in <span class="math inline">\(s\)</span></strong> (enforced by architecture) - Higher capital stock → Higher probability of not investing - <strong>All layers</strong>: weights <span class="math inline">\(w_i \geq 0\)</span> via <span class="math inline">\(\text{softplus}(w_i)\)</span> to ensure monotonic increasing - This is the standard monotonic network architecture (all positive weights) - Output layer applies sigmoid: <span class="math inline">\(\hat{P}(a=0|s) = \sigma(g_\theta(s))\)</span>, output <span class="math inline">\(\in [0,1]\)</span></p>
+<p>Then <span class="math inline">\(\hat{P}(a=1|s) = 1 - \hat{P}(a=0|s)\)</span> gives the desired decreasing probability.</p>
 <p>This is estimated by maximum likelihood using the observed state-action pairs.</p>
 </section>
 <section id="step-2b-solve-for-value-functions-given-ccp-and-candidate-beta" class="level4">
@@ -360,14 +362,14 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <h3 class="anchored" data-anchor-id="step-2-estimate-beta-via-revealed-preference">Step 2: Estimate Beta via Revealed Preference</h3>
 <p><strong>Procedure</strong> <code>EstimateBeta</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], <span class="math inline">\(\hat{\gamma}\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[<span class="math inline">\(K\)</span>], <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, max_iter: int, <span class="math inline">\(\gamma_E\)</span>: float) <span class="math inline">\(\to\)</span> (float, Array[<span class="math inline">\(K\)</span>])</p>
 <ol type="1">
-<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>EstimateCCP</code>(states, actions, hyperparameters, num_epochs, learning_rate)</p></li>
+<li><p><span class="math inline">\(\hat{P}_0\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>EstimateCCP</code>(states, actions, hyperparameters, num_epochs, learning_rate) &nbsp;&nbsp;&nbsp;&nbsp;// Returns network that predicts <span class="math inline">\(P(a=0|s)\)</span></p></li>
 <li><p><span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>GenerateStateGrid</code>(<span class="math inline">\(N\)</span>, state_range)</p></li>
-<li><p><span class="math inline">\(\hat{P}_{\text{eval}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow \hat{P}(S)\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Pre-compute once</p></li>
+<li><p><span class="math inline">\(\hat{P}_{\text{eval}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow 1 - \hat{P}_0(S)\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Convert to <span class="math inline">\(P(a=1|s) = 1 - P(a=0|s)\)</span> and pre-compute once</p></li>
 <li><p>distances: Array[<span class="math inline">\(K\)</span>] <span class="math inline">\(\leftarrow\)</span> Empty array</p></li>
 <li><p><strong>ParallelFor</strong> <span class="math inline">\(k\)</span>: int = 1 to <span class="math inline">\(K\)</span> <strong>do in parallel</strong>: &nbsp;&nbsp;&nbsp;&nbsp;// Evaluate beta candidates in parallel</p>
 <ol type="a">
 <li><p><span class="math inline">\(\beta_k\)</span>: float <span class="math inline">\(\leftarrow\)</span> beta_grid[<span class="math inline">\(k\)</span>]</p></li>
-<li><p>distance: float <span class="math inline">\(\leftarrow\)</span> <code>EvaluateBetaCandidate</code>(<span class="math inline">\(\beta_k\)</span>, <span class="math inline">\(\hat{P}\)</span>, <span class="math inline">\(\hat{P}_{\text{eval}}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, hyperparameters, <span class="math inline">\(S\)</span>, max_iter, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, num_epochs, learning_rate)</p></li>
+<li><p>distance: float <span class="math inline">\(\leftarrow\)</span> <code>EvaluateBetaCandidate</code>(<span class="math inline">\(\beta_k\)</span>, <span class="math inline">\(\hat{P}_0\)</span>, <span class="math inline">\(\hat{P}_{\text{eval}}\)</span>, <span class="math inline">\(\hat{\gamma}\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, hyperparameters, <span class="math inline">\(S\)</span>, max_iter, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, num_epochs, learning_rate)</p></li>
 <li><p>distances[<span class="math inline">\(k\)</span>] <span class="math inline">\(\leftarrow\)</span> distance</p></li>
 </ol></li>
 <li><p><span class="math inline">\(k^*\)</span>: int <span class="math inline">\(\leftarrow\)</span> <code>ArgMin</code>(distances)</p></li>
@@ -378,11 +380,11 @@ Algorithm: Two-Step Estimation of MDP Parameters
 </section>
 <section id="subroutine-for-parallel-beta-evaluation" class="level3">
 <h3 class="anchored" data-anchor-id="subroutine-for-parallel-beta-evaluation">Subroutine for Parallel Beta Evaluation</h3>
-<p><strong>Procedure</strong> <code>EvaluateBetaCandidate</code>(<span class="math inline">\(\beta_k\)</span>: float, <span class="math inline">\(\hat{P}\)</span>: Network, <span class="math inline">\(\hat{P}_{\text{eval}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, hyperparameters: dict, <span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], max_iter: int, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> float</p>
+<p><strong>Procedure</strong> <code>EvaluateBetaCandidate</code>(<span class="math inline">\(\beta_k\)</span>: float, <span class="math inline">\(\hat{P}_0\)</span>: Network, <span class="math inline">\(\hat{P}_{\text{eval}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, hyperparameters: dict, <span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], max_iter: int, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> float</p>
 <ol type="1">
-<li><p><span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span> <span class="math inline">\(\leftarrow\)</span> <code>SolveValueFunctionGivenCCP</code>(<span class="math inline">\(\hat{P}\)</span>, <span class="math inline">\(\beta_k\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, hyperparameters, <span class="math inline">\(S\)</span>, max_iter, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, num_epochs, learning_rate)</p></li>
-<li><p><span class="math inline">\(P^{\text{updated}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>ComputeCCPFromValue</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p></li>
-<li><p>distance: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeDistance</code>(<span class="math inline">\(\hat{P}_{\text{eval}}\)</span>, <span class="math inline">\(P^{\text{updated}}\)</span>)</p></li>
+<li><p><span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span> <span class="math inline">\(\leftarrow\)</span> <code>SolveValueFunctionGivenCCP</code>(<span class="math inline">\(\hat{P}_0\)</span>, <span class="math inline">\(\beta_k\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, hyperparameters, <span class="math inline">\(S\)</span>, max_iter, <span class="math inline">\(\epsilon_{\text{tol}}\)</span>, num_epochs, learning_rate) &nbsp;&nbsp;&nbsp;&nbsp;// <span class="math inline">\(\hat{P}_0\)</span> predicts <span class="math inline">\(P(a=0|s)\)</span></p></li>
+<li><p><span class="math inline">\(P^{\text{updated}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>ComputeCCPFromValue</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>) &nbsp;&nbsp;&nbsp;&nbsp;// Returns <span class="math inline">\(P(a=1|s)\)</span></p></li>
+<li><p>distance: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeDistance</code>(<span class="math inline">\(\hat{P}_{\text{eval}}\)</span>, <span class="math inline">\(P^{\text{updated}}\)</span>) &nbsp;&nbsp;&nbsp;&nbsp;// Both are <span class="math inline">\(P(a=1|s)\)</span></p></li>
 <li><p><strong>Return</strong> distance</p></li>
 </ol>
 <hr>
@@ -391,8 +393,8 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <h3 class="anchored" data-anchor-id="subroutines-for-step-2a-estimate-ccp">Subroutines for Step 2a: Estimate CCP</h3>
 <p><strong>Procedure</strong> <code>EstimateCCP</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], hyperparameters: dict, num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> Network</p>
 <ol type="1">
-<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeDecreasingCCPNetwork</code>(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// DECREASING: layer 1 weights <span class="math inline">\(w_1 \leq 0\)</span>, remaining <span class="math inline">\(w_i \geq 0\)</span>, sigmoid output <span class="math inline">\(\in [0,1]\)</span></p></li>
-<li><p>optimizer: Optimizer <span class="math inline">\(\leftarrow\)</span> <code>CreateOptimizer</code>(<span class="math inline">\(\hat{P}\)</span>, learning_rate)</p></li>
+<li><p><span class="math inline">\(\hat{P}_0\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeIncreasingCCPNetwork</code>(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// INCREASING: all layer weights <span class="math inline">\(w_i \geq 0\)</span> via softplus, sigmoid output <span class="math inline">\(\in [0,1]\)</span></p></li>
+<li><p>optimizer: Optimizer <span class="math inline">\(\leftarrow\)</span> <code>CreateOptimizer</code>(<span class="math inline">\(\hat{P}_0\)</span>, learning_rate)</p></li>
 <li><p>For epoch: int = 1 to num_epochs:</p>
 <ol type="a">
 <li><p>optimizer.<code>zero_grad</code>()</p></li>
@@ -401,26 +403,27 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <p>&nbsp;&nbsp;&nbsp;&nbsp;i. For <span class="math inline">\(t\)</span>: int = 1 to <span class="math inline">\(T\)</span>:</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s_{mt}\)</span>: Tensor <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(a_{mt}\)</span>: int <span class="math inline">\(\leftarrow\)</span> actions[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\hat{p}_{mt}\)</span>: Tensor <span class="math inline">\(\leftarrow \hat{P}(s_{mt})\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Probability of <span class="math inline">\(a=1\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loss: Tensor <span class="math inline">\(\leftarrow\)</span> <code>ComputeBinaryCrossEntropy</code>(<span class="math inline">\(a_{mt}\)</span>, <span class="math inline">\(\hat{p}_{mt}\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(\hat{p}_{0,mt}\)</span>: Tensor <span class="math inline">\(\leftarrow \hat{P}_0(s_{mt})\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Probability of <span class="math inline">\(a=0\)</span> (increasing in <span class="math inline">\(s\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(a_{0,mt}\)</span>: int <span class="math inline">\(\leftarrow 1 - a_{mt}\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Convert to indicator <span class="math inline">\(1\{a=0\}\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;loss: Tensor <span class="math inline">\(\leftarrow\)</span> <code>ComputeBinaryCrossEntropy</code>(<span class="math inline">\(a_{0,mt}\)</span>, <span class="math inline">\(\hat{p}_{0,mt}\)</span>)</p>
 <ol start="3" type="a">
 <li><p>loss.<code>backward</code>()</p></li>
 <li><p>optimizer.<code>step</code>()</p></li>
 </ol></li>
-<li><p><strong>Return</strong> <span class="math inline">\(\hat{P}\)</span></p></li>
+<li><p><strong>Return</strong> <span class="math inline">\(\hat{P}_0\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Returns network that predicts <span class="math inline">\(P(a=0|s)\)</span>; compute <span class="math inline">\(P(a=1|s) = 1 - \hat{P}_0(s)\)</span> when needed</p></li>
 </ol>
 <hr>
 </section>
 <section id="subroutines-for-step-2b-solve-value-function-given-ccp" class="level3">
 <h3 class="anchored" data-anchor-id="subroutines-for-step-2b-solve-value-function-given-ccp">Subroutines for Step 2b: Solve Value Function Given CCP</h3>
-<p><strong>Procedure</strong> <code>SolveValueFunctionGivenCCP</code>(<span class="math inline">\(\hat{P}\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, hyperparameters: dict, <span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> (Network, Network)</p>
+<p><strong>Procedure</strong> <code>SolveValueFunctionGivenCCP</code>(<span class="math inline">\(\hat{P}_0\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, hyperparameters: dict, <span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>], num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> (Network, Network)</p>
 <ol type="1">
-<li><p><span class="math inline">\(v^{(0)}\)</span>: Array[<span class="math inline">\(N\)</span>], <span class="math inline">\(v^{(1)}\)</span>: Array[<span class="math inline">\(N\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>SolveLinearBellman</code>(<span class="math inline">\(\hat{P}\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, <span class="math inline">\(S\)</span>)</p></li>
+<li><p><span class="math inline">\(v^{(0)}\)</span>: Array[<span class="math inline">\(N\)</span>], <span class="math inline">\(v^{(1)}\)</span>: Array[<span class="math inline">\(N\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>SolveLinearBellman</code>(<span class="math inline">\(\hat{P}_0\)</span>, <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span>, <span class="math inline">\(S\)</span>) &nbsp;&nbsp;&nbsp;&nbsp;// <span class="math inline">\(\hat{P}_0\)</span> predicts <span class="math inline">\(P(a=0|s)\)</span></p></li>
 <li><p><span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span> <span class="math inline">\(\leftarrow\)</span> <code>FitNetworksToValues</code>(<span class="math inline">\(S\)</span>, <span class="math inline">\(v^{(0)}\)</span>, <span class="math inline">\(v^{(1)}\)</span>, hyperparameters, num_epochs, learning_rate)</p></li>
 <li><p><strong>Return</strong> <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span></p></li>
 </ol>
 <hr>
-<p><strong>Procedure</strong> <code>SolveLinearBellman</code>(<span class="math inline">\(\hat{P}\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, <span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>]) <span class="math inline">\(\to\)</span> (Array[<span class="math inline">\(N\)</span>], Array[<span class="math inline">\(N\)</span>])</p>
+<p><strong>Procedure</strong> <code>SolveLinearBellman</code>(<span class="math inline">\(\hat{P}_0\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(\gamma_E\)</span>: float, <span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>]) <span class="math inline">\(\to\)</span> (Array[<span class="math inline">\(N\)</span>], Array[<span class="math inline">\(N\)</span>])</p>
 <ol type="1">
 <li><p><span class="math inline">\(N\)</span>: int <span class="math inline">\(\leftarrow\)</span> Length(<span class="math inline">\(S\)</span>)</p></li>
 <li><p>For each action <span class="math inline">\(a\)</span>: int <span class="math inline">\(\in \{0, 1\}\)</span>:</p>
@@ -432,8 +435,9 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <p>&nbsp;&nbsp;&nbsp;&nbsp;i. <span class="math inline">\(s_i\)</span>: float <span class="math inline">\(\leftarrow S[i]\)</span></p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;ii. <span class="math inline">\(r^{(a)}[i]\)</span> <span class="math inline">\(\leftarrow\)</span> <code>ComputeMeanReward</code>(<span class="math inline">\(s_i\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\beta\)</span>)</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;iii. <span class="math inline">\(s'_i\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeNextState</code>(<span class="math inline">\(s_i\)</span>, <span class="math inline">\(a\)</span>, <span class="math inline">\(\gamma\)</span>)</p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;iv. <span class="math inline">\(\hat{p}_i\)</span>: float <span class="math inline">\(\leftarrow \hat{P}(s'_i)\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// <span class="math inline">\(P(a=1|s'_i)\)</span></p>
-<p>&nbsp;&nbsp;&nbsp;&nbsp;v. For <span class="math inline">\(j\)</span>: int = 1 to <span class="math inline">\(N\)</span>: &nbsp;&nbsp;&nbsp;&nbsp;// Find which grid point <span class="math inline">\(s'_i\)</span> maps to</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;iv. <span class="math inline">\(\hat{p}_{0,i}\)</span>: float <span class="math inline">\(\leftarrow \hat{P}_0(s'_i)\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// <span class="math inline">\(P(a=0|s'_i)\)</span> from network</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;v. <span class="math inline">\(\hat{p}_i\)</span>: float <span class="math inline">\(\leftarrow 1 - \hat{p}_{0,i}\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Convert to <span class="math inline">\(P(a=1|s'_i) = 1 - P(a=0|s'_i)\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;vi. For <span class="math inline">\(j\)</span>: int = 1 to <span class="math inline">\(N\)</span>: &nbsp;&nbsp;&nbsp;&nbsp;// Find which grid point <span class="math inline">\(s'_i\)</span> maps to</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>If</strong> <span class="math inline">\(s'_i \approx S[j]\)</span>: &nbsp;&nbsp;&nbsp;&nbsp;// Interpolate or find nearest neighbor</p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(T^{(a)}[i, j]\)</span> <span class="math inline">\(\leftarrow (1 - \hat{p}_i)\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Transition to <span class="math inline">\(v^{(0)}\)</span></p>
 <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Also add contribution to <span class="math inline">\(v^{(1)}\)</span> via second matrix (or handle jointly)</p>
@@ -507,16 +511,16 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <p><strong>Key Implementation Details:</strong></p>
 <ul>
 <li><strong>Shared configuration</strong>: Load <span class="math inline">\(\delta\)</span>, <span class="math inline">\(\gamma_E\)</span> from the same config used in solve_mdp</li>
-<li><strong>Monotonic network for CCP</strong>: The CCP network <span class="math inline">\(\hat{P}\)</span> uses monotonic architecture to ensure <span class="math inline">\(\hat{P}(a=1|s)\)</span> is <strong>DECREASING in <span class="math inline">\(s\)</span></strong> (higher capital → lower investment probability). <strong>Implementation</strong>: First layer uses negative weights <span class="math inline">\(w_1 = -\text{softplus}(\tilde{w}_1)\)</span> to flip sign. Remaining layers use positive weights <span class="math inline">\(w_i = \text{softplus}(\tilde{w}_i)\)</span> to preserve monotonicity. This achieves: positive input <span class="math inline">\(s\)</span> → negative (layer 1) → monotonic increasing through remaining layers → overall decreasing. Output layer applies sigmoid <span class="math inline">\(\sigma\)</span> to constrain to <span class="math inline">\([0,1]\)</span></li>
+<li><strong>Monotonic network for CCP</strong>: We want <span class="math inline">\(P(a=1|s)\)</span> to be <strong>DECREASING in <span class="math inline">\(s\)</span></strong> (higher capital → lower investment probability). Instead of directly predicting this decreasing function, we predict <span class="math inline">\(\hat{P}_0(s) = P(a=0|s)\)</span> which is <strong>INCREASING in <span class="math inline">\(s\)</span></strong>, then compute <span class="math inline">\(P(a=1|s) = 1 - \hat{P}_0(s)\)</span>. <strong>Implementation</strong>: Network <span class="math inline">\(\hat{P}_0\)</span> uses standard monotonic increasing architecture with <strong>all layer weights <span class="math inline">\(w_i = \text{softplus}(\tilde{w}_i) \geq 0\)</span></strong> to ensure increasing monotonicity. Output layer applies sigmoid <span class="math inline">\(\sigma\)</span> to constrain to <span class="math inline">\([0,1]\)</span>. Train on complement indicator <span class="math inline">\(1\{a=0\}\)</span> instead of <span class="math inline">\(1\{a=1\}\)</span></li>
 <li><strong>Nested fixed-point</strong>: The outer loop searches over <span class="math inline">\(\beta\)</span> candidates, inner loop solves value functions for each <span class="math inline">\(\beta\)</span></li>
-<li><strong>Binary cross-entropy loss</strong>: For CCP estimation, use <span class="math inline">\(-[a \log(\hat{p}) + (1-a) \log(1-\hat{p})]\)</span></li>
+<li><strong>Binary cross-entropy loss</strong>: For CCP estimation, use <span class="math inline">\(-[a_0 \log(\hat{p}_0) + (1-a_0) \log(1-\hat{p}_0)]\)</span> where <span class="math inline">\(a_0 = 1\{a=0\}\)</span> and <span class="math inline">\(\hat{p}_0 = \hat{P}_0(s)\)</span></li>
 <li><strong>Grid search for <span class="math inline">\(\beta\)</span></strong>: Can be replaced with gradient-free optimization methods like Nelder-Mead</li>
 </ul>
 </section>
 <section id="diagnostic-compare-estimated-ccp-with-true-ccp" class="level2">
 <h2 class="anchored" data-anchor-id="diagnostic-compare-estimated-ccp-with-true-ccp">Diagnostic: Compare Estimated CCP with True CCP</h2>
 <p>Before running the full estimation, we diagnose the quality of CCP estimation by comparing the estimated CCP (from observed choices) with the true CCP (from the solver’s value functions).</p>
-<div id="f0f7334f" class="cell" data-execution_count="2">
+<div id="1e4f8ac8" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -532,88 +536,91 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== DIAGNOSTIC: CCP Estimation Quality ==="</span>)</span>
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate CCP from observed (s,a) pairs</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimating CCP from observed choices..."</span>)</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>P_hat_network <span class="op">=</span> EstimateCCP(</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    states<span class="op">=</span>states,</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    actions<span class="op">=</span>actions,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Loading true value functions from solver..."</span>)</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>v_theta_0_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>v_theta_1_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.<span class="bu">eval</span>()</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.<span class="bu">eval</span>()</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate estimated CCP on grid</span></span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>    P_hat_eval <span class="op">=</span> P_hat_network(S_eval).numpy().flatten()</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute true CCP on grid from true value functions</span></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>prob_a1_true_list <span class="op">=</span> []</span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N):</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    s_i <span class="op">=</span> S_eval[i].item()</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    prob_a0_t, prob_a1_t <span class="op">=</span> ComputeChoiceProbability(</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>        s<span class="op">=</span>s_i,</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>        v_theta_0<span class="op">=</span>v_theta_0_true,</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        v_theta_1<span class="op">=</span>v_theta_1_true</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    prob_a1_true_list.append(prob_a1_t)</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>P_true_eval <span class="op">=</span> np.array(prob_a1_true_list)</span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute CCP errors</span></span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>ccp_diff <span class="op">=</span> np.<span class="bu">abs</span>(P_hat_eval <span class="op">-</span> P_true_eval)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># EstimateCCP returns a network that predicts P(a=0|s)</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimating CCP from observed choices..."</span>)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>P_hat_network <span class="op">=</span> EstimateCCP(</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    states<span class="op">=</span>states,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    actions<span class="op">=</span>actions,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Loading true value functions from solver..."</span>)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>v_theta_0_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>v_theta_1_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.<span class="bu">eval</span>()</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.<span class="bu">eval</span>()</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate estimated CCP on grid</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="co"># P_hat_network predicts P(a=0|s), convert to P(a=1|s) = 1 - P(a=0|s)</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    P_hat_a0_eval <span class="op">=</span> P_hat_network(S_eval).numpy().flatten()  <span class="co"># P(a=0|s)</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>    P_hat_eval <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> P_hat_a0_eval  <span class="co"># Convert to P(a=1|s)</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute true CCP on grid from true value functions</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>prob_a1_true_list <span class="op">=</span> []</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N):</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    s_i <span class="op">=</span> S_eval[i].item()</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    prob_a0_t, prob_a1_t <span class="op">=</span> ComputeChoiceProbability(</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        s<span class="op">=</span>s_i,</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>        v_theta_0<span class="op">=</span>v_theta_0_true,</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>        v_theta_1<span class="op">=</span>v_theta_1_true</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>    prob_a1_true_list.append(prob_a1_t)</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>P_true_eval <span class="op">=</span> np.array(prob_a1_true_list)</span>
 <span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== CCP Comparison ==="</span>)</span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Comparing: Estimated CCP (from data) vs. True CCP (from solver)"</span>)</span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">P(a=1|s) errors:"</span>)</span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Mean absolute error: </span><span class="sc">{</span>ccp_diff<span class="sc">.</span>mean()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Max absolute error:  </span><span class="sc">{</span>ccp_diff<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Root mean squared error: </span><span class="sc">{</span>np<span class="sc">.</span>sqrt((ccp_diff<span class="op">**</span><span class="dv">2</span>).mean())<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
-<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot CCP comparison</span></span>
-<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">6</span>))</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute CCP errors</span></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>ccp_diff <span class="op">=</span> np.<span class="bu">abs</span>(P_hat_eval <span class="op">-</span> P_true_eval)</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== CCP Comparison ==="</span>)</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Comparing: Estimated CCP (from data) vs. True CCP (from solver)"</span>)</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">P(a=1|s) errors:"</span>)</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Mean absolute error: </span><span class="sc">{</span>ccp_diff<span class="sc">.</span>mean()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Max absolute error:  </span><span class="sc">{</span>ccp_diff<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Root mean squared error: </span><span class="sc">{</span>np<span class="sc">.</span>sqrt((ccp_diff<span class="op">**</span><span class="dv">2</span>).mean())<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
 <span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 1: CCPs over state space</span></span>
-<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
-<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>s_grid <span class="op">=</span> S_eval.numpy().flatten()</span>
-<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_true_eval, <span class="st">'g-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'True CCP (solver)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
-<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_hat_eval, <span class="st">'r--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Estimated CCP (from data)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
-<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'State (s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Conditional Choice Probability'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
-<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
-<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
-<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 2: Scatter plot (estimated vs true)</span></span>
-<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>]</span>
-<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>ax.scatter(P_true_eval, P_hat_eval, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">30</span>)</span>
-<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
-<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'CCP: Estimated vs True'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
-<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
-<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>ax.set_xlim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
-<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
-<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>)</span>
-<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot CCP comparison</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">6</span>))</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 1: CCPs over state space</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>s_grid <span class="op">=</span> S_eval.numpy().flatten()</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_true_eval, <span class="st">'g-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'True CCP (solver)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_hat_eval, <span class="st">'r--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Estimated CCP (from data)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'State (s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Conditional Choice Probability'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 2: Scatter plot (estimated vs true)</span></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>]</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>ax.scatter(P_true_eval, P_hat_eval, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'CCP: Estimated vs True'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>ax.set_xlim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>)</span>
 <span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== Interpretation ==="</span>)</span>
-<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are LARGE: The CCP estimation is poor."</span>)</span>
-<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isolated."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== Interpretation ==="</span>)</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are LARGE: The CCP estimation is poor."</span>)</span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isolated."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 === DIAGNOSTIC: CCP Estimation Quality ===
@@ -625,9 +632,9 @@ Loading true value functions from solver...
 Comparing: Estimated CCP (from data) vs. True CCP (from solver)
 
 P(a=1|s) errors:
-  Mean absolute error: 0.544826
-  Max absolute error:  0.771138
-  Root mean squared error: 0.552815</code></pre>
+  Mean absolute error: 0.550636
+  Max absolute error:  0.788139
+  Root mean squared error: 0.558068</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -646,7 +653,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 </section>
 <section id="run-estimation" class="level2">
 <h2 class="anchored" data-anchor-id="run-estimation">Run Estimation</h2>
-<div id="a4f56944" class="cell" data-execution_count="3">
+<div id="5860d8d8" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration from solver output (for estimation hyperparameters)</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -724,7 +731,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 </section>
 <section id="save-estimation-results" class="level2">
 <h2 class="anchored" data-anchor-id="save-estimation-results">Save Estimation Results</h2>
-<div id="ee449b3f" class="cell" data-execution_count="4">
+<div id="b573751f" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimation results</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/estimate_mdp'</span>)</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
@@ -751,7 +758,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 </section>
 <section id="compare-estimated-and-true-parameters" class="level2">
 <h2 class="anchored" data-anchor-id="compare-estimated-and-true-parameters">Compare Estimated and True Parameters</h2>
-<div id="3351f6f4" class="cell" data-execution_count="5">
+<div id="0a650f2b" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison table</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>comparison_data <span class="op">=</span> {</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Parameter'</span>: [<span class="st">'gamma'</span>, <span class="st">'beta'</span>],</span>
@@ -772,7 +779,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <section id="compare-equilibrium-objects" class="level2">
 <h2 class="anchored" data-anchor-id="compare-equilibrium-objects">Compare Equilibrium Objects</h2>
 <p>Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.</p>
-<div id="3872143b" class="cell" data-execution_count="6">
+<div id="399dd50d" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> solver_dir.exists():</span>
@@ -792,7 +799,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Loaded true value functions from solver"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="a3332d22" class="cell" data-execution_count="7">
+<div id="8b94e5f8" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> GenerateStateGrid, SolveValueIteration</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve for estimated value functions using estimated parameters</span></span>
@@ -815,7 +822,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Solved value functions under estimated parameters"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="1c5c72ab" class="cell" data-execution_count="8">
+<div id="405cadaa" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -871,7 +878,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Computed equilibrium objects on grid of </span><span class="sc">{</span>N<span class="sc">}</span><span class="ss"> points"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="9f9e8447" class="cell" data-execution_count="9">
+<div id="78203d37" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison plots</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">12</span>))</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>

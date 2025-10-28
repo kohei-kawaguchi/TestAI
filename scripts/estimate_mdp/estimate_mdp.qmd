@@ -445,6 +445,7 @@ learning_rate = solver_config['learning_rate']
 print(f"\n=== DIAGNOSTIC: CCP Estimation Quality ===")
 
 # Estimate CCP from observed (s,a) pairs
+# EstimateCCP returns a network that predicts P(a=0|s)
 print(f"\nEstimating CCP from observed choices...")
 P_hat_network = EstimateCCP(
     states=states,
@@ -467,8 +468,10 @@ v_theta_1_true.eval()
 S_eval = GenerateStateGrid(N=N, state_range=state_range)
 
 # Evaluate estimated CCP on grid
+# P_hat_network predicts P(a=0|s), convert to P(a=1|s) = 1 - P(a=0|s)
 with torch.no_grad():
-    P_hat_eval = P_hat_network(S_eval).numpy().flatten()
+    P_hat_a0_eval = P_hat_network(S_eval).numpy().flatten()  # P(a=0|s)
+    P_hat_eval = 1 - P_hat_a0_eval  # Convert to P(a=1|s)
 
 # Compute true CCP on grid from true value functions
 prob_a1_true_list = []
