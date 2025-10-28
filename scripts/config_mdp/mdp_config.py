@@ -55,6 +55,7 @@ _ESTIMATOR_CONFIG: Dict[str, Any] = {
     "beta_grid_min": 0.5,   # Minimum beta value for grid search
     "beta_grid_max": 1.5,   # Maximum beta value for grid search
     "beta_grid_points": 11, # Number of grid points for beta search
+    "seed": 123,            # Random seed for CCP network initialization
 }
 
 

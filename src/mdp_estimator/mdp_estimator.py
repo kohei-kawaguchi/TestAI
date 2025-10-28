@@ -107,7 +107,8 @@ def EstimateMDP(
     beta_grid: np.ndarray,
     epsilon_tol: float,
     max_iter: int,
-    gamma_E: float
+    gamma_E: float,
+    seed: int
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """
     Procedure EstimateMDP(...)
@@ -127,6 +128,7 @@ def EstimateMDP(
         epsilon_tol: Convergence tolerance
         max_iter: Maximum iterations for value iteration
         gamma_E: Euler-Mascheroni constant
+        seed: Random seed for CCP network initialization (required)
 
     Returns:
         Tuple of (gamma_hat, beta_hat, beta_grid, distances):
@@ -152,7 +154,8 @@ def EstimateMDP(
         beta_grid=beta_grid,
         epsilon_tol=epsilon_tol,
         max_iter=max_iter,
-        gamma_E=gamma_E
+        gamma_E=gamma_E,
+        seed=seed
     )
 
     return gamma_hat, beta_hat, beta_grid, distances
@@ -217,7 +220,8 @@ def EstimateBeta(
     beta_grid: np.ndarray,
     epsilon_tol: float,
     max_iter: int,
-    gamma_E: float
+    gamma_E: float,
+    seed: int
 ) -> Tuple[float, np.ndarray]:
     """
     Procedure EstimateBeta(...) -> (float, Array[K])
@@ -242,6 +246,7 @@ def EstimateBeta(
         epsilon_tol: Convergence tolerance
         max_iter: Maximum iterations
         gamma_E: Euler-Mascheroni constant
+        seed: Random seed for CCP network initialization (required)
 
     Returns:
         Tuple of (beta_hat, distances):
@@ -254,7 +259,8 @@ def EstimateBeta(
         actions=actions,
         hyperparameters=hyperparameters,
         num_epochs=num_epochs,
-        learning_rate=learning_rate
+        learning_rate=learning_rate,
+        seed=seed
     )
 
     # Generate state grid for evaluation
@@ -385,7 +391,8 @@ def EstimateCCP(
     actions: np.ndarray,
     hyperparameters: Dict,
     num_epochs: int,
-    learning_rate: float
+    learning_rate: float,
+    seed: int
 ) -> CCPNetwork:
     """
     Procedure EstimateCCP(...) -> Network
@@ -401,10 +408,15 @@ def EstimateCCP(
         hyperparameters: Dict containing 'hidden_sizes'
         num_epochs: Training epochs
         learning_rate: Learning rate
+        seed: Random seed for reproducibility (required)
 
     Returns:
         P_hat: Trained standard network for P(a=1|s)
     """
+    # Set random seed for reproducibility
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
     # Initialize standard network
     P_hat = InitializeCCPNetwork(hyperparameters=hyperparameters)
 

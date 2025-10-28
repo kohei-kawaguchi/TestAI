@@ -102,7 +102,8 @@ def test_estimate_ccp_returns_network():
         actions=actions,
         hyperparameters=hyperparameters,
         num_epochs=10,
-        learning_rate=1e-3
+        learning_rate=1e-3,
+        seed=42
     )
 
     assert isinstance(network, CCPNetwork)
@@ -119,7 +120,8 @@ def test_estimate_ccp_network_outputs_valid_probabilities():
         actions=actions,
         hyperparameters=hyperparameters,
         num_epochs=10,
-        learning_rate=1e-3
+        learning_rate=1e-3,
+        seed=42
     )
 
     # Test on evaluation grid
@@ -146,7 +148,8 @@ def test_estimate_ccp_learns_from_data():
         actions=actions,
         hyperparameters=hyperparameters,
         num_epochs=200,
-        learning_rate=1e-2
+        learning_rate=1e-2,
+        seed=42
     )
 
     # Network predicts P(a=1|s), should be high for low states, low for high states

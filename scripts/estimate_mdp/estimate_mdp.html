@@ -184,7 +184,7 @@ window.Quarto = {
 
 <section id="load-configuration-and-simulation-results" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulation-results">Load Configuration and Simulation Results</h2>
-<div id="b539f165" class="cell" data-execution_count="1">
+<div id="3dac4ff6" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -360,9 +360,9 @@ Algorithm: Two-Step Estimation of MDP Parameters
 </section>
 <section id="step-2-estimate-beta-via-revealed-preference" class="level3">
 <h3 class="anchored" data-anchor-id="step-2-estimate-beta-via-revealed-preference">Step 2: Estimate Beta via Revealed Preference</h3>
-<p><strong>Procedure</strong> <code>EstimateBeta</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], <span class="math inline">\(\hat{\gamma}\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[<span class="math inline">\(K\)</span>], <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, max_iter: int, <span class="math inline">\(\gamma_E\)</span>: float) <span class="math inline">\(\to\)</span> (float, Array[<span class="math inline">\(K\)</span>])</p>
+<p><strong>Procedure</strong> <code>EstimateBeta</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], <span class="math inline">\(\hat{\gamma}\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(N\)</span>: int, state_range: tuple[float, float], hyperparameters: dict, num_epochs: int, learning_rate: float, beta_grid: Array[<span class="math inline">\(K\)</span>], <span class="math inline">\(\epsilon_{\text{tol}}\)</span>: float, max_iter: int, <span class="math inline">\(\gamma_E\)</span>: float, seed: int) <span class="math inline">\(\to\)</span> (float, Array[<span class="math inline">\(K\)</span>])</p>
 <ol type="1">
-<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>EstimateCCP</code>(states, actions, hyperparameters, num_epochs, learning_rate) &nbsp;&nbsp;&nbsp;&nbsp;// Returns network that predicts <span class="math inline">\(P(a=1|s)\)</span></p></li>
+<li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>EstimateCCP</code>(states, actions, hyperparameters, num_epochs, learning_rate, seed) &nbsp;&nbsp;&nbsp;&nbsp;// Returns network that predicts <span class="math inline">\(P(a=1|s)\)</span></p></li>
 <li><p><span class="math inline">\(S\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow\)</span> <code>GenerateStateGrid</code>(<span class="math inline">\(N\)</span>, state_range)</p></li>
 <li><p><span class="math inline">\(\hat{P}_{\text{eval}}\)</span>: Tensor[<span class="math inline">\(N \times 1\)</span>] <span class="math inline">\(\leftarrow \hat{P}(S)\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Pre-compute <span class="math inline">\(P(a=1|s)\)</span> on grid once</p></li>
 <li><p>distances: Array[<span class="math inline">\(K\)</span>] <span class="math inline">\(\leftarrow\)</span> Empty array</p></li>
@@ -391,8 +391,9 @@ Algorithm: Two-Step Estimation of MDP Parameters
 </section>
 <section id="subroutines-for-step-2a-estimate-ccp" class="level3">
 <h3 class="anchored" data-anchor-id="subroutines-for-step-2a-estimate-ccp">Subroutines for Step 2a: Estimate CCP</h3>
-<p><strong>Procedure</strong> <code>EstimateCCP</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], hyperparameters: dict, num_epochs: int, learning_rate: float) <span class="math inline">\(\to\)</span> Network</p>
+<p><strong>Procedure</strong> <code>EstimateCCP</code>(states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], hyperparameters: dict, num_epochs: int, learning_rate: float, seed: int) <span class="math inline">\(\to\)</span> Network</p>
 <ol type="1">
+<li><p>Set random seed for reproducibility: <code>torch.manual_seed(seed)</code></p></li>
 <li><p><span class="math inline">\(\hat{P}\)</span>: Network <span class="math inline">\(\leftarrow\)</span> <code>InitializeCCPNetwork</code>(hyperparameters) &nbsp;&nbsp;&nbsp;&nbsp;// Standard network: unconstrained weights, sigmoid output <span class="math inline">\(\in [0,1]\)</span></p></li>
 <li><p>optimizer: Optimizer <span class="math inline">\(\leftarrow\)</span> <code>CreateOptimizer</code>(<span class="math inline">\(\hat{P}\)</span>, learning_rate)</p></li>
 <li><p>For epoch: int = 1 to num_epochs:</p>
@@ -518,7 +519,7 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <section id="diagnostic-compare-estimated-ccp-with-true-ccp" class="level2">
 <h2 class="anchored" data-anchor-id="diagnostic-compare-estimated-ccp-with-true-ccp">Diagnostic: Compare Estimated CCP with True CCP</h2>
 <p>Before running the full estimation, we diagnose the quality of CCP estimation by comparing the estimated CCP (from observed choices) with the true CCP (from the solver’s value functions).</p>
-<div id="590ce233" class="cell" data-execution_count="2">
+<div id="7e840e6d" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -531,106 +532,111 @@ Algorithm: Two-Step Estimation of MDP Parameters
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>num_epochs <span class="op">=</span> solver_config[<span class="st">'num_epochs'</span>]</span>
 <span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>learning_rate <span class="op">=</span> solver_config[<span class="st">'learning_rate'</span>]</span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== DIAGNOSTIC: CCP Estimation Quality ==="</span>)</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate CCP from observed (s,a) pairs</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># EstimateCCP returns a network that predicts P(a=1|s)</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimating CCP from observed choices..."</span>)</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>P_hat_network <span class="op">=</span> EstimateCCP(</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    states<span class="op">=</span>states,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    actions<span class="op">=</span>actions,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate</span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Loading true value functions from solver..."</span>)</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>v_theta_0_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>v_theta_1_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
-<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.<span class="bu">eval</span>()</span>
-<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.<span class="bu">eval</span>()</span>
-<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
-<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
-<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate estimated CCP on grid</span></span>
-<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
-<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>    P_hat_eval <span class="op">=</span> P_hat_network(S_eval).numpy().flatten()  <span class="co"># P(a=1|s)</span></span>
-<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute true CCP on grid from true value functions</span></span>
-<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>prob_a1_true_list <span class="op">=</span> []</span>
-<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N):</span>
-<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    s_i <span class="op">=</span> S_eval[i].item()</span>
-<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>    prob_a0_t, prob_a1_t <span class="op">=</span> ComputeChoiceProbability(</span>
-<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>        s<span class="op">=</span>s_i,</span>
-<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        v_theta_0<span class="op">=</span>v_theta_0_true,</span>
-<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        v_theta_1<span class="op">=</span>v_theta_1_true</span>
-<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    prob_a1_true_list.append(prob_a1_t)</span>
-<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>P_true_eval <span class="op">=</span> np.array(prob_a1_true_list)</span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute CCP errors</span></span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>ccp_diff <span class="op">=</span> np.<span class="bu">abs</span>(P_hat_eval <span class="op">-</span> P_true_eval)</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Load estimator configuration</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>estimator_config <span class="op">=</span> get_estimator_config()</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>ccp_seed <span class="op">=</span> estimator_config[<span class="st">'seed'</span>]</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== DIAGNOSTIC: CCP Estimation Quality ==="</span>)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate CCP from observed (s,a) pairs</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co"># EstimateCCP returns a network that predicts P(a=1|s)</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimating CCP from observed choices (seed=</span><span class="sc">{</span>ccp_seed<span class="sc">}</span><span class="ss">)..."</span>)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>P_hat_network <span class="op">=</span> EstimateCCP(</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    states<span class="op">=</span>states,</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    actions<span class="op">=</span>actions,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate,</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span>ccp_seed</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Loading true value functions from solver..."</span>)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>v_theta_0_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>v_theta_1_true <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hyperparameters[<span class="st">'hidden_sizes'</span>])</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.load_state_dict(torch.load(solver_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>v_theta_0_true.<span class="bu">eval</span>()</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>v_theta_1_true.<span class="bu">eval</span>()</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate estimated CCP on grid</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> torch.no_grad():</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    P_hat_eval <span class="op">=</span> P_hat_network(S_eval).numpy().flatten()  <span class="co"># P(a=1|s)</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute true CCP on grid from true value functions</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>prob_a1_true_list <span class="op">=</span> []</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N):</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    s_i <span class="op">=</span> S_eval[i].item()</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    prob_a0_t, prob_a1_t <span class="op">=</span> ComputeChoiceProbability(</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>        s<span class="op">=</span>s_i,</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>        v_theta_0<span class="op">=</span>v_theta_0_true,</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>        v_theta_1<span class="op">=</span>v_theta_1_true</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>    prob_a1_true_list.append(prob_a1_t)</span>
 <span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== CCP Comparison ==="</span>)</span>
-<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Comparing: Estimated CCP (from data) vs. True CCP (from solver)"</span>)</span>
-<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">P(a=1|s) errors:"</span>)</span>
-<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Mean absolute error: </span><span class="sc">{</span>ccp_diff<span class="sc">.</span>mean()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
-<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Max absolute error:  </span><span class="sc">{</span>ccp_diff<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
-<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Root mean squared error: </span><span class="sc">{</span>np<span class="sc">.</span>sqrt((ccp_diff<span class="op">**</span><span class="dv">2</span>).mean())<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
-<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot CCP comparison</span></span>
-<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">6</span>))</span>
-<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 1: CCPs over state space</span></span>
-<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
-<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>s_grid <span class="op">=</span> S_eval.numpy().flatten()</span>
-<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_true_eval, <span class="st">'g-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'True CCP (solver)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
-<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_hat_eval, <span class="st">'r--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Estimated CCP (from data)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
-<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'State (s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Conditional Choice Probability'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
-<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
-<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
-<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 2: Scatter plot (estimated vs true)</span></span>
-<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>]</span>
-<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>ax.scatter(P_true_eval, P_hat_eval, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">30</span>)</span>
-<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
-<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'CCP: Estimated vs True'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
-<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
-<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>ax.set_xlim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
-<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
-<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>)</span>
-<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== Interpretation ==="</span>)</span>
-<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are LARGE: The CCP estimation is poor."</span>)</span>
-<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isolated."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>P_true_eval <span class="op">=</span> np.array(prob_a1_true_list)</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute CCP errors</span></span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>ccp_diff <span class="op">=</span> np.<span class="bu">abs</span>(P_hat_eval <span class="op">-</span> P_true_eval)</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== CCP Comparison ==="</span>)</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Comparing: Estimated CCP (from data) vs. True CCP (from solver)"</span>)</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">P(a=1|s) errors:"</span>)</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Mean absolute error: </span><span class="sc">{</span>ccp_diff<span class="sc">.</span>mean()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Max absolute error:  </span><span class="sc">{</span>ccp_diff<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Root mean squared error: </span><span class="sc">{</span>np<span class="sc">.</span>sqrt((ccp_diff<span class="op">**</span><span class="dv">2</span>).mean())<span class="sc">:.6f}</span><span class="ss">"</span>)</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot CCP comparison</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">6</span>))</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 1: CCPs over state space</span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>s_grid <span class="op">=</span> S_eval.numpy().flatten()</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_true_eval, <span class="st">'g-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'True CCP (solver)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>ax.plot(s_grid, P_hat_eval, <span class="st">'r--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Estimated CCP (from data)'</span>, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'State (s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Conditional Choice Probability'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot 2: Scatter plot (estimated vs true)</span></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>]</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>ax.scatter(P_true_eval, P_hat_eval, alpha<span class="op">=</span><span class="fl">0.6</span>, s<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>ax.plot([<span class="dv">0</span>, <span class="dv">1</span>], [<span class="dv">0</span>, <span class="dv">1</span>], <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'True P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Estimated P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'CCP: Estimated vs True'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>ax.set_xlim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>ax.set_ylim([<span class="dv">0</span>, <span class="dv">1</span>])</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>)</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">=== Interpretation ==="</span>)</span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are LARGE: The CCP estimation is poor."</span>)</span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isolated."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 === DIAGNOSTIC: CCP Estimation Quality ===
 
-Estimating CCP from observed choices...
+Estimating CCP from observed choices (seed=123)...
 Loading true value functions from solver...
 
 === CCP Comparison ===
 Comparing: Estimated CCP (from data) vs. True CCP (from solver)
 
 P(a=1|s) errors:
-  Mean absolute error: 0.060055
-  Max absolute error:  0.258965
-  Root mean squared error: 0.082002</code></pre>
+  Mean absolute error: 0.047768
+  Max absolute error:  0.192464
+  Root mean squared error: 0.061082</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -651,7 +657,7 @@ If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isol
 <h2 class="anchored" data-anchor-id="diagnostic-value-functions-given-ccp">DIAGNOSTIC: Value Functions Given CCP</h2>
 <p>Now we test whether the value function estimation step works correctly. Given the estimated CCP, we solve for value functions using the true parameters (beta, gamma) and compare with the true value functions from the solver.</p>
 <p>If this diagnostic shows large errors, it indicates issues with the value function solver given CCP (Step 2b of estimation). If errors are small, any estimation issues are isolated to the beta search step.</p>
-<div id="2b18c0b0" class="cell" data-execution_count="3">
+<div id="5380395d" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_estimator <span class="im">import</span> SolveValueFunctionGivenCCP</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration and true value functions</span></span>
@@ -797,14 +803,14 @@ Solving for value functions given:
 
 === Value Function Comparison ===
 V_0 errors (given CCP vs true):
-  Mean absolute error: 25.582972
-  Max absolute error:  31.087088
-  RMSE: 25.869759
+  Mean absolute error: 26.251436
+  Max absolute error:  31.743935
+  RMSE: 26.528297
 
 V_1 errors (given CCP vs true):
-  Mean absolute error: 26.039728
-  Max absolute error:  31.119446
-  RMSE: 26.274401</code></pre>
+  Mean absolute error: 26.524240
+  Max absolute error:  52.609871
+  RMSE: 26.860800</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -824,7 +830,7 @@ If value function errors are SMALL: The value function step works correctly;
 </section>
 <section id="run-estimation" class="level2">
 <h2 class="anchored" data-anchor-id="run-estimation">Run Estimation</h2>
-<div id="e1530903" class="cell" data-execution_count="4">
+<div id="5caa0a37" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load solver configuration from solver output (for estimation hyperparameters)</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(solver_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
@@ -853,60 +859,65 @@ If value function errors are SMALL: The value function step works correctly;
 <span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="bu">float</span>(np.percentile(states_flat, <span class="dv">90</span>))</span>
 <span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimation Configuration:"</span>)</span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  State grid size (N): </span><span class="sc">{</span>N<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Original state range (from simulation): </span><span class="sc">{</span>state_range<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Estimation state range (10%-90% percentile): </span><span class="sc">{</span>state_range_est<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Beta grid: </span><span class="sc">{</span>beta_grid<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Max iterations: </span><span class="sc">{</span>max_iter<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Tolerance: </span><span class="sc">{</span>epsilon_tol<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Training epochs per iteration: </span><span class="sc">{</span>num_epochs<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Learning rate: </span><span class="sc">{</span>learning_rate<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Run estimation using restricted state range</span></span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Running estimation..."</span>)</span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>gamma_hat, beta_hat, beta_grid_used, distances <span class="op">=</span> EstimateMDP(</span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    states<span class="op">=</span>states,</span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>    actions<span class="op">=</span>actions,</span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>    delta<span class="op">=</span>delta,</span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>    N<span class="op">=</span>N,</span>
-<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    state_range<span class="op">=</span>state_range_est,</span>
-<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
-<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
-<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate,</span>
-<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>    beta_grid<span class="op">=</span>beta_grid,</span>
-<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
-<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span>max_iter,</span>
-<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>    gamma_E<span class="op">=</span>gamma_E</span>
-<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimation Results:"</span>)</span>
-<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Estimated gamma: </span><span class="sc">{</span>gamma_hat<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  True gamma: </span><span class="sc">{</span>gamma_true<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Error: </span><span class="sc">{</span><span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">  Estimated beta: </span><span class="sc">{</span>beta_hat<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  True beta: </span><span class="sc">{</span>beta_true<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Error: </span><span class="sc">{</span><span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot distance vs beta candidates</span></span>
-<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
-<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>ax.plot(beta_grid_used, distances, <span class="st">'b-o'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, markersize<span class="op">=</span><span class="dv">8</span>, label<span class="op">=</span><span class="st">'Distance'</span>)</span>
-<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>ax.axvline(beta_true, color<span class="op">=</span><span class="st">'g'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f'True beta = </span><span class="sc">{</span>beta_true<span class="sc">:.2f}</span><span class="ss">'</span>)</span>
-<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>ax.axvline(beta_hat, color<span class="op">=</span><span class="st">'r'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f'Estimated beta = </span><span class="sc">{</span>beta_hat<span class="sc">:.2f}</span><span class="ss">'</span>)</span>
-<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Beta Candidate'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Distance (CCP mismatch)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
-<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Beta Grid Search: Distance vs Beta Candidates'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
-<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
-<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
-<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
-<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if minimum is at or near true beta</span></span>
-<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>min_idx <span class="op">=</span> np.argmin(distances)</span>
-<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Beta Grid Search Diagnostics:"</span>)</span>
-<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Minimum distance at beta = </span><span class="sc">{</span>beta_grid_used[min_idx]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  True beta = </span><span class="sc">{</span>beta_true<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Distance at true beta index: </span><span class="sc">{</span>distances[min_idx]<span class="sc">:.6f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Get seed from estimator config</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>estimation_seed <span class="op">=</span> estimator_config[<span class="st">'seed'</span>]</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimation Configuration:"</span>)</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  State grid size (N): </span><span class="sc">{</span>N<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Original state range (from simulation): </span><span class="sc">{</span>state_range<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Estimation state range (10%-90% percentile): </span><span class="sc">{</span>state_range_est<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Beta grid: </span><span class="sc">{</span>beta_grid<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Max iterations: </span><span class="sc">{</span>max_iter<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Tolerance: </span><span class="sc">{</span>epsilon_tol<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Training epochs per iteration: </span><span class="sc">{</span>num_epochs<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Learning rate: </span><span class="sc">{</span>learning_rate<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Random seed: </span><span class="sc">{</span>estimation_seed<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Run estimation using restricted state range</span></span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Running estimation..."</span>)</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>gamma_hat, beta_hat, beta_grid_used, distances <span class="op">=</span> EstimateMDP(</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    states<span class="op">=</span>states,</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>    actions<span class="op">=</span>actions,</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>    delta<span class="op">=</span>delta,</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>    N<span class="op">=</span>N,</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>    state_range<span class="op">=</span>state_range_est,</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>    hyperparameters<span class="op">=</span>hyperparameters,</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>    num_epochs<span class="op">=</span>num_epochs,</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>    learning_rate<span class="op">=</span>learning_rate,</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>    beta_grid<span class="op">=</span>beta_grid,</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>    max_iter<span class="op">=</span>max_iter,</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>    gamma_E<span class="op">=</span>gamma_E,</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span>estimation_seed</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Estimation Results:"</span>)</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Estimated gamma: </span><span class="sc">{</span>gamma_hat<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  True gamma: </span><span class="sc">{</span>gamma_true<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Error: </span><span class="sc">{</span><span class="bu">abs</span>(gamma_hat <span class="op">-</span> gamma_true)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">  Estimated beta: </span><span class="sc">{</span>beta_hat<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  True beta: </span><span class="sc">{</span>beta_true<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Error: </span><span class="sc">{</span><span class="bu">abs</span>(beta_hat <span class="op">-</span> beta_true)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot distance vs beta candidates</span></span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>ax.plot(beta_grid_used, distances, <span class="st">'b-o'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, markersize<span class="op">=</span><span class="dv">8</span>, label<span class="op">=</span><span class="st">'Distance'</span>)</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>ax.axvline(beta_true, color<span class="op">=</span><span class="st">'g'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f'True beta = </span><span class="sc">{</span>beta_true<span class="sc">:.2f}</span><span class="ss">'</span>)</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>ax.axvline(beta_hat, color<span class="op">=</span><span class="st">'r'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f'Estimated beta = </span><span class="sc">{</span>beta_hat<span class="sc">:.2f}</span><span class="ss">'</span>)</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Beta Candidate'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Distance (CCP mismatch)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Beta Grid Search: Distance vs Beta Candidates'</span>, fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">11</span>)</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a><span class="co"># Check if minimum is at or near true beta</span></span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>min_idx <span class="op">=</span> np.argmin(distances)</span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Beta Grid Search Diagnostics:"</span>)</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Minimum distance at beta = </span><span class="sc">{</span>beta_grid_used[min_idx]<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  True beta = </span><span class="sc">{</span>beta_true<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Distance at true beta index: </span><span class="sc">{</span>distances[min_idx]<span class="sc">:.6f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Estimation Configuration:
@@ -918,30 +929,31 @@ Estimation Configuration:
   Tolerance: 0.0001
   Training epochs per iteration: 50
   Learning rate: 0.001
+  Random seed: 123
 
 Running estimation...
   Searching over 11 beta candidates in parallel...
-    Completed beta[1]=0.600, distance=2.077736
-    Completed beta[3]=0.800, distance=3.393830
-    Completed beta[0]=0.500, distance=0.166690
-    Completed beta[2]=0.700, distance=6.555653
-    Completed beta[5]=1.000, distance=1.631937
-    Completed beta[4]=0.900, distance=0.570125
-    Completed beta[6]=1.100, distance=0.685627
-    Completed beta[7]=1.200, distance=0.067345
-    Completed beta[8]=1.300, distance=0.411081
-    Completed beta[9]=1.400, distance=1.135147
-    Completed beta[10]=1.500, distance=0.370085
-  Best beta: 1.2000 (k=7, distance=0.067345)
+    Completed beta[0]=0.500, distance=0.202631
+    Completed beta[1]=0.600, distance=2.264800
+    Completed beta[3]=0.800, distance=0.781489
+    Completed beta[2]=0.700, distance=0.117861
+    Completed beta[4]=0.900, distance=0.327916
+    Completed beta[5]=1.000, distance=3.126255
+    Completed beta[6]=1.100, distance=0.309172
+    Completed beta[7]=1.200, distance=1.666612
+    Completed beta[8]=1.300, distance=4.782494
+    Completed beta[10]=1.500, distance=1.674218
+    Completed beta[9]=1.400, distance=0.069084
+  Best beta: 1.4000 (k=9, distance=0.069084)
 
 Estimation Results:
   Estimated gamma: 0.1000
   True gamma: 0.1000
   Error: 0.0000
 
-  Estimated beta: 1.2000
+  Estimated beta: 1.4000
   True beta: 1.0000
-  Error: 0.2000</code></pre>
+  Error: 0.4000</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
@@ -953,15 +965,15 @@ Estimation Results:
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Beta Grid Search Diagnostics:
-  Minimum distance at beta = 1.2000
+  Minimum distance at beta = 1.4000
   True beta = 1.0000
-  Distance at true beta index: 0.067345</code></pre>
+  Distance at true beta index: 0.069084</code></pre>
 </div>
 </div>
 </section>
 <section id="save-estimation-results" class="level2">
 <h2 class="anchored" data-anchor-id="save-estimation-results">Save Estimation Results</h2>
-<div id="939f5b20" class="cell" data-execution_count="5">
+<div id="8fef15dd" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Save estimation results</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/estimate_mdp'</span>)</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
@@ -991,7 +1003,7 @@ Beta Grid Search Diagnostics:
 </section>
 <section id="compare-estimated-and-true-parameters" class="level2">
 <h2 class="anchored" data-anchor-id="compare-estimated-and-true-parameters">Compare Estimated and True Parameters</h2>
-<div id="9cdc0a44" class="cell" data-execution_count="6">
+<div id="6af091aa" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison table</span></span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>comparison_data <span class="op">=</span> {</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'Parameter'</span>: [<span class="st">'gamma'</span>, <span class="st">'beta'</span>],</span>
@@ -1012,14 +1024,14 @@ Beta Grid Search Diagnostics:
 Parameter Estimation Comparison:
 Parameter  True Value  Estimated Value  Absolute Error  Relative Error (%)
     gamma         0.1              0.1    2.335316e-08            0.000023
-     beta         1.0              1.2    2.000000e-01           20.000000</code></pre>
+     beta         1.0              1.4    4.000000e-01           40.000000</code></pre>
 </div>
 </div>
 </section>
 <section id="compare-equilibrium-objects" class="level2">
 <h2 class="anchored" data-anchor-id="compare-equilibrium-objects">Compare Equilibrium Objects</h2>
 <p>Now we compare the estimated and true equilibrium objects: conditional choice probabilities (CCP) and value functions. We load the true value functions from the solver results and compute the implied equilibrium objects under both true and estimated parameters.</p>
-<div id="4f4e68d2" class="cell" data-execution_count="7">
+<div id="ba643eb9" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load true value functions from solver</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>solver_dir <span class="op">=</span> Path(<span class="st">'../../output/solve_mdp'</span>)</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> solver_dir.exists():</span>
@@ -1042,7 +1054,7 @@ Parameter  True Value  Estimated Value  Absolute Error  Relative Error (%)
 <pre><code>Loaded true value functions from solver</code></pre>
 </div>
 </div>
-<div id="0362cef9" class="cell" data-execution_count="8">
+<div id="7e74701b" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> GenerateStateGrid, SolveValueIteration</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Solve for estimated value functions using estimated parameters</span></span>
@@ -1067,111 +1079,111 @@ Parameter  True Value  Estimated Value  Absolute Error  Relative Error (%)
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Solving for value functions under estimated parameters...
-  Using gamma_hat=0.1000, beta_hat=1.2000
-Iteration 0: max_error = 3.145430
-Iteration 10: max_error = 1.619867
-Iteration 20: max_error = 1.705627
-Iteration 30: max_error = 1.112343
-Iteration 40: max_error = 0.628681
-Iteration 50: max_error = 0.587696
-Iteration 60: max_error = 0.542412
-Iteration 70: max_error = 0.350437
-Iteration 80: max_error = 0.187256
-Iteration 90: max_error = 0.155540
-Iteration 100: max_error = 0.139988
-Iteration 110: max_error = 0.115646
-Iteration 120: max_error = 0.089920
-Iteration 130: max_error = 0.071095
-Iteration 140: max_error = 0.057758
-Iteration 150: max_error = 0.047894
-Iteration 160: max_error = 0.040371
-Iteration 170: max_error = 0.034565
-Iteration 180: max_error = 0.029896
-Iteration 190: max_error = 0.025822
-Iteration 200: max_error = 0.022171
-Iteration 210: max_error = 0.019230
-Iteration 220: max_error = 0.016640
-Iteration 230: max_error = 0.014462
-Iteration 240: max_error = 0.012749
-Iteration 250: max_error = 0.011414
-Iteration 260: max_error = 0.009979
-Iteration 270: max_error = 0.009529
-Iteration 280: max_error = 0.010170
-Iteration 290: max_error = 0.007095
-Iteration 300: max_error = 0.013699
-Iteration 310: max_error = 0.008198
-Iteration 320: max_error = 0.007339
-Iteration 330: max_error = 0.007999
-Iteration 340: max_error = 0.006939
-Iteration 350: max_error = 0.006634
-Iteration 360: max_error = 0.008541
-Iteration 370: max_error = 0.006489
-Iteration 380: max_error = 0.007195
-Iteration 390: max_error = 0.008579
-Iteration 400: max_error = 0.005836
-Iteration 410: max_error = 0.006042
-Iteration 420: max_error = 0.006054
-Iteration 430: max_error = 0.005741
-Iteration 440: max_error = 0.004829
-Iteration 450: max_error = 0.006931
-Iteration 460: max_error = 0.005524
-Iteration 470: max_error = 0.005196
-Iteration 480: max_error = 0.005524
-Iteration 490: max_error = 0.005310
-Iteration 500: max_error = 0.007660
-Iteration 510: max_error = 0.005302
-Iteration 520: max_error = 0.005936
-Iteration 530: max_error = 0.004879
-Iteration 540: max_error = 0.005062
-Iteration 550: max_error = 0.005249
-Iteration 560: max_error = 0.006580
-Iteration 570: max_error = 0.004803
-Iteration 580: max_error = 0.005096
-Iteration 590: max_error = 0.004597
-Iteration 600: max_error = 0.006294
-Iteration 610: max_error = 0.004601
-Iteration 620: max_error = 0.004841
-Iteration 630: max_error = 0.006290
-Iteration 640: max_error = 0.004620
-Iteration 650: max_error = 0.005672
-Iteration 660: max_error = 0.004650
-Iteration 670: max_error = 0.004471
-Iteration 680: max_error = 0.004787
-Iteration 690: max_error = 0.003807
-Iteration 700: max_error = 0.004215
-Iteration 710: max_error = 0.004818
-Iteration 720: max_error = 0.004333
-Iteration 730: max_error = 0.003990
-Iteration 740: max_error = 0.004097
-Iteration 750: max_error = 0.004272
-Iteration 760: max_error = 0.004017
-Iteration 770: max_error = 0.004101
-Iteration 780: max_error = 0.004036
-Iteration 790: max_error = 0.004570
-Iteration 800: max_error = 0.003933
-Iteration 810: max_error = 0.003880
-Iteration 820: max_error = 0.005177
-Iteration 830: max_error = 0.003941
-Iteration 840: max_error = 0.004227
-Iteration 850: max_error = 0.003826
-Iteration 860: max_error = 0.003731
-Iteration 870: max_error = 0.003811
-Iteration 880: max_error = 0.003746
-Iteration 890: max_error = 0.004707
-Iteration 900: max_error = 0.003567
-Iteration 910: max_error = 0.003738
-Iteration 920: max_error = 0.003601
-Iteration 930: max_error = 0.003834
-Iteration 940: max_error = 0.003532
-Iteration 950: max_error = 0.003681
-Iteration 960: max_error = 0.004547
-Iteration 970: max_error = 0.006096
-Iteration 980: max_error = 0.006855
-Iteration 990: max_error = 0.004753
+  Using gamma_hat=0.1000, beta_hat=1.4000
+Iteration 0: max_error = 8.115299
+Iteration 10: max_error = 2.095642
+Iteration 20: max_error = 2.016098
+Iteration 30: max_error = 2.041470
+Iteration 40: max_error = 2.213112
+Iteration 50: max_error = 2.336292
+Iteration 60: max_error = 2.387886
+Iteration 70: max_error = 1.755581
+Iteration 80: max_error = 0.718857
+Iteration 90: max_error = 0.419228
+Iteration 100: max_error = 0.211330
+Iteration 110: max_error = 0.216923
+Iteration 120: max_error = 0.199646
+Iteration 130: max_error = 0.148304
+Iteration 140: max_error = 0.091152
+Iteration 150: max_error = 0.068901
+Iteration 160: max_error = 0.054420
+Iteration 170: max_error = 0.044075
+Iteration 180: max_error = 0.036293
+Iteration 190: max_error = 0.030602
+Iteration 200: max_error = 0.026367
+Iteration 210: max_error = 0.022964
+Iteration 220: max_error = 0.020683
+Iteration 230: max_error = 0.018562
+Iteration 240: max_error = 0.017632
+Iteration 250: max_error = 0.016838
+Iteration 260: max_error = 0.015572
+Iteration 270: max_error = 0.015434
+Iteration 280: max_error = 0.015099
+Iteration 290: max_error = 0.013184
+Iteration 300: max_error = 0.013367
+Iteration 310: max_error = 0.012741
+Iteration 320: max_error = 0.012794
+Iteration 330: max_error = 0.012726
+Iteration 340: max_error = 0.011871
+Iteration 350: max_error = 0.011520
+Iteration 360: max_error = 0.011284
+Iteration 370: max_error = 0.009644
+Iteration 380: max_error = 0.010773
+Iteration 390: max_error = 0.009621
+Iteration 400: max_error = 0.010452
+Iteration 410: max_error = 0.009727
+Iteration 420: max_error = 0.009178
+Iteration 430: max_error = 0.009445
+Iteration 440: max_error = 0.009132
+Iteration 450: max_error = 0.009026
+Iteration 460: max_error = 0.008698
+Iteration 470: max_error = 0.008728
+Iteration 480: max_error = 0.008644
+Iteration 490: max_error = 0.008224
+Iteration 500: max_error = 0.008568
+Iteration 510: max_error = 0.007973
+Iteration 520: max_error = 0.008011
+Iteration 530: max_error = 0.008080
+Iteration 540: max_error = 0.007225
+Iteration 550: max_error = 0.008781
+Iteration 560: max_error = 0.007454
+Iteration 570: max_error = 0.007629
+Iteration 580: max_error = 0.007515
+Iteration 590: max_error = 0.008850
+Iteration 600: max_error = 0.007664
+Iteration 610: max_error = 0.007011
+Iteration 620: max_error = 0.008247
+Iteration 630: max_error = 0.006958
+Iteration 640: max_error = 0.007217
+Iteration 650: max_error = 0.013157
+Iteration 660: max_error = 0.007408
+Iteration 670: max_error = 0.007599
+Iteration 680: max_error = 0.006699
+Iteration 690: max_error = 0.009277
+Iteration 700: max_error = 0.006454
+Iteration 710: max_error = 0.019051
+Iteration 720: max_error = 0.006351
+Iteration 730: max_error = 0.006390
+Iteration 740: max_error = 0.006599
+Iteration 750: max_error = 0.007694
+Iteration 760: max_error = 0.007317
+Iteration 770: max_error = 0.006771
+Iteration 780: max_error = 0.007111
+Iteration 790: max_error = 0.007133
+Iteration 800: max_error = 0.006332
+Iteration 810: max_error = 0.006233
+Iteration 820: max_error = 0.007030
+Iteration 830: max_error = 0.007057
+Iteration 840: max_error = 0.006622
+Iteration 850: max_error = 0.006111
+Iteration 860: max_error = 0.006863
+Iteration 870: max_error = 0.006737
+Iteration 880: max_error = 0.007866
+Iteration 890: max_error = 0.006821
+Iteration 900: max_error = 0.007668
+Iteration 910: max_error = 0.010162
+Iteration 920: max_error = 0.010029
+Iteration 930: max_error = 0.008099
+Iteration 940: max_error = 0.006382
+Iteration 950: max_error = 0.009357
+Iteration 960: max_error = 0.009846
+Iteration 970: max_error = 0.018665
+Iteration 980: max_error = 0.006550
+Iteration 990: max_error = 0.006496
 Solved value functions under estimated parameters</code></pre>
 </div>
 </div>
-<div id="42908a62" class="cell" data-execution_count="9">
+<div id="bb31a56b" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate evaluation grid</span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>S_eval <span class="op">=</span> GenerateStateGrid(N<span class="op">=</span>N, state_range<span class="op">=</span>state_range)</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1231,7 +1243,7 @@ Solved value functions under estimated parameters</code></pre>
 Computed equilibrium objects on grid of 100 points</code></pre>
 </div>
 </div>
-<div id="c97029a7" class="cell" data-execution_count="10">
+<div id="b916fb79" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create comparison plots</span></span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">12</span>))</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1319,9 +1331,9 @@ Computed equilibrium objects on grid of 100 points</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Equilibrium Object Comparison:
-  CCP - Correlation: 0.9995, RMSE: 0.0473
-  V0  - Correlation: 1.0000, RMSE: 7.1301
-  V1  - Correlation: 1.0000, RMSE: 7.3277</code></pre>
+  CCP - Correlation: 0.9981, RMSE: 0.0898
+  V0  - Correlation: 1.0000, RMSE: 14.4163
+  V1  - Correlation: 1.0000, RMSE: 14.8037</code></pre>
 </div>
 </div>
 
