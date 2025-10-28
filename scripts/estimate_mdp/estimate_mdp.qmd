@@ -416,7 +416,7 @@ from mdp_solver import MonotonicNetwork, ComputeChoiceProbability
 from config_mdp import get_estimator_config
 
 # Load solver configuration from solver output (for estimation hyperparameters)
-solver_dir = Path('../../output/sovle_mdp')
+solver_dir = Path('../../output/solve_mdp')
 with open(solver_dir / 'config.json', 'r', encoding='utf-8') as f:
     solver_output = json.load(f)
 
@@ -446,7 +446,7 @@ print(f"  Learning rate: {learning_rate}")
 
 # Run estimation
 print(f"\nRunning estimation...")
-gamma_hat, beta_hat = EstimateMDP(
+gamma_hat, beta_hat, beta_grid_used, distances = EstimateMDP(
     states=states,
     actions=actions,
     delta=delta,
@@ -468,6 +468,26 @@ print(f"  Error: {abs(gamma_hat - gamma_true):.4f}")
 print(f"\n  Estimated beta: {beta_hat:.4f}")
 print(f"  True beta: {beta_true:.4f}")
 print(f"  Error: {abs(beta_hat - beta_true):.4f}")
+
+# Plot distance vs beta candidates
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(beta_grid_used, distances, 'b-o', linewidth=2, markersize=8, label='Distance')
+ax.axvline(beta_true, color='g', linestyle='--', linewidth=2, label=f'True beta = {beta_true:.2f}')
+ax.axvline(beta_hat, color='r', linestyle='--', linewidth=2, label=f'Estimated beta = {beta_hat:.2f}')
+ax.set_xlabel('Beta Candidate', fontsize=12)
+ax.set_ylabel('Distance (CCP mismatch)', fontsize=12)
+ax.set_title('Beta Grid Search: Distance vs Beta Candidates', fontsize=14, fontweight='bold')
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+# Check if minimum is at or near true beta
+min_idx = np.argmin(distances)
+print(f"\nBeta Grid Search Diagnostics:")
+print(f"  Minimum distance at beta = {beta_grid_used[min_idx]:.4f}")
+print(f"  True beta = {beta_true:.4f}")
+print(f"  Distance at true beta index: {distances[min_idx]:.6f}")
 ```
 
 ## Save Estimation Results
@@ -524,7 +544,7 @@ Now we compare the estimated and true equilibrium objects: conditional choice pr
 
 ```{python}
 # Load true value functions from solver
-solver_dir = Path('../../output/sovle_mdp')
+solver_dir = Path('../../output/solve_mdp')
 if not solver_dir.exists():
     raise FileNotFoundError(
         f"Expected solver results in {solver_dir}. Run solve_mdp.qmd first."
