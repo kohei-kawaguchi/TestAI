@@ -181,7 +181,7 @@ def EstimateBeta(
         x0=np.array([initial_beta]),
         method=method,
         bounds=[beta_bounds],
-        options={'ftol': tolerance}
+        options={'ftol': tolerance, 'disp': True}
     )
 
     # Step 4: Extract estimated beta

@@ -32,7 +32,7 @@ _MODEL_CONFIG: Dict[str, Any] = {
 # Solution method parameters (how to solve the model)
 _SOLVER_CONFIG: Dict[str, Any] = {
     "hyperparameters": {
-        "hidden_sizes": [32],
+        "hidden_sizes": [32, 32],
     },
     "N": 100,           # Number of grid points
     "state_range": (0.0, 10.0),  # State space range
