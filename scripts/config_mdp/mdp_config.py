@@ -1,13 +1,18 @@
 """
-Central configuration for MDP solving and simulation workflows.
+Central configuration for MDP solving, simulation, and estimation workflows.
 
-The configuration is structured into three disjoint configs:
+The configuration is structured into four configs:
 1. MODEL_CONFIG: MDP model parameters (shared across all workflows)
-2. SOLVER_CONFIG: Solution method parameters (solver-specific)
+2. SOLVER_CONFIG: Solution method parameters (shared by solver and estimator)
 3. SIMULATOR_CONFIG: Simulation method parameters (simulator-specific)
+4. ESTIMATOR_CONFIG: Estimation method parameters (estimator-specific optimization)
 
 Design principle: Only the solver loads from Python config. Downstream steps
 (simulator, estimator) load configs from saved outputs of previous steps.
+
+Key for estimator:
+- Reuses SOLVER_CONFIG for nested MDP solving (passed to SolveValueIteration)
+- Only adds optimization_config for outer loop (beta bounds, method, tolerance)
 """
 
 from __future__ import annotations
@@ -52,10 +57,15 @@ _SIMULATOR_CONFIG: Dict[str, Any] = {
 
 # Estimation method parameters (how to estimate from simulated data)
 _ESTIMATOR_CONFIG: Dict[str, Any] = {
-    "beta_grid_min": 0.5,   # Minimum beta value for grid search
-    "beta_grid_max": 1.5,   # Maximum beta value for grid search
-    "beta_grid_points": 11, # Number of grid points for beta search
-    "seed": 123,            # Random seed for CCP network initialization
+    # Optimization configuration for beta estimation
+    "optimization_config": {
+        "beta_bounds": (0.1, 3.0),  # Bounds for beta optimization
+        "method": "L-BFGS-B",        # Optimization method (supports bounds)
+        "tolerance": 1e-6,           # Convergence tolerance for optimizer
+        "initial_beta": 1.0,         # Initial guess for beta
+    },
+    # Solver configuration is reused from SOLVER_CONFIG
+    # (passed to nested fixed point at each likelihood evaluation)
 }
 
 

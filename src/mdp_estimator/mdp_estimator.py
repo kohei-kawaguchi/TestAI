@@ -3,10 +3,15 @@ MDP Estimator using Nested Fixed Point Algorithm.
 
 This module implements nested fixed point estimation for Markov Decision Processes
 using two-step estimation procedure. The implementation follows the modular pseudo code
-structure and reuses shared functions from mdp_solver.
+structure and reuses shared functions and configurations from mdp_solver.
 
 Step 1: Estimate gamma directly from state transitions using OLS
 Step 2: Estimate beta via maximum likelihood, solving MDP at each evaluation
+
+Key Design:
+- Reuses SolveValueIteration from mdp_solver (DRY)
+- Reuses solver_config from get_solver_config() (shared configuration)
+- Only adds estimator-specific optimization_config
 """
 
 import numpy as np
