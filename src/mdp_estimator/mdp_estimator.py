@@ -37,10 +37,11 @@ class DecreasingCCPNetwork(nn.Module):
     In the capital accumulation model, P(a=1|s) should be DECREASING in state s:
     - Higher capital stock → Lower probability of investing
 
-    Implementation: Constrains all weights to be NON-POSITIVE (w ≤ 0) using
-    negative softplus: w = -softplus(w_unconstrained). This ensures:
-    - Positive input s with negative weights → negative pre-activation
-    - Monotonic decreasing through all layers
+    Implementation:
+    - First layer: negative weights (w₁ ≤ 0) via -softplus to flip sign
+    - Remaining layers: positive weights (wᵢ ≥ 0) via softplus to preserve monotonicity
+    - Composition: positive input s → negative (layer 1) → monotonic increasing (layers 2+)
+    - Overall effect: monotonically DECREASING in s
     - Sigmoid output maps to [0,1] probability range
     """
 
@@ -69,10 +70,13 @@ class DecreasingCCPNetwork(nn.Module):
 
     def forward(self, s: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass with negative weight constraints and sigmoid output.
+        Forward pass with monotonic decreasing constraints and sigmoid output.
 
-        Applies negative softplus to all weights to ensure w ≤ 0, maintaining
-        monotonic decrease. Uses tanh activation in hidden layers.
+        First layer uses negative weights (w₁ ≤ 0) to flip sign, remaining layers
+        use positive weights (wᵢ ≥ 0) to preserve monotonicity. This ensures:
+        - Positive input s → negative after first layer
+        - Monotonic increasing through remaining layers
+        - Overall effect: monotonically DECREASING in s
 
         Args:
             s: State tensor of shape (N, 1)
@@ -83,17 +87,23 @@ class DecreasingCCPNetwork(nn.Module):
         """
         x = s
 
-        # Apply layers with negative softplus on weights to ensure w ≤ 0
-        for layer in self.layers[:-1]:
-            # Apply negative softplus to weights: w = -softplus(w_raw)
-            weight = -torch.nn.functional.softplus(layer.weight)
+        # First layer: negative weights to flip sign (w₁ ≤ 0)
+        first_layer = self.layers[0]
+        weight = -torch.nn.functional.softplus(first_layer.weight)
+        bias = first_layer.bias
+        x = torch.nn.functional.linear(x, weight, bias)
+        x = torch.tanh(x)
+
+        # Remaining hidden layers: positive weights to preserve monotonicity (wᵢ ≥ 0)
+        for layer in self.layers[1:-1]:
+            weight = torch.nn.functional.softplus(layer.weight)
             bias = layer.bias
             x = torch.nn.functional.linear(x, weight, bias)
-            x = torch.tanh(x)  # Smooth activation
+            x = torch.tanh(x)
 
-        # Final layer with negative weights
+        # Final layer: positive weights (w_out ≥ 0)
         final_layer = self.layers[-1]
-        weight = -torch.nn.functional.softplus(final_layer.weight)
+        weight = torch.nn.functional.softplus(final_layer.weight)
         bias = final_layer.bias
         logits = torch.nn.functional.linear(x, weight, bias)
 
