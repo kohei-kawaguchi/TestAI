@@ -593,23 +593,44 @@ S_eval = GenerateStateGrid(N=N, state_range=state_range)
 
 # Compute true CCPs and values
 with torch.no_grad():
-    # True equilibrium
-    prob_a0_true, prob_a1_true = ComputeChoiceProbability(
-        s=S_eval,
-        v_theta_0=v_theta_0_true,
-        v_theta_1=v_theta_1_true
-    )
+    # Compute value functions on grid
     v0_true = v_theta_0_true(S_eval)
     v1_true = v_theta_1_true(S_eval)
-
-    # Estimated equilibrium
-    prob_a0_est, prob_a1_est = ComputeChoiceProbability(
-        s=S_eval,
-        v_theta_0=v_theta_0_est,
-        v_theta_1=v_theta_1_est
-    )
     v0_est = v_theta_0_est(S_eval)
     v1_est = v_theta_1_est(S_eval)
+
+    # Compute choice probabilities for each state in the grid
+    prob_a0_true_list = []
+    prob_a1_true_list = []
+    prob_a0_est_list = []
+    prob_a1_est_list = []
+
+    for i in range(N):
+        s_i = S_eval[i].item()
+
+        # True equilibrium probabilities
+        prob_a0_t, prob_a1_t = ComputeChoiceProbability(
+            s=s_i,
+            v_theta_0=v_theta_0_true,
+            v_theta_1=v_theta_1_true
+        )
+        prob_a0_true_list.append(prob_a0_t)
+        prob_a1_true_list.append(prob_a1_t)
+
+        # Estimated equilibrium probabilities
+        prob_a0_e, prob_a1_e = ComputeChoiceProbability(
+            s=s_i,
+            v_theta_0=v_theta_0_est,
+            v_theta_1=v_theta_1_est
+        )
+        prob_a0_est_list.append(prob_a0_e)
+        prob_a1_est_list.append(prob_a1_e)
+
+    # Convert to tensors
+    prob_a0_true = torch.tensor(prob_a0_true_list).reshape(-1, 1)
+    prob_a1_true = torch.tensor(prob_a1_true_list).reshape(-1, 1)
+    prob_a0_est = torch.tensor(prob_a0_est_list).reshape(-1, 1)
+    prob_a1_est = torch.tensor(prob_a1_est_list).reshape(-1, 1)
 
 # Convert to numpy
 s_grid = S_eval.numpy().flatten()
