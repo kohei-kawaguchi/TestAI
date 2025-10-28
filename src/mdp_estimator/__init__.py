@@ -15,8 +15,9 @@ from .mdp_estimator import (
     FitNetworksToValues,
     ComputeCCPFromValue,
     ComputeDistance,
-    InitializeMonotonicNetwork,
-    ComputeBinaryCrossEntropy
+    InitializeDecreasingCCPNetwork,
+    ComputeBinaryCrossEntropy,
+    DecreasingCCPNetwork
 )
 
 __all__ = [
@@ -29,6 +30,7 @@ __all__ = [
     'FitNetworksToValues',
     'ComputeCCPFromValue',
     'ComputeDistance',
-    'InitializeMonotonicNetwork',
-    'ComputeBinaryCrossEntropy'
+    'InitializeDecreasingCCPNetwork',
+    'ComputeBinaryCrossEntropy',
+    'DecreasingCCPNetwork'
 ]

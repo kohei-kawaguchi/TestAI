@@ -30,17 +30,21 @@ from mdp_solver import (
 # CCP Network with Sigmoid Output
 # ============================================================================
 
-class MonotonicCCPNetwork(nn.Module):
+class DecreasingCCPNetwork(nn.Module):
     """
-    Monotonic network for CCP estimation with sigmoid output layer.
+    Monotonically DECREASING network for CCP estimation with sigmoid output.
 
-    Wraps MonotonicNetwork and applies sigmoid to ensure output is in [0,1],
-    since CCP represents P(a=1|s).
+    In the capital accumulation model, P(a=1|s) should be DECREASING in state s:
+    - Higher capital stock → Lower probability of investing
+
+    Implementation: Wraps MonotonicNetwork (which is increasing) and negates the
+    input to flip monotonicity direction: P(s) = σ(g(-s)) where g is monotonic
+    increasing and σ is sigmoid to ensure output in [0,1].
     """
 
     def __init__(self, hidden_sizes: list = [32, 32]):
         """
-        Initialize monotonic CCP network.
+        Initialize decreasing CCP network.
 
         Args:
             hidden_sizes: List of hidden layer sizes
@@ -50,15 +54,19 @@ class MonotonicCCPNetwork(nn.Module):
 
     def forward(self, s: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass with sigmoid output to ensure probabilities in [0,1].
+        Forward pass with input negation and sigmoid output.
+
+        Negates input to flip monotonicity: increasing in -s = decreasing in s.
+        Then applies sigmoid to ensure probabilities in [0,1].
 
         Args:
             s: State tensor of shape (N, 1)
 
         Returns:
-            Probability tensor of shape (N, 1) with values in [0,1]
+            Probability tensor of shape (N, 1) with values in [0,1],
+            monotonically DECREASING in s
         """
-        logits = self.base_network(s)
+        logits = self.base_network(-s)  # Negate input to flip monotonicity
         probabilities = torch.sigmoid(logits)
         return probabilities
 
@@ -358,14 +366,14 @@ def EstimateCCP(
     hyperparameters: Dict,
     num_epochs: int,
     learning_rate: float
-) -> MonotonicCCPNetwork:
+) -> DecreasingCCPNetwork:
     """
     Procedure EstimateCCP(...) -> Network
 
-    Estimate conditional choice probability as monotonic function of state.
+    Estimate conditional choice probability as monotonically DECREASING function of state.
 
     Uses maximum likelihood estimation with binary cross-entropy loss.
-    The network outputs P(a=1|s) in [0,1] using sigmoid activation.
+    The network outputs P(a=1|s) in [0,1], DECREASING in s (higher capital → lower investment prob).
 
     Args:
         states: Array of shape (M, T) with observed states
@@ -378,7 +386,7 @@ def EstimateCCP(
         P_hat: Trained monotonic network for CCP
     """
     # Initialize monotonic network
-    P_hat = InitializeMonotonicNetwork(hyperparameters=hyperparameters)
+    P_hat = InitializeDecreasingCCPNetwork(hyperparameters=hyperparameters)
 
     # Create optimizer
     optimizer = torch.optim.Adam(P_hat.parameters(), lr=learning_rate)
@@ -408,20 +416,23 @@ def EstimateCCP(
     return P_hat
 
 
-def InitializeMonotonicNetwork(hyperparameters: Dict) -> MonotonicCCPNetwork:
+def InitializeDecreasingCCPNetwork(hyperparameters: Dict) -> DecreasingCCPNetwork:
     """
-    Initialize a monotonic CCP network with sigmoid output.
+    Initialize a monotonically DECREASING CCP network with sigmoid output.
 
-    The network outputs P(a=1|s) in [0,1] range using sigmoid activation.
+    The network outputs P(a=1|s) in [0,1] range, monotonically DECREASING in s.
+    Higher capital stock → Lower probability of investing (a=1).
+
+    Implementation: Negates input before passing to monotonic network.
 
     Args:
         hyperparameters: Dict containing 'hidden_sizes'
 
     Returns:
-        network: Initialized monotonic CCP network with sigmoid output
+        network: Initialized decreasing CCP network with sigmoid output
     """
     hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
-    network = MonotonicCCPNetwork(hidden_sizes=hidden_sizes)
+    network = DecreasingCCPNetwork(hidden_sizes=hidden_sizes)
     return network
 
 
