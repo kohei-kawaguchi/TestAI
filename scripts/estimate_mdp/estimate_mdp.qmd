@@ -88,16 +88,23 @@ where $f_\theta$ is a neural network that is:
 
 This is estimated by maximum likelihood using the observed state-action pairs.
 
-#### Step 2b: Value Function Iteration Given CCP and Candidate $\beta$
+#### Step 2b: Solve for Value Functions Given CCP and Candidate $\beta$
 
-For a candidate value of $\beta$, train value functions $v^{(0)}(s)$ and $v^{(1)}(s)$ that are consistent with the estimated CCP $\hat{P}(a|s)$ from Step 2a.
+For a candidate value of $\beta$, solve for value functions $v^{(0)}(s)$ and $v^{(1)}(s)$ that are consistent with the estimated CCP $\hat{P}(a|s)$ from Step 2a.
 
 The value functions satisfy the Bellman equation under the estimated policy:
-$$v^{(a)}(s) = \bar{r}(s, a) + \delta \mathbb{E}_{a' \sim \hat{P}(\cdot|s')} [v^{(a')}(s')]$$
+$$v^{(a)}(s_i) = \bar{r}(s_i, a) + \delta \left[(1 - \hat{P}(a=1|s'_i)) v^{(0)}(s'_i) + \hat{P}(a=1|s'_i) v^{(1)}(s'_i)\right] + \delta \gamma_E$$
 
-where $s' = (1-\hat{\gamma})s + a$ using the estimated $\hat{\gamma}$ from Step 1.
+where $s'_i = (1-\hat{\gamma})s_i + a$ using the estimated $\hat{\gamma}$ from Step 1.
 
-This is the "critic" step - we evaluate the value functions under the estimated policy.
+**Efficient Solution via Linear System**:
+
+Since we evaluate on a discrete state grid $\{s_1, ..., s_N\}$, the Bellman equation forms a **linear system** in the value functions. We can solve it directly:
+
+1. **Solve linear system**: For each action $a \in \{0,1\}$, solve $(I - \delta T^{(a)}) v^{(a)} = r^{(a)}$ where $T^{(a)}$ is the transition matrix under the estimated policy
+2. **Fit neural networks**: Train networks $v_\theta^{(0)}, v_\theta^{(1)}$ to approximate the solved grid values via supervised learning
+
+This is much faster than iterative value function training, as it requires only one linear solve and one supervised learning step per $\beta$ candidate.
 
 #### Step 2c: Compute Updated CCP from Value Functions
 
@@ -267,43 +274,63 @@ This pseudo code is designed for direct implementation:
 
 ### Subroutines for Step 2b: Solve Value Function Given CCP
 
-**Procedure** `SolveValueFunctionGivenCCP`($\hat{P}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float, hyperparameters: dict, $S$: Tensor[$N \times 1$], max_iter: int, $\epsilon_{\text{tol}}$: float, num_epochs: int, learning_rate: float) $\to$ (Network, Network)
+**Procedure** `SolveValueFunctionGivenCCP`($\hat{P}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float, hyperparameters: dict, $S$: Tensor[$N \times 1$], num_epochs: int, learning_rate: float) $\to$ (Network, Network)
+
+1. $v^{(0)}$: Array[$N$], $v^{(1)}$: Array[$N$] $\leftarrow$ `SolveLinearBellman`($\hat{P}$, $\beta$, $\gamma$, $\delta$, $\gamma_E$, $S$)
+
+2. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `FitNetworksToValues`($S$, $v^{(0)}$, $v^{(1)}$, hyperparameters, num_epochs, learning_rate)
+
+3. **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
+
+---
+
+**Procedure** `SolveLinearBellman`($\hat{P}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float, $S$: Tensor[$N \times 1$]) $\to$ (Array[$N$], Array[$N$])
+
+1. $N$: int $\leftarrow$ Length($S$)
+
+2. For each action $a$: int $\in \{0, 1\}$:
+
+   a. $r^{(a)}$: Array[$N$] $\leftarrow$ Empty array
+
+   b. $T^{(a)}$: Matrix[$N \times N$] $\leftarrow$ Zero matrix
+
+   c. For $i$: int = 1 to $N$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;i. $s_i$: float $\leftarrow S[i]$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;ii. $r^{(a)}[i]$ $\leftarrow$ `ComputeMeanReward`($s_i$, $a$, $\beta$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;iii. $s'_i$: float $\leftarrow$ `ComputeNextState`($s_i$, $a$, $\gamma$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;iv. $\hat{p}_i$: float $\leftarrow \hat{P}(s'_i)$ &nbsp;&nbsp;&nbsp;&nbsp;// $P(a=1|s'_i)$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;v. For $j$: int = 1 to $N$: &nbsp;&nbsp;&nbsp;&nbsp;// Find which grid point $s'_i$ maps to
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**If** $s'_i \approx S[j]$: &nbsp;&nbsp;&nbsp;&nbsp;// Interpolate or find nearest neighbor
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$T^{(a)}[i, j]$ $\leftarrow (1 - \hat{p}_i)$ &nbsp;&nbsp;&nbsp;&nbsp;// Transition to $v^{(0)}$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Also add contribution to $v^{(1)}$ via second matrix (or handle jointly)
+
+   d. Add $\delta \gamma_E$ to $r^{(a)}$ &nbsp;&nbsp;&nbsp;&nbsp;// Constant term from Euler constant
+
+   e. $v^{(a)}$: Array[$N$] $\leftarrow$ `SolveLinearSystem`($(I - \delta T^{(a)})$, $r^{(a)}$)
+
+3. **Return** $v^{(0)}$, $v^{(1)}$
+
+---
+
+**Procedure** `FitNetworksToValues`($S$: Tensor[$N \times 1$], $v^{(0)}$: Array[$N$], $v^{(1)}$: Array[$N$], hyperparameters: dict, num_epochs: int, learning_rate: float) $\to$ (Network, Network)
 
 1. $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network $\leftarrow$ `InitializeNetworks`(hyperparameters)
 
 2. optimizer: Optimizer $\leftarrow$ `CreateOptimizer`($[v_\theta^{(0)}, v_\theta^{(1)}]$, learning_rate)
 
-3. For iteration: int = 1 to max_iter:
+3. targets: Tensor[$N \times 2$] $\leftarrow$ `Stack`($v^{(0)}$, $v^{(1)}$)
 
-   a. $\{y_i^{(a)}\}$: Tensor[$N \times 2$] $\leftarrow$ `ComputeBellmanTargetsGivenCCP`($S$, $\hat{P}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, $\beta$, $\gamma$, $\delta$, $\gamma_E$)
+4. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `UpdateNetworks`($S$, targets, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs, optimizer)
 
-   b. $v_\theta^{(0)}$, $v_\theta^{(1)}$ $\leftarrow$ `UpdateNetworks`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$, num_epochs, optimizer)
-
-   c. max_error: float $\leftarrow$ `CheckConvergence`($S$, $\{y_i^{(a)}\}$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
-
-   d. **If** max_error $< \epsilon_{\text{tol}}$: **Break**
-
-4. **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
-
----
-
-**Procedure** `ComputeBellmanTargetsGivenCCP`($S$: Tensor[$N \times 1$], $\hat{P}$: Network, $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $\gamma_E$: float) $\to$ Tensor[$N \times 2$]
-
-For each $s_i$: float $\in S$ and $a$: int $\in \{0, 1\}$:
-
-&nbsp;&nbsp;&nbsp;&nbsp;$s'_i$: Tensor[$N \times 1$] $\leftarrow$ `ComputeNextState`($s_i$, $a$, $\gamma$)
-
-&nbsp;&nbsp;&nbsp;&nbsp;$\hat{p}_i$: Tensor[$N \times 1$] $\leftarrow \hat{P}(s'_i)$ &nbsp;&nbsp;&nbsp;&nbsp;// Estimated $P(a=1|s'_i)$
-
-&nbsp;&nbsp;&nbsp;&nbsp;$v_0$: Tensor[$N \times 1$] $\leftarrow v_\theta^{(0)}(s'_i)$
-
-&nbsp;&nbsp;&nbsp;&nbsp;$v_1$: Tensor[$N \times 1$] $\leftarrow v_\theta^{(1)}(s'_i)$
-
-&nbsp;&nbsp;&nbsp;&nbsp;$\text{EV}_i$: Tensor[$N \times 1$] $\leftarrow (1 - \hat{p}_i) \cdot v_0 + \hat{p}_i \cdot v_1 + \gamma_E$ &nbsp;&nbsp;&nbsp;&nbsp;// Expected value under estimated policy
-
-&nbsp;&nbsp;&nbsp;&nbsp;$y_i^{(a)}$: Tensor[$N \times 1$] $\leftarrow$ `ComputeMeanReward`($s_i$, $a$, $\beta$) $+ \delta \cdot \text{EV}_i$
-
-**Return** $\{y_i^{(a)}\}$: Tensor[$N \times 2$] for all $i$, $a$
+5. **Return** $v_\theta^{(0)}$, $v_\theta^{(1)}$
 
 ---
 
