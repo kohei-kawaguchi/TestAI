@@ -370,3 +370,419 @@ The following functions are imported from solve_mdp and reused directly to ensur
 - Step 1 is $\sqrt{MT}$-consistent since it's a linear regression
 - Step 2 is also $\sqrt{MT}$-consistent but asymptotic variance accounts for estimation error in $\hat{\gamma}$
 - Standard errors can be computed using the outer product of the gradient (OPG) or bootstrapping
+
+## Implementation
+
+### Load Estimator and Configuration
+
+```{python}
+from mdp_estimator import EstimateMDP, EstimateGamma, EstimateBeta
+from mdp_solver import SolveValueIteration, ComputeChoiceProbability
+
+# Load solver config from solve_mdp output (reused for nested estimation)
+solve_artifact_dir = Path('../../output/solve_mdp')
+with open(solve_artifact_dir / 'config.json', 'r', encoding='utf-8') as f:
+    solve_config = json.load(f)
+
+solver_config = solve_config['solver']
+
+# Load estimator config from Python module
+sys.path.insert(0, '../config_mdp')
+from mdp_config import get_estimator_config
+
+estimator_config = get_estimator_config()
+optimization_config = estimator_config['optimization_config']
+
+print("Solver configuration (from solve_mdp output):")
+print(f"  N: {solver_config['N']}")
+print(f"  State range: {solver_config['state_range']}")
+print(f"  Max iter: {solver_config['max_iter']}")
+print(f"  Tolerance: {solver_config['epsilon_tol']}")
+
+print("\nEstimator configuration:")
+print(f"  Beta bounds: {optimization_config['beta_bounds']}")
+print(f"  Method: {optimization_config['method']}")
+print(f"  Tolerance: {optimization_config['tolerance']}")
+print(f"  Initial beta: {optimization_config['initial_beta']}")
+```
+
+### Run Nested Fixed Point Estimation
+
+```{python}
+import time
+
+print("\n" + "="*70)
+print("RUNNING NESTED FIXED POINT ESTIMATION")
+print("="*70)
+
+start_time = time.time()
+
+# Run the two-step estimator
+beta_hat, gamma_hat = EstimateMDP(
+    states=states,
+    actions=actions,
+    delta=delta,
+    gamma_E=gamma_E,
+    solver_config=solver_config,
+    optimization_config=optimization_config
+)
+
+elapsed_time = time.time() - start_time
+
+print(f"\nEstimation completed in {elapsed_time:.2f} seconds")
+print("\n" + "="*70)
+print("ESTIMATION RESULTS")
+print("="*70)
+```
+
+### Compare Estimated vs True Parameters
+
+```{python}
+# True parameters (used for simulation)
+beta_true = beta
+gamma_true = gamma
+
+print("\nStructural Parameters:")
+print(f"{'Parameter':<15} {'True':>12} {'Estimated':>12} {'Error':>12} {'% Error':>12}")
+print("-" * 70)
+print(f"{'β (reward)':<15} {beta_true:>12.6f} {beta_hat:>12.6f} {beta_hat - beta_true:>12.6f} {100*(beta_hat - beta_true)/beta_true:>11.2f}%")
+print(f"{'γ (depreciation)':<15} {gamma_true:>12.6f} {gamma_hat:>12.6f} {gamma_hat - gamma_true:>12.6f} {100*(gamma_hat - gamma_true)/gamma_true:>11.2f}%")
+
+# Compute relative errors
+beta_rel_error = abs(beta_hat - beta_true) / abs(beta_true)
+gamma_rel_error = abs(gamma_hat - gamma_true) / abs(gamma_true)
+
+print(f"\nRelative errors:")
+print(f"  β: {beta_rel_error:.4%}")
+print(f"  γ: {gamma_rel_error:.4%}")
+```
+
+### Solve MDP with Estimated Parameters
+
+```{python}
+print("\n" + "="*70)
+print("SOLVING MDP WITH ESTIMATED PARAMETERS")
+print("="*70)
+
+# Solve MDP with estimated parameters
+v_theta_0_est, v_theta_1_est, history_est = SolveValueIteration(
+    beta=beta_hat,
+    gamma=gamma_hat,
+    delta=delta,
+    gamma_E=gamma_E,
+    hyperparameters=solver_config['hyperparameters'],
+    N=solver_config['N'],
+    state_range=tuple(solver_config['state_range']),
+    max_iter=solver_config['max_iter'],
+    epsilon_tol=solver_config['epsilon_tol'],
+    num_epochs=solver_config['num_epochs'],
+    learning_rate=solver_config['learning_rate'],
+    verbose=True
+)
+
+print(f"\nEstimated model converged in {len(history_est['iterations'])} iterations")
+```
+
+### Solve MDP with True Parameters (for comparison)
+
+```{python}
+print("\n" + "="*70)
+print("SOLVING MDP WITH TRUE PARAMETERS")
+print("="*70)
+
+# Solve MDP with true parameters
+v_theta_0_true, v_theta_1_true, history_true = SolveValueIteration(
+    beta=beta_true,
+    gamma=gamma_true,
+    delta=delta,
+    gamma_E=gamma_E,
+    hyperparameters=solver_config['hyperparameters'],
+    N=solver_config['N'],
+    state_range=tuple(solver_config['state_range']),
+    max_iter=solver_config['max_iter'],
+    epsilon_tol=solver_config['epsilon_tol'],
+    num_epochs=solver_config['num_epochs'],
+    learning_rate=solver_config['learning_rate'],
+    verbose=True
+)
+
+print(f"\nTrue model converged in {len(history_true['iterations'])} iterations")
+```
+
+### Compare Equilibrium Objects
+
+#### Choice Probabilities (CCP)
+
+```{python}
+# Evaluate CCPs on a grid of states
+state_grid = np.linspace(state_range[0], state_range[1], 50)
+
+# Compute CCPs for estimated parameters
+ccp_est_a0 = []
+ccp_est_a1 = []
+for s in state_grid:
+    p0, p1 = ComputeChoiceProbability(s=float(s), v_theta_0=v_theta_0_est, v_theta_1=v_theta_1_est)
+    ccp_est_a0.append(p0)
+    ccp_est_a1.append(p1)
+
+ccp_est_a0 = np.array(ccp_est_a0)
+ccp_est_a1 = np.array(ccp_est_a1)
+
+# Compute CCPs for true parameters
+ccp_true_a0 = []
+ccp_true_a1 = []
+for s in state_grid:
+    p0, p1 = ComputeChoiceProbability(s=float(s), v_theta_0=v_theta_0_true, v_theta_1=v_theta_1_true)
+    ccp_true_a0.append(p0)
+    ccp_true_a1.append(p1)
+
+ccp_true_a0 = np.array(ccp_true_a0)
+ccp_true_a1 = np.array(ccp_true_a1)
+
+# Compute max absolute difference
+max_ccp_diff = np.max(np.abs(ccp_est_a1 - ccp_true_a1))
+mean_ccp_diff = np.mean(np.abs(ccp_est_a1 - ccp_true_a1))
+
+print("\nChoice Probability Comparison (P(a=1|s)):")
+print(f"  Max absolute difference: {max_ccp_diff:.6f}")
+print(f"  Mean absolute difference: {mean_ccp_diff:.6f}")
+
+# Plot CCPs
+fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Panel 1: CCP comparison
+ax = axes[0]
+ax.plot(state_grid, ccp_true_a1, 'b-', linewidth=2, label='True parameters')
+ax.plot(state_grid, ccp_est_a1, 'r--', linewidth=2, label='Estimated parameters')
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('P(a=1|s)', fontsize=12)
+ax.set_title('Choice Probability: True vs Estimated', fontsize=14)
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+
+# Panel 2: CCP difference
+ax = axes[1]
+ax.plot(state_grid, ccp_est_a1 - ccp_true_a1, 'k-', linewidth=2)
+ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Difference in P(a=1|s)', fontsize=12)
+ax.set_title('Estimation Error in Choice Probability', fontsize=14)
+ax.grid(True, alpha=0.3)
+
+fig.tight_layout()
+plt.show()
+```
+
+#### Value Functions
+
+```{python}
+# Compute value functions on state grid
+with torch.no_grad():
+    state_grid_tensor = torch.tensor(state_grid).reshape(-1, 1).float()
+
+    # Estimated parameters
+    v0_est = v_theta_0_est(state_grid_tensor).numpy().flatten()
+    v1_est = v_theta_1_est(state_grid_tensor).numpy().flatten()
+
+    # True parameters
+    v0_true = v_theta_0_true(state_grid_tensor).numpy().flatten()
+    v1_true = v_theta_1_true(state_grid_tensor).numpy().flatten()
+
+# Compute max absolute differences
+max_v0_diff = np.max(np.abs(v0_est - v0_true))
+max_v1_diff = np.max(np.abs(v1_est - v1_true))
+mean_v0_diff = np.mean(np.abs(v0_est - v0_true))
+mean_v1_diff = np.mean(np.abs(v1_est - v1_true))
+
+print("\nValue Function Comparison:")
+print(f"  V(s, a=0) - Max absolute difference: {max_v0_diff:.6f}")
+print(f"  V(s, a=0) - Mean absolute difference: {mean_v0_diff:.6f}")
+print(f"  V(s, a=1) - Max absolute difference: {max_v1_diff:.6f}")
+print(f"  V(s, a=1) - Mean absolute difference: {mean_v1_diff:.6f}")
+
+# Plot value functions
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+# Panel 1: V(s, a=0) comparison
+ax = axes[0, 0]
+ax.plot(state_grid, v0_true, 'b-', linewidth=2, label='True parameters')
+ax.plot(state_grid, v0_est, 'r--', linewidth=2, label='Estimated parameters')
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('V(s, a=0)', fontsize=12)
+ax.set_title('Value Function for a=0: True vs Estimated', fontsize=14)
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+
+# Panel 2: V(s, a=0) difference
+ax = axes[0, 1]
+ax.plot(state_grid, v0_est - v0_true, 'k-', linewidth=2)
+ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Difference in V(s, a=0)', fontsize=12)
+ax.set_title('Estimation Error in V(s, a=0)', fontsize=14)
+ax.grid(True, alpha=0.3)
+
+# Panel 3: V(s, a=1) comparison
+ax = axes[1, 0]
+ax.plot(state_grid, v1_true, 'b-', linewidth=2, label='True parameters')
+ax.plot(state_grid, v1_est, 'r--', linewidth=2, label='Estimated parameters')
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('V(s, a=1)', fontsize=12)
+ax.set_title('Value Function for a=1: True vs Estimated', fontsize=14)
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+
+# Panel 4: V(s, a=1) difference
+ax = axes[1, 1]
+ax.plot(state_grid, v1_est - v1_true, 'k-', linewidth=2)
+ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('Difference in V(s, a=1)', fontsize=12)
+ax.set_title('Estimation Error in V(s, a=1)', fontsize=14)
+ax.grid(True, alpha=0.3)
+
+fig.tight_layout()
+plt.show()
+```
+
+## Likelihood Profile Around True Parameter
+
+To verify that the likelihood is maximized at the true parameter, we compute the log-likelihood for a grid of β values around the true value, holding γ at its estimated value.
+
+```{python}
+print("\n" + "="*70)
+print("COMPUTING LIKELIHOOD PROFILE")
+print("="*70)
+
+# Define grid around true beta
+beta_grid = np.linspace(beta_true - 0.5, beta_true + 0.5, 15)
+
+# Compute log-likelihood for each beta value
+log_likelihoods = []
+
+print(f"\nEvaluating log-likelihood on grid of {len(beta_grid)} beta values...")
+print(f"This requires solving the MDP {len(beta_grid)} times...")
+
+for i, beta_val in enumerate(beta_grid):
+    print(f"  [{i+1}/{len(beta_grid)}] β = {beta_val:.4f}...", end=" ")
+
+    # Solve MDP for this beta (using estimated gamma)
+    v0, v1, _ = SolveValueIteration(
+        beta=beta_val,
+        gamma=gamma_hat,
+        delta=delta,
+        gamma_E=gamma_E,
+        hyperparameters=solver_config['hyperparameters'],
+        N=solver_config['N'],
+        state_range=tuple(solver_config['state_range']),
+        max_iter=solver_config['max_iter'],
+        epsilon_tol=solver_config['epsilon_tol'],
+        num_epochs=solver_config['num_epochs'],
+        learning_rate=solver_config['learning_rate'],
+        verbose=False
+    )
+
+    # Compute log-likelihood
+    log_likelihood = 0.0
+    for m in range(states.shape[0]):
+        for t in range(states.shape[1]):
+            s_mt = states[m, t]
+            a_mt = actions[m, t]
+
+            P_0, P_1 = ComputeChoiceProbability(
+                s=float(s_mt),
+                v_theta_0=v0,
+                v_theta_1=v1
+            )
+
+            if a_mt == 0:
+                log_likelihood += np.log(P_0)
+            else:
+                log_likelihood += np.log(P_1)
+
+    log_likelihoods.append(log_likelihood)
+    print(f"ℓ = {log_likelihood:.2f}")
+
+log_likelihoods = np.array(log_likelihoods)
+
+# Find maximum
+max_idx = np.argmax(log_likelihoods)
+beta_max_likelihood = beta_grid[max_idx]
+
+print(f"\nLikelihood maximized at β = {beta_max_likelihood:.4f}")
+print(f"True β = {beta_true:.4f}")
+print(f"Estimated β = {beta_hat:.4f}")
+```
+
+### Plot Likelihood Profile
+
+```{python}
+fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+
+# Plot log-likelihood profile
+ax.plot(beta_grid, log_likelihoods, 'b-', linewidth=2.5, label='Log-likelihood')
+
+# Mark true parameter
+ax.axvline(x=beta_true, color='green', linestyle='--', linewidth=2,
+           label=f'True β = {beta_true:.3f}')
+
+# Mark estimated parameter
+ax.axvline(x=beta_hat, color='red', linestyle='--', linewidth=2,
+           label=f'Estimated β = {beta_hat:.3f}')
+
+# Mark maximum of likelihood profile
+ax.plot(beta_max_likelihood, log_likelihoods[max_idx], 'ko',
+        markersize=10, label=f'Max at β = {beta_max_likelihood:.3f}')
+
+ax.set_xlabel('β (Reward Parameter)', fontsize=13)
+ax.set_ylabel('Log-Likelihood', fontsize=13)
+ax.set_title('Log-Likelihood Profile Around True Parameter', fontsize=15)
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+
+fig.tight_layout()
+plt.show()
+
+print("\nVerification:")
+if abs(beta_true - beta_max_likelihood) < 0.05:
+    print("  ✓ Likelihood is maximized near the true parameter")
+else:
+    print("  ⚠ Likelihood maximum differs from true parameter")
+
+if abs(beta_hat - beta_max_likelihood) < 0.1:
+    print("  ✓ Estimated parameter is near the likelihood maximum")
+else:
+    print("  ⚠ Estimated parameter differs from likelihood maximum")
+```
+
+## Summary
+
+```{python}
+print("\n" + "="*70)
+print("ESTIMATION SUMMARY")
+print("="*70)
+
+print(f"\nData:")
+print(f"  Paths (M): {M}")
+print(f"  Periods (T): {T}")
+print(f"  Total observations: {M * T}")
+
+print(f"\nTrue Parameters:")
+print(f"  β = {beta_true:.6f}")
+print(f"  γ = {gamma_true:.6f}")
+
+print(f"\nEstimated Parameters:")
+print(f"  β̂ = {beta_hat:.6f}  (error: {100*(beta_hat - beta_true)/beta_true:+.2f}%)")
+print(f"  γ̂ = {gamma_hat:.6f}  (error: {100*(gamma_hat - gamma_true)/gamma_true:+.2f}%)")
+
+print(f"\nEquilibrium Object Errors:")
+print(f"  CCP max error: {max_ccp_diff:.6f}")
+print(f"  V(s,a=0) max error: {max_v0_diff:.6f}")
+print(f"  V(s,a=1) max error: {max_v1_diff:.6f}")
+
+print(f"\nComputational Cost:")
+print(f"  Total estimation time: {elapsed_time:.2f} seconds")
+print(f"  Likelihood evaluations: Multiple (nested optimization)")
+
+print("\n" + "="*70)
+```
