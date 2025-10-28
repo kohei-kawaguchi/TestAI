@@ -180,7 +180,6 @@ import torch
 import matplotlib.pyplot as plt
 
 from mdp_solver import MonotonicNetwork
-from config_mdp import get_solver_config, get_comparative_statics
 from mdp_utils import (
     plot_choice_value_functions,
     plot_convergence_history,
@@ -193,12 +192,25 @@ if not artifact_dir.exists():
         f"Expected trained artifacts in {artifact_dir}. Run solve_mdp.qmd first."
     )
 
-module_config = get_solver_config()
-module_statics = get_comparative_statics()
-
-# Load configuration written alongside the trained policy
+# Load configuration from solver output (as data from previous step)
 with open(artifact_dir / 'config.json', 'r', encoding='utf-8') as config_file:
     config = json.load(config_file)
+
+model_config = config['model']
+solver_config = config['solver']
+comparative_statics = config['comparative_statics']
+
+# Extract model parameters
+beta = model_config['beta']
+gamma = model_config['gamma']
+delta = model_config['delta']
+gamma_E = model_config['gamma_E']
+
+# Extract solver parameters needed for visualization
+hyperparameters = solver_config['hyperparameters']
+state_range = tuple(solver_config['state_range'])
+hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
+epsilon_tol = solver_config['epsilon_tol']
 
 # Load precomputed grids for diagnostics
 policy_store = np.load(artifact_dir / 'policy_data.npz')
@@ -211,25 +223,6 @@ prob_a1_grid = policy_store['prob_a1']
 history_store = np.load(artifact_dir / 'convergence_history.npz')
 history_iterations = history_store['iterations']
 history_max_errors = history_store['max_errors']
-
-module_config_for_compare = module_config.copy()
-module_config_for_compare['state_range'] = list(module_config_for_compare['state_range'])
-
-stored_subset = {k: config[k] for k in module_config}
-if module_config_for_compare != stored_subset:
-    raise ValueError("Module configuration and stored configuration are inconsistent.")
-
-if module_statics != config.get('comparative_statics', {}):
-    raise ValueError("Comparative statics configuration mismatch.")
-
-beta = module_config['beta']
-gamma = module_config['gamma']
-delta = module_config['delta']
-gamma_E = module_config['gamma_E']
-hyperparameters = module_config['hyperparameters']
-state_range = tuple(module_config['state_range'])
-hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
-epsilon_tol = module_config['epsilon_tol']
 
 print(f"Loaded trained networks with hidden sizes {hidden_sizes}")
 
@@ -326,17 +319,15 @@ np.savez(
     seed=seed
 )
 
-# Save configuration used
-sim_config_with_mdp = {
-    **sim_config,
-    'beta': beta,
-    'gamma': gamma,
-    'delta': delta,
-    'state_range': list(state_range),
+# Save configuration for downstream workflows (estimator)
+# Model config comes from solver (loaded as data), simulator config from Python module
+config_payload = {
+    'model': model_config,
+    'simulator': sim_config
 }
 
-with open(output_dir / 'simulation_config.json', 'w', encoding='utf-8') as f:
-    json.dump(sim_config_with_mdp, f, indent=2)
+with open(output_dir / 'config.json', 'w', encoding='utf-8') as f:
+    json.dump(config_payload, f, indent=2)
 
 print(f"Saved simulation results to {output_dir.resolve()}")
 ```

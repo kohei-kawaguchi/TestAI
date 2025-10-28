@@ -20,31 +20,36 @@ import json
 from pathlib import Path
 import numpy as np
 
-from config_mdp import get_solver_config
-
-# Load simulation results
+# Load simulation results and configuration
 sim_dir = Path('../../output/simulate_mdp')
 if not sim_dir.exists():
     raise FileNotFoundError(
         f"Expected simulation results in {sim_dir}. Run simulate_mdp.qmd first."
     )
 
-# Load configuration
-with open(sim_dir / 'simulation_config.json', 'r', encoding='utf-8') as f:
-    sim_config = json.load(f)
+# Load configuration from simulator output (as data from previous step)
+with open(sim_dir / 'config.json', 'r', encoding='utf-8') as f:
+    config = json.load(f)
+
+model_config = config['model']
+simulator_config = config['simulator']
+
+# Extract model parameters (true values for comparison)
+beta_true = model_config['beta']
+gamma_true = model_config['gamma']
+delta = model_config['delta']
+gamma_E = model_config['gamma_E']
+
+# Extract simulator parameters
+M = simulator_config['M']
+T = simulator_config['T']
 
 # Load simulated data
 sim_data = np.load(sim_dir / 'simulation_results.npz')
 states = sim_data['states']
 actions = sim_data['actions']
 rewards = sim_data['rewards']
-
-M = sim_config['M']
-T = sim_config['T']
-delta = sim_config['delta']
-state_range = tuple(sim_config['state_range'])
-beta_true = sim_config['beta']
-gamma_true = sim_config['gamma']
+state_range = tuple(sim_data['state_range'])
 
 print(f"Loaded simulation data: M={M}, T={T}, delta={delta}")
 print(f"True parameters: beta={beta_true}, gamma={gamma_true}")
@@ -407,9 +412,12 @@ import matplotlib.pyplot as plt
 from mdp_estimator import EstimateMDP
 from mdp_solver import MonotonicNetwork, ComputeChoiceProbability
 
-# Load solver configuration for shared parameters
-solver_config = get_solver_config()
-gamma_E = solver_config['gamma_E']
+# Load solver configuration from solver output (for estimation hyperparameters)
+solver_dir = Path('../../output/sovle_mdp')
+with open(solver_dir / 'config.json', 'r', encoding='utf-8') as f:
+    solver_output = json.load(f)
+
+solver_config = solver_output['solver']
 hyperparameters = solver_config['hyperparameters']
 N = solver_config['N']
 epsilon_tol = solver_config['epsilon_tol']
