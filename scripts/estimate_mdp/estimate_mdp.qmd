@@ -49,3 +49,70 @@ gamma_true = sim_config['gamma']
 print(f"Loaded simulation data: M={M}, T={T}, delta={delta}")
 print(f"True parameters: beta={beta_true}, gamma={gamma_true}")
 ```
+
+## Estimation Strategy
+
+We estimate the structural parameters $\beta$ and $\gamma$ using a two-step approach. The key insight is that in real data, we typically observe only states and actions - rewards are not observed.
+
+**Observable data**: $\{(s_t^{(m)}, a_t^{(m)})\}_{m=1,t=0}^{M,T-1}$
+
+**Known parameter**: $\delta$ (discount factor)
+
+**Parameters to estimate**: $\beta$ (reward weight), $\gamma$ (depreciation rate)
+
+### Step 1: Estimate State Depreciation Parameter $\gamma$
+
+The state transition is deterministic:
+$$s_{t+1} = (1 - \gamma) s_t + a_t$$
+
+Rearranging:
+$$\gamma = 1 - \frac{s_{t+1} - a_t}{s_t}$$
+
+We can directly estimate $\gamma$ from observed state transitions and actions using ordinary least squares or method of moments.
+
+### Step 2: Estimate Reward Parameter $\beta$ via Revealed Preference
+
+The reward function is:
+$$\bar{r}(s, a) = \beta \log(1 + s) - a$$
+
+Since rewards are not observed, we use a revealed preference approach based on the optimality of observed actions. This follows an actor-critic style method:
+
+#### Step 2a: Estimate Conditional Choice Probability (CCP)
+
+Estimate the choice probability as a function of state:
+$$\hat{P}(a=1|s) = f_\theta(s)$$
+
+where $f_\theta$ is a neural network that is:
+- Continuous in $s$
+- Monotonically increasing in $s$ (enforced by architecture)
+
+This is estimated by maximum likelihood using the observed state-action pairs.
+
+#### Step 2b: Value Function Iteration Given CCP and Candidate $\beta$
+
+For a candidate value of $\beta$, train value functions $v^{(0)}(s)$ and $v^{(1)}(s)$ that are consistent with the estimated CCP $\hat{P}(a|s)$ from Step 2a.
+
+The value functions satisfy the Bellman equation under the estimated policy:
+$$v^{(a)}(s) = \bar{r}(s, a) + \delta \mathbb{E}_{a' \sim \hat{P}(\cdot|s')} [v^{(a')}(s')]$$
+
+where $s' = (1-\hat{\gamma})s + a$ using the estimated $\hat{\gamma}$ from Step 1.
+
+This is the "critic" step - we evaluate the value functions under the estimated policy.
+
+#### Step 2c: Compute Updated CCP from Value Functions
+
+From the trained value functions, compute the implied choice probabilities using the logit formula:
+$$P^{\text{updated}}(a=1|s) = \frac{\exp(v^{(1)}(s))}{\exp(v^{(0)}(s)) + \exp(v^{(1)}(s))}$$
+
+#### Step 2d: Find $\beta$ that Minimizes Distance
+
+Find the value of $\beta$ that minimizes the distance between the estimated CCP network and the updated CCP:
+$$\hat{\beta} = \arg\min_\beta \sum_{s \in \mathcal{S}} \left[\hat{P}(a=1|s) - P^{\text{updated}}(a=1|s; \beta)\right]^2$$
+
+where $\mathcal{S}$ is a grid of state values spanning the observed state range.
+
+This is a nested fixed-point problem:
+- **Outer loop**: Search over candidate values of $\beta$
+- **Inner loop**: For each $\beta$, solve for value functions consistent with estimated CCP, then compute updated CCP
+
+The optimal $\beta$ is the one where the estimated policy (from data) is consistent with the optimal policy (from the model).

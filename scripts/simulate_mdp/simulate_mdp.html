@@ -280,7 +280,7 @@ Algorithm: Monte Carlo Simulation of MDP Policy
 </section>
 <section id="load-trained-policy" class="level2">
 <h2 class="anchored" data-anchor-id="load-trained-policy">Load Trained Policy</h2>
-<div id="f7c0e74f" class="cell" data-execution_count="1">
+<div id="05cc6482" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -371,7 +371,7 @@ Algorithm: Monte Carlo Simulation of MDP Policy
 </section>
 <section id="stored-policy-diagnostics" class="level2">
 <h2 class="anchored" data-anchor-id="stored-policy-diagnostics">Stored Policy Diagnostics</h2>
-<div id="09d35806" class="cell" data-execution_count="2">
+<div id="742e5b59" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>))</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>plot_choice_value_functions(</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
@@ -397,7 +397,7 @@ Algorithm: Monte Carlo Simulation of MDP Policy
 </div>
 </div>
 </div>
-<div id="28cc7d91" class="cell" data-execution_count="3">
+<div id="5413f71c" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_policy_probabilities(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0_grid,</span>
@@ -417,7 +417,7 @@ Algorithm: Monte Carlo Simulation of MDP Policy
 <section id="run-monte-carlo-simulation" class="level2">
 <h2 class="anchored" data-anchor-id="run-monte-carlo-simulation">Run Monte Carlo Simulation</h2>
 <p>Now we use the trained policy to simulate the MDP dynamics and analyze the behavior of the optimal policy.</p>
-<div id="70821f28" class="cell" data-execution_count="4">
+<div id="311a2256" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_simulator <span class="im">import</span> SimulateMDP</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> config_mdp <span class="im">import</span> get_simulator_config</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -477,13 +477,13 @@ Algorithm: Monte Carlo Simulation of MDP Policy
 <span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved simulation results to </span><span class="sc">{</span>output_dir<span class="sc">.</span>resolve()<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Running Monte Carlo simulation with M=100 paths, T=100 periods
+<pre><code>Running Monte Carlo simulation with M=1000 paths, T=100 periods
 Initial state range: (0.0, 10.0), Random seed: 42
 
 Simulation complete!
-States shape: (100, 100)
-Actions shape: (100, 100)
-Rewards shape: (100, 100)
+States shape: (1000, 100)
+Actions shape: (1000, 100)
+Rewards shape: (1000, 100)
 Saved simulation results to C:\Users\kohei\Documents\TestAI\output\simulate_mdp</code></pre>
 </div>
 </div>
@@ -491,7 +491,7 @@ Saved simulation results to C:\Users\kohei\Documents\TestAI\output\simulate_mdp<
 <section id="empirical-vs-theoretical-choice-probabilities" class="level2">
 <h2 class="anchored" data-anchor-id="empirical-vs-theoretical-choice-probabilities">Empirical vs Theoretical Choice Probabilities</h2>
 <p>We compare the empirical choice probabilities from the simulation with the theoretical probabilities from the trained value functions.</p>
-<div id="ebed334e" class="cell" data-execution_count="5">
+<div id="ad475778" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> ComputeChoiceProbability</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute empirical choice probabilities from simulation</span></span>
@@ -591,15 +591,15 @@ Saved simulation results to C:\Users\kohei\Documents\TestAI\output\simulate_mdp<
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Comparison Statistics:
-Number of bins with sufficient data (n≥10): 34
-Correlation: 0.7914
-RMSE: 0.0664</code></pre>
+Number of bins with sufficient data (n≥10): 50
+Correlation: 0.9246
+RMSE: 0.0381</code></pre>
 </div>
 </div>
 </section>
 <section id="simulation-summary-statistics" class="level2">
 <h2 class="anchored" data-anchor-id="simulation-summary-statistics">Simulation Summary Statistics</h2>
-<div id="cd1c1af0" class="cell" data-execution_count="6">
+<div id="1029cee8" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute summary statistics across paths</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>state_mean <span class="op">=</span> states.mean(axis<span class="op">=</span><span class="dv">0</span>)</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>state_std <span class="op">=</span> states.std(axis<span class="op">=</span><span class="dv">0</span>)</span>
@@ -681,20 +681,20 @@ RMSE: 0.0664</code></pre>
 <pre><code>
 State Evolution:
   Initial state range: (0.0, 10.0)
-  Initial state - mean: 4.893, std: 2.635
-  Final state - mean: 5.072, std: 1.079
-  Final state - median: 4.983
+  Initial state - mean: 5.180, std: 2.806
+  Final state - mean: 5.239, std: 1.039
+  Final state - median: 5.197
 
 Action Statistics:
-  Overall fraction of a=1: 0.516
-  First period a=1 frequency: 0.480
-  Last period a=1 frequency: 0.560
+  Overall fraction of a=1: 0.522
+  First period a=1 frequency: 0.531
+  Last period a=1 frequency: 0.496
 
 Reward Statistics:
-  Mean cumulative discounted reward: 24.999
-  Std cumulative discounted reward: 3.191
-  Min cumulative discounted reward: 17.574
-  Max cumulative discounted reward: 29.961</code></pre>
+  Mean cumulative discounted reward: 25.231
+  Std cumulative discounted reward: 3.407
+  Min cumulative discounted reward: 15.783
+  Max cumulative discounted reward: 30.420</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>

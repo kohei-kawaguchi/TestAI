@@ -100,6 +100,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   }
 }</script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -116,6 +145,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#load-configuration-and-simulation-results" id="toc-load-configuration-and-simulation-results" class="nav-link active" data-scroll-target="#load-configuration-and-simulation-results">Load Configuration and Simulation Results</a></li>
+  <li><a href="#estimation-strategy" id="toc-estimation-strategy" class="nav-link" data-scroll-target="#estimation-strategy">Estimation Strategy</a>
+  <ul class="collapse">
+  <li><a href="#step-1-estimate-state-depreciation-parameter-gamma" id="toc-step-1-estimate-state-depreciation-parameter-gamma" class="nav-link" data-scroll-target="#step-1-estimate-state-depreciation-parameter-gamma">Step 1: Estimate State Depreciation Parameter <span class="math inline">\(\gamma\)</span></a></li>
+  <li><a href="#step-2-estimate-reward-parameter-beta-via-revealed-preference" id="toc-step-2-estimate-reward-parameter-beta-via-revealed-preference" class="nav-link" data-scroll-target="#step-2-estimate-reward-parameter-beta-via-revealed-preference">Step 2: Estimate Reward Parameter <span class="math inline">\(\beta\)</span> via Revealed Preference</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -143,7 +177,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="load-configuration-and-simulation-results" class="level2">
 <h2 class="anchored" data-anchor-id="load-configuration-and-simulation-results">Load Configuration and Simulation Results</h2>
-<div id="1ba25043" class="cell" data-execution_count="1">
+<div id="6eeb4340" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
@@ -181,12 +215,54 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Loaded simulation data: M=</span><span class="sc">{</span>M<span class="sc">}</span><span class="ss">, T=</span><span class="sc">{</span>T<span class="sc">}</span><span class="ss">, delta=</span><span class="sc">{</span>delta<span class="sc">}</span><span class="ss">"</span>)</span>
 <span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"True parameters: beta=</span><span class="sc">{</span>beta_true<span class="sc">}</span><span class="ss">, gamma=</span><span class="sc">{</span>gamma_true<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Loaded simulation data: M=100, T=100, delta=0.95
+<pre><code>Loaded simulation data: M=1000, T=100, delta=0.95
 True parameters: beta=1.0, gamma=0.1</code></pre>
 </div>
 </div>
+</section>
+<section id="estimation-strategy" class="level2">
+<h2 class="anchored" data-anchor-id="estimation-strategy">Estimation Strategy</h2>
+<p>We estimate the structural parameters <span class="math inline">\(\beta\)</span> and <span class="math inline">\(\gamma\)</span> using a two-step approach. The key insight is that in real data, we typically observe only states and actions - rewards are not observed.</p>
+<p><strong>Observable data</strong>: <span class="math inline">\(\{(s_t^{(m)}, a_t^{(m)})\}_{m=1,t=0}^{M,T-1}\)</span></p>
+<p><strong>Known parameter</strong>: <span class="math inline">\(\delta\)</span> (discount factor)</p>
+<p><strong>Parameters to estimate</strong>: <span class="math inline">\(\beta\)</span> (reward weight), <span class="math inline">\(\gamma\)</span> (depreciation rate)</p>
+<section id="step-1-estimate-state-depreciation-parameter-gamma" class="level3">
+<h3 class="anchored" data-anchor-id="step-1-estimate-state-depreciation-parameter-gamma">Step 1: Estimate State Depreciation Parameter <span class="math inline">\(\gamma\)</span></h3>
+<p>The state transition is deterministic: <span class="math display">\[s_{t+1} = (1 - \gamma) s_t + a_t\]</span></p>
+<p>Rearranging: <span class="math display">\[\gamma = 1 - \frac{s_{t+1} - a_t}{s_t}\]</span></p>
+<p>We can directly estimate <span class="math inline">\(\gamma\)</span> from observed state transitions and actions using ordinary least squares or method of moments.</p>
+</section>
+<section id="step-2-estimate-reward-parameter-beta-via-revealed-preference" class="level3">
+<h3 class="anchored" data-anchor-id="step-2-estimate-reward-parameter-beta-via-revealed-preference">Step 2: Estimate Reward Parameter <span class="math inline">\(\beta\)</span> via Revealed Preference</h3>
+<p>The reward function is: <span class="math display">\[\bar{r}(s, a) = \beta \log(1 + s) - a\]</span></p>
+<p>Since rewards are not observed, we use a revealed preference approach based on the optimality of observed actions. This follows an actor-critic style method:</p>
+<section id="step-2a-estimate-conditional-choice-probability-ccp" class="level4">
+<h4 class="anchored" data-anchor-id="step-2a-estimate-conditional-choice-probability-ccp">Step 2a: Estimate Conditional Choice Probability (CCP)</h4>
+<p>Estimate the choice probability as a function of state: <span class="math display">\[\hat{P}(a=1|s) = f_\theta(s)\]</span></p>
+<p>where <span class="math inline">\(f_\theta\)</span> is a neural network that is: - Continuous in <span class="math inline">\(s\)</span> - Monotonically increasing in <span class="math inline">\(s\)</span> (enforced by architecture)</p>
+<p>This is estimated by maximum likelihood using the observed state-action pairs.</p>
+</section>
+<section id="step-2b-value-function-iteration-given-ccp-and-candidate-beta" class="level4">
+<h4 class="anchored" data-anchor-id="step-2b-value-function-iteration-given-ccp-and-candidate-beta">Step 2b: Value Function Iteration Given CCP and Candidate <span class="math inline">\(\beta\)</span></h4>
+<p>For a candidate value of <span class="math inline">\(\beta\)</span>, train value functions <span class="math inline">\(v^{(0)}(s)\)</span> and <span class="math inline">\(v^{(1)}(s)\)</span> that are consistent with the estimated CCP <span class="math inline">\(\hat{P}(a|s)\)</span> from Step 2a.</p>
+<p>The value functions satisfy the Bellman equation under the estimated policy: <span class="math display">\[v^{(a)}(s) = \bar{r}(s, a) + \delta \mathbb{E}_{a' \sim \hat{P}(\cdot|s')} [v^{(a')}(s')]\]</span></p>
+<p>where <span class="math inline">\(s' = (1-\hat{\gamma})s + a\)</span> using the estimated <span class="math inline">\(\hat{\gamma}\)</span> from Step 1.</p>
+<p>This is the “critic” step - we evaluate the value functions under the estimated policy.</p>
+</section>
+<section id="step-2c-compute-updated-ccp-from-value-functions" class="level4">
+<h4 class="anchored" data-anchor-id="step-2c-compute-updated-ccp-from-value-functions">Step 2c: Compute Updated CCP from Value Functions</h4>
+<p>From the trained value functions, compute the implied choice probabilities using the logit formula: <span class="math display">\[P^{\text{updated}}(a=1|s) = \frac{\exp(v^{(1)}(s))}{\exp(v^{(0)}(s)) + \exp(v^{(1)}(s))}\]</span></p>
+</section>
+<section id="step-2d-find-beta-that-minimizes-distance" class="level4">
+<h4 class="anchored" data-anchor-id="step-2d-find-beta-that-minimizes-distance">Step 2d: Find <span class="math inline">\(\beta\)</span> that Minimizes Distance</h4>
+<p>Find the value of <span class="math inline">\(\beta\)</span> that minimizes the distance between the estimated CCP network and the updated CCP: <span class="math display">\[\hat{\beta} = \arg\min_\beta \sum_{s \in \mathcal{S}} \left[\hat{P}(a=1|s) - P^{\text{updated}}(a=1|s; \beta)\right]^2\]</span></p>
+<p>where <span class="math inline">\(\mathcal{S}\)</span> is a grid of state values spanning the observed state range.</p>
+<p>This is a nested fixed-point problem: - <strong>Outer loop</strong>: Search over candidate values of <span class="math inline">\(\beta\)</span> - <strong>Inner loop</strong>: For each <span class="math inline">\(\beta\)</span>, solve for value functions consistent with estimated CCP, then compute updated CCP</p>
+<p>The optimal <span class="math inline">\(\beta\)</span> is the one where the estimated policy (from data) is consistent with the optimal policy (from the model).</p>
 
 
+</section>
+</section>
 </section>
 
 </main> <!-- /main -->

@@ -33,7 +33,7 @@ _COMPARATIVE_STATICS: Dict[str, List[float]] = {
 }
 
 _SIMULATOR_CONFIG: Dict[str, Any] = {
-    "M": 100,           # Number of simulation paths
+    "M": 1000,          # Number of simulation paths
     "T": 100,           # Time periods per path
     "seed": 42,         # Random seed for reproducibility
 }
