@@ -547,22 +547,31 @@ beta_grid = np.linspace(
     estimator_config['beta_grid_points']
 )
 
+# Compute state range from 10th to 90th percentile of observed data
+states_flat = states.flatten()
+state_range_est = (
+    float(np.percentile(states_flat, 10)),
+    float(np.percentile(states_flat, 90))
+)
+
 print(f"\nEstimation Configuration:")
 print(f"  State grid size (N): {N}")
+print(f"  Original state range (from simulation): {state_range}")
+print(f"  Estimation state range (10%-90% percentile): {state_range_est}")
 print(f"  Beta grid: {beta_grid}")
 print(f"  Max iterations: {max_iter}")
 print(f"  Tolerance: {epsilon_tol}")
 print(f"  Training epochs per iteration: {num_epochs}")
 print(f"  Learning rate: {learning_rate}")
 
-# Run estimation
+# Run estimation using restricted state range
 print(f"\nRunning estimation...")
 gamma_hat, beta_hat, beta_grid_used, distances = EstimateMDP(
     states=states,
     actions=actions,
     delta=delta,
     N=N,
-    state_range=state_range,
+    state_range=state_range_est,
     hyperparameters=hyperparameters,
     num_epochs=num_epochs,
     learning_rate=learning_rate,
