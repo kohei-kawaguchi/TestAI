@@ -1,0 +1,45 @@
+{
+  "model": {
+    "beta": 1.0,
+    "gamma": 0.1,
+    "delta": 0.95,
+    "gamma_E": 0.5772156649015329
+  },
+  "solver": {
+    "hyperparameters": {
+      "hidden_sizes": [
+        32,
+        32
+      ]
+    },
+    "N": 100,
+    "state_range": [
+      0.0,
+      10.0
+    ],
+    "max_iter": 1000,
+    "epsilon_tol": 0.0001,
+    "num_epochs": 50,
+    "learning_rate": 0.001
+  },
+  "comparative_statics": {
+    "beta_values": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0,
+      1.25,
+      1.5,
+      1.75,
+      2.0
+    ],
+    "gamma_values": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ]
+  }
+}

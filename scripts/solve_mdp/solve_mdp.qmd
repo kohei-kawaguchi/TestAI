@@ -453,7 +453,7 @@ print(f"\nPolicy switches near s ≈ {threshold_s:.3f}")
 print(f"At this state: P(a=0) = {prob_a0[threshold_idx]:.3f}, P(a=1) = {prob_a1[threshold_idx]:.3f}")
 
 # Persist trained policy artifacts for downstream simulation
-output_dir = Path('../../output/sovle_mdp')
+output_dir = Path('../../output/solve_mdp')
 output_dir.mkdir(parents=True, exist_ok=True)
 
 statics = get_comparative_statics()
