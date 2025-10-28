@@ -405,6 +405,115 @@ The following functions are imported from solve_mdp and reused directly:
 - **Binary cross-entropy loss**: For CCP estimation, use $-[a \log(\hat{p}) + (1-a) \log(1-\hat{p})]$
 - **Grid search for $\beta$**: Can be replaced with gradient-free optimization methods like Nelder-Mead
 
+## Diagnostic: Compare Estimated CCP with True CCP
+
+Before running the full estimation, we diagnose the quality of CCP estimation by comparing the estimated CCP (from observed choices) with the true CCP (from the solver's value functions).
+
+```{python}
+import torch
+import matplotlib.pyplot as plt
+from mdp_estimator import EstimateCCP
+from mdp_solver import MonotonicNetwork, ComputeChoiceProbability, GenerateStateGrid
+
+# Load solver configuration
+solver_dir = Path('../../output/solve_mdp')
+with open(solver_dir / 'config.json', 'r', encoding='utf-8') as f:
+    solver_output = json.load(f)
+
+solver_config = solver_output['solver']
+hyperparameters = solver_config['hyperparameters']
+N = solver_config['N']
+state_range = solver_config['state_range']
+num_epochs = solver_config['num_epochs']
+learning_rate = solver_config['learning_rate']
+
+print(f"\n=== DIAGNOSTIC: CCP Estimation Quality ===")
+
+# Estimate CCP from observed (s,a) pairs
+print(f"\nEstimating CCP from observed choices...")
+P_hat_network = EstimateCCP(
+    states=states,
+    actions=actions,
+    hyperparameters=hyperparameters,
+    num_epochs=num_epochs,
+    learning_rate=learning_rate
+)
+
+# Load true value functions from solver
+print(f"Loading true value functions from solver...")
+v_theta_0_true = MonotonicNetwork(hidden_sizes=hyperparameters['hidden_sizes'])
+v_theta_1_true = MonotonicNetwork(hidden_sizes=hyperparameters['hidden_sizes'])
+v_theta_0_true.load_state_dict(torch.load(solver_dir / 'v_theta_0.pt', map_location='cpu'))
+v_theta_1_true.load_state_dict(torch.load(solver_dir / 'v_theta_1.pt', map_location='cpu'))
+v_theta_0_true.eval()
+v_theta_1_true.eval()
+
+# Generate evaluation grid
+S_eval = GenerateStateGrid(N=N, state_range=state_range)
+
+# Evaluate estimated CCP on grid
+with torch.no_grad():
+    P_hat_eval = P_hat_network(S_eval).numpy().flatten()
+
+# Compute true CCP on grid from true value functions
+prob_a1_true_list = []
+for i in range(N):
+    s_i = S_eval[i].item()
+    prob_a0_t, prob_a1_t = ComputeChoiceProbability(
+        s=s_i,
+        v_theta_0=v_theta_0_true,
+        v_theta_1=v_theta_1_true
+    )
+    prob_a1_true_list.append(prob_a1_t)
+
+P_true_eval = np.array(prob_a1_true_list)
+
+# Compute CCP errors
+ccp_diff = np.abs(P_hat_eval - P_true_eval)
+
+print(f"\n=== CCP Comparison ===")
+print(f"Comparing: Estimated CCP (from data) vs. True CCP (from solver)")
+print(f"\nP(a=1|s) errors:")
+print(f"  Mean absolute error: {ccp_diff.mean():.6f}")
+print(f"  Max absolute error:  {ccp_diff.max():.6f}")
+print(f"  Root mean squared error: {np.sqrt((ccp_diff**2).mean()):.6f}")
+
+# Plot CCP comparison
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+
+# Plot 1: CCPs over state space
+ax = axes[0]
+s_grid = S_eval.numpy().flatten()
+ax.plot(s_grid, P_true_eval, 'g-', linewidth=2, label='True CCP (solver)', alpha=0.8)
+ax.plot(s_grid, P_hat_eval, 'r--', linewidth=2, label='Estimated CCP (from data)', alpha=0.8)
+ax.set_xlabel('State (s)', fontsize=12)
+ax.set_ylabel('P(a=1|s)', fontsize=12)
+ax.set_title('Conditional Choice Probability', fontsize=14, fontweight='bold')
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+ax.set_ylim([0, 1])
+
+# Plot 2: Scatter plot (estimated vs true)
+ax = axes[1]
+ax.scatter(P_true_eval, P_hat_eval, alpha=0.6, s=30)
+ax.plot([0, 1], [0, 1], 'k--', linewidth=2, label='45° line')
+ax.set_xlabel('True P(a=1|s)', fontsize=12)
+ax.set_ylabel('Estimated P(a=1|s)', fontsize=12)
+ax.set_title('CCP: Estimated vs True', fontsize=14, fontweight='bold')
+ax.legend(fontsize=11)
+ax.grid(True, alpha=0.3)
+ax.set_xlim([0, 1])
+ax.set_ylim([0, 1])
+ax.set_aspect('equal')
+
+plt.tight_layout()
+plt.show()
+
+print("\n=== Interpretation ===")
+print("If CCP errors are LARGE: The CCP estimation is poor.")
+print("If CCP errors are SMALL: CCP estimation is good; beta estimation issues are isolated.")
+```
+
 ## Run Estimation
 
 ```{python}
