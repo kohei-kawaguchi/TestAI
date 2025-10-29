@@ -2,6 +2,42 @@
 
 This document contains the annotated conversation history showing how to develop Monte Carlo simulators and structural parameter estimators for Markov Decision Process (MDP) models with neural network function approximation.
 
+## The Ultimate Validation: Solve → Simulate → Estimate → Recover
+
+The goal of this project is to build a complete computational pipeline: **solve an MDP, simulate data from the solution, estimate parameters from the simulated data, and verify that estimated parameters match the true parameters used for simulation.** This end-to-end workflow provides the most comprehensive validation of core functionality:
+
+**Why This Matters:**
+- **Parameter recovery** is the gold standard test for structural estimation
+- Successfully recovering true parameters proves:
+  - Solver correctly finds equilibrium value functions
+  - Simulator correctly implements the decision rule
+  - Estimator correctly inverts the model
+  - All three components are internally consistent
+- This validation can only succeed if there are **no flaws** in any component at the given parameter setting
+
+**The Challenge:**
+- This rarely works on the first attempt
+- Bugs in any component break the entire chain:
+  - Solver bug → wrong value functions → wrong simulated data → wrong estimates
+  - Simulator bug → data doesn't match model → estimates biased
+  - Estimator bug → fails to recover even from correct data
+- Debugging requires isolating which component is faulty
+- Each component must be validated independently before integration
+
+**The Workflow:**
+1. **Solve**: Train neural networks to approximate value functions
+2. **Simulate**: Generate Monte Carlo paths using trained value functions
+3. **Estimate**: Recover structural parameters from simulated data
+4. **Validate**: Check if β̂ ≈ β_true and γ̂ ≈ γ_true
+
+**Success Criteria:**
+- Relative parameter errors < 1%
+- Estimated value functions visually match true value functions
+- Estimated choice probabilities match true choice probabilities
+- This proves the entire computational pipeline is correct
+
+This document chronicles the journey from initial setup to achieving successful parameter recovery, including all the bugs encountered, design decisions made, and lessons learned along the way.
+
 ---
 
 ## Phase 1: Initial Setup and Live Server Configuration
