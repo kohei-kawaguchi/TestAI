@@ -5,7 +5,10 @@
       "Bash(npx -y live-server:*)",
       "Bash(export PATH=\"$HOME/.elan/bin:$PATH\")",
       "Bash(lean:*)",
-      "Bash(quarto render:*)"
+      "Bash(quarto render:*)",
+      "Bash(uv run:*)",
+      "Bash(git log:*)",
+      "Bash(python:*)"
     ],
     "deny": [
       "Bash(git push:*)",
