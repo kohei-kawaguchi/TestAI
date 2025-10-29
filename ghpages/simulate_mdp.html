@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.45">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Simulating Markov Decision Processes</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="simulate_mdp_files/libs/clipboard/clipboard.min.js"></script>
+<script src="simulate_mdp_files/libs/quarto-html/quarto.js"></script>
+<script src="simulate_mdp_files/libs/quarto-html/popper.min.js"></script>
+<script src="simulate_mdp_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="simulate_mdp_files/libs/quarto-html/anchor.min.js"></script>
+<link href="simulate_mdp_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="simulate_mdp_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="simulate_mdp_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="simulate_mdp_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="simulate_mdp_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview">Overview</a></li>
+  <li><a href="#monte-carlo-simulation-algorithm" id="toc-monte-carlo-simulation-algorithm" class="nav-link" data-scroll-target="#monte-carlo-simulation-algorithm">Monte Carlo Simulation Algorithm</a>
+  <ul class="collapse">
+  <li><a href="#pseudo-code" id="toc-pseudo-code" class="nav-link" data-scroll-target="#pseudo-code">Pseudo Code</a></li>
+  </ul></li>
+  <li><a href="#load-trained-policy" id="toc-load-trained-policy" class="nav-link" data-scroll-target="#load-trained-policy">Load Trained Policy</a></li>
+  <li><a href="#stored-policy-diagnostics" id="toc-stored-policy-diagnostics" class="nav-link" data-scroll-target="#stored-policy-diagnostics">Stored Policy Diagnostics</a></li>
+  <li><a href="#run-monte-carlo-simulation" id="toc-run-monte-carlo-simulation" class="nav-link" data-scroll-target="#run-monte-carlo-simulation">Run Monte Carlo Simulation</a></li>
+  <li><a href="#empirical-vs-theoretical-choice-probabilities" id="toc-empirical-vs-theoretical-choice-probabilities" class="nav-link" data-scroll-target="#empirical-vs-theoretical-choice-probabilities">Empirical vs Theoretical Choice Probabilities</a></li>
+  <li><a href="#simulation-summary-statistics" id="toc-simulation-summary-statistics" class="nav-link" data-scroll-target="#simulation-summary-statistics">Simulation Summary Statistics</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Simulating Markov Decision Processes</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="overview" class="level2">
+<h2 class="anchored" data-anchor-id="overview">Overview</h2>
+<p>This document loads the policy learned in <code>solve_mdp.qmd</code>, reconstructs the trained neural networks, and runs Monte Carlo simulations to analyze the dynamic behavior of the optimal policy.</p>
+</section>
+<section id="monte-carlo-simulation-algorithm" class="level2">
+<h2 class="anchored" data-anchor-id="monte-carlo-simulation-algorithm">Monte Carlo Simulation Algorithm</h2>
+<p>We simulate the Markov Decision Process under the optimal policy learned by the neural networks. The simulation generates multiple paths of state evolution and action choices to analyze the long-run behavior of the system.</p>
+<p><strong>Model Specification</strong> (from <a href="../solve_mdp/solve_mdp.qmd">solve_mdp.qmd</a>):</p>
+<ul>
+<li><strong>State transition</strong>: <span class="math inline">\(s_{t+1} = (1 - \gamma) s_t + a_t\)</span></li>
+<li><strong>Mean reward</strong>: <span class="math inline">\(\bar{r}(s, a) = \beta \log(1 + s) - a\)</span></li>
+<li><strong>Choice probabilities</strong>: <span class="math inline">\(P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}\)</span> where <span class="math inline">\(v(s, a)\)</span> is the choice-specific value function learned by the neural networks</li>
+</ul>
+<p><strong>Simulation Parameters</strong>:</p>
+<ul>
+<li>Number of paths: <span class="math inline">\(M = 100\)</span></li>
+<li>Time periods per path: <span class="math inline">\(T = 100\)</span></li>
+<li>Initial state distribution: <span class="math inline">\(s_0^{(m)} \sim \text{Uniform}(\text{state\_range})\)</span> for better state space coverage</li>
+</ul>
+<p><strong>Algorithm</strong>:</p>
+<p>For each path <span class="math inline">\(m = 1, \ldots, M\)</span>:</p>
+<ol type="1">
+<li><p><strong>Initialize</strong>: Draw initial state <span class="math inline">\(s_0^{(m)} \sim \text{Uniform}(s_{\min}, s_{\max})\)</span> from the state range</p></li>
+<li><p><strong>Simulate forward</strong> for <span class="math inline">\(t = 0, \ldots, T-1\)</span>:</p>
+<ol type="a">
+<li><p><strong>Compute choice probabilities</strong>: Evaluate the trained neural networks at current state <span class="math inline">\(s_t^{(m)}\)</span>: <span class="math display">\[P(a=0 | s_t^{(m)}) = \frac{\exp(v_\theta^{(0)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}\]</span> <span class="math display">\[P(a=1 | s_t^{(m)}) = \frac{\exp(v_\theta^{(1)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}\]</span></p></li>
+<li><p><strong>Draw action</strong>: Sample action from the choice probabilities: <span class="math display">\[a_t^{(m)} \sim \text{Categorical}(P(a=0 | s_t^{(m)}), P(a=1 | s_t^{(m)}))\]</span></p></li>
+<li><p><strong>Compute mean reward</strong>: <span class="math display">\[r_t^{(m)} = \beta \log(1 + s_t^{(m)}) - a_t^{(m)}\]</span></p></li>
+<li><p><strong>Update state</strong>: <span class="math display">\[s_{t+1}^{(m)} = (1 - \gamma) s_t^{(m)} + a_t^{(m)}\]</span></p></li>
+</ol></li>
+<li><p><strong>Store path</strong>: Save <span class="math inline">\((s_t^{(m)}, a_t^{(m)}, r_t^{(m)})_{t=0}^{T-1}\)</span> for analysis</p></li>
+</ol>
+<p><strong>Output Statistics</strong>:</p>
+<ul>
+<li>State evolution: Mean, median, and quantiles of <span class="math inline">\(s_t\)</span> across paths</li>
+<li>Action frequency: Fraction of times each action is chosen at each period</li>
+<li>Cumulative rewards: Mean discounted rewards <span class="math inline">\(\sum_{t=0}^{T-1} \delta^t r_t^{(m)}\)</span> across paths</li>
+<li>Policy behavior: State-dependent action choices and convergence to steady state</li>
+</ul>
+<section id="pseudo-code" class="level3">
+<h3 class="anchored" data-anchor-id="pseudo-code">Pseudo Code</h3>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Algorithm: Monte Carlo Simulation of MDP Policy
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>Design Principles:</strong></p>
+<p>This pseudo code is designed for direct implementation:</p>
+<ul>
+<li><strong>No placeholders</strong>: Every operation corresponds to a concrete function or method call</li>
+<li><strong>Explicit parameters</strong>: All inputs are passed as parameters, no implicit/global state</li>
+<li><strong>Reuses shared functions</strong>: Uses <code>ComputeChoiceProbability</code>, <code>ComputeNextState</code>, <code>ComputeMeanReward</code> from solve_mdp</li>
+<li><strong>No hard-coding</strong>: All values are parameterized</li>
+</ul>
+<p><strong>Input:</strong></p>
+<ul>
+<li>Trained networks: <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network (from solve_mdp)</li>
+<li>MDP parameters: <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float (from shared config)</li>
+<li>Simulation parameters: <span class="math inline">\(M\)</span>: int (number of paths), <span class="math inline">\(T\)</span>: int (time periods), state_range: tuple[float, float] (initial state range)</li>
+<li>Random seed: seed: int (for reproducibility)</li>
+</ul>
+<p><strong>Output:</strong></p>
+<ul>
+<li>Simulated paths: states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], rewards: Array[<span class="math inline">\(M \times T\)</span>]</li>
+</ul>
+<hr>
+<section id="main-algorithm" class="level3">
+<h3 class="anchored" data-anchor-id="main-algorithm">Main Algorithm</h3>
+<p><strong>Procedure</strong> <code>SimulateMDP</code>(<span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network, <span class="math inline">\(\beta\)</span>: float, <span class="math inline">\(\gamma\)</span>: float, <span class="math inline">\(\delta\)</span>: float, <span class="math inline">\(M\)</span>: int, <span class="math inline">\(T\)</span>: int, state_range: tuple[float, float], seed: int) <span class="math inline">\(\to\)</span> (Array[<span class="math inline">\(M \times T\)</span>], Array[<span class="math inline">\(M \times T\)</span>], Array[<span class="math inline">\(M \times T\)</span>])</p>
+<ol type="1">
+<li><p>Set random seed to seed</p></li>
+<li><p>states: Array[<span class="math inline">\(M \times T\)</span>], actions: Array[<span class="math inline">\(M \times T\)</span>], rewards: Array[<span class="math inline">\(M \times T\)</span>] <span class="math inline">\(\leftarrow\)</span> Empty arrays</p></li>
+<li><p>For <span class="math inline">\(m\)</span>: int = 1 to <span class="math inline">\(M\)</span>:</p>
+<ol type="a">
+<li><p><span class="math inline">\(s_0^{(m)}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>DrawUniform</code>(state_range[0], state_range[1]) &nbsp;&nbsp;&nbsp;&nbsp;// Draw initial state from uniform distribution</p></li>
+<li><p>states[<span class="math inline">\(m\)</span>, 1] <span class="math inline">\(\leftarrow s_0^{(m)}\)</span> &nbsp;&nbsp;&nbsp;&nbsp;// Initialize first state</p></li>
+<li><p>For <span class="math inline">\(t\)</span>: int = 1 to <span class="math inline">\(T\)</span>:</p></li>
+</ol>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i. <span class="math inline">\(s_t\)</span>: float <span class="math inline">\(\leftarrow\)</span> states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>]</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ii. <span class="math inline">\(P(a=0|s_t)\)</span>: float, <span class="math inline">\(P(a=1|s_t)\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeChoiceProbability</code>(<span class="math inline">\(s_t\)</span>, <span class="math inline">\(v_\theta^{(0)}\)</span>, <span class="math inline">\(v_\theta^{(1)}\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iii. <span class="math inline">\(a_t\)</span>: int <span class="math inline">\(\leftarrow\)</span> <code>DrawAction</code>(<span class="math inline">\(P(a=0|s_t)\)</span>, <span class="math inline">\(P(a=1|s_t)\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iv. actions[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>] <span class="math inline">\(\leftarrow a_t\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v. <span class="math inline">\(r_t\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeMeanReward</code>(<span class="math inline">\(s_t\)</span>, <span class="math inline">\(a_t\)</span>, <span class="math inline">\(\beta\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vi. rewards[<span class="math inline">\(m\)</span>, <span class="math inline">\(t\)</span>] <span class="math inline">\(\leftarrow r_t\)</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vii. <strong>If</strong> <span class="math inline">\(t &lt; T\)</span>:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="math inline">\(s_{t+1}\)</span>: float <span class="math inline">\(\leftarrow\)</span> <code>ComputeNextState</code>(<span class="math inline">\(s_t\)</span>, <span class="math inline">\(a_t\)</span>, <span class="math inline">\(\gamma\)</span>)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;states[<span class="math inline">\(m\)</span>, <span class="math inline">\(t+1\)</span>] <span class="math inline">\(\leftarrow s_{t+1}\)</span></p></li>
+<li><p><strong>Return</strong> states, actions, rewards</p></li>
+</ol>
+<hr>
+</section>
+<section id="subroutines" class="level3">
+<h3 class="anchored" data-anchor-id="subroutines">Subroutines</h3>
+<p><strong>Procedure</strong> <code>DrawAction</code>(<span class="math inline">\(P_0\)</span>: float, <span class="math inline">\(P_1\)</span>: float) <span class="math inline">\(\to\)</span> int</p>
+<ul>
+<li>Draw <span class="math inline">\(u\)</span>: float <span class="math inline">\(\sim\)</span> Uniform(0, 1)</li>
+<li><strong>If</strong> <span class="math inline">\(u &lt; P_0\)</span>: <strong>Return</strong> 0</li>
+<li><strong>Else</strong>: <strong>Return</strong> 1</li>
+</ul>
+<hr>
+</section>
+<section id="shared-functions-from-solve_mdp" class="level3">
+<h3 class="anchored" data-anchor-id="shared-functions-from-solve_mdp">Shared Functions from solve_mdp</h3>
+<p>The following functions are imported from solve_mdp and reused directly:</p>
+<p><strong>Procedure</strong> <code>ComputeChoiceProbability</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(v_\theta^{(0)}\)</span>: Network, <span class="math inline">\(v_\theta^{(1)}\)</span>: Network) <span class="math inline">\(\to\)</span> (float, float)</p>
+<ul>
+<li>Computes <span class="math inline">\(P(a=0|s)\)</span> and <span class="math inline">\(P(a=1|s)\)</span> using logit formula</li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeNextState</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\gamma\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
+<ul>
+<li>Returns <span class="math inline">\((1 - \gamma) \cdot s + a\)</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+<p><strong>Procedure</strong> <code>ComputeMeanReward</code>(<span class="math inline">\(s\)</span>: float, <span class="math inline">\(a\)</span>: int, <span class="math inline">\(\beta\)</span>: float) <span class="math inline">\(\to\)</span> float</p>
+<ul>
+<li>Returns <span class="math inline">\(\beta \cdot \log(1 + s) - a\)</span></li>
+<li>See solve_mdp documentation for implementation details</li>
+</ul>
+</section>
+</div>
+</div>
+<p><strong>Key Implementation Details:</strong></p>
+<ul>
+<li><strong>Shared configuration</strong>: Load <span class="math inline">\(\beta\)</span>, <span class="math inline">\(\gamma\)</span>, <span class="math inline">\(\delta\)</span> from the same config used in solve_mdp</li>
+<li><strong>Reproducibility</strong>: Set random seed before simulation for reproducible results</li>
+<li><strong>Categorical sampling</strong>: Use inverse CDF method to draw actions from choice probabilities</li>
+<li><strong>Storage efficiency</strong>: Pre-allocate arrays for states, actions, and rewards before loop</li>
+</ul>
+</section>
+</section>
+<section id="load-trained-policy" class="level2">
+<h2 class="anchored" data-anchor-id="load-trained-policy">Load Trained Policy</h2>
+<div id="7c86a27b" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'..'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">'../../src'</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> MonotonicNetwork</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_utils <span class="im">import</span> (</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    plot_choice_value_functions,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    plot_convergence_history,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    plot_policy_probabilities,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>artifact_dir <span class="op">=</span> Path(<span class="st">'../../output/sovle_mdp'</span>)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">not</span> artifact_dir.exists():</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">FileNotFoundError</span>(</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"Expected trained artifacts in </span><span class="sc">{</span>artifact_dir<span class="sc">}</span><span class="ss">. Run solve_mdp.qmd first."</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Load configuration from solver output (as data from previous step)</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(artifact_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'r'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> config_file:</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    config <span class="op">=</span> json.load(config_file)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>model_config <span class="op">=</span> config[<span class="st">'model'</span>]</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>solver_config <span class="op">=</span> config[<span class="st">'solver'</span>]</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>comparative_statics <span class="op">=</span> config[<span class="st">'comparative_statics'</span>]</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract model parameters</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>beta <span class="op">=</span> model_config[<span class="st">'beta'</span>]</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>gamma <span class="op">=</span> model_config[<span class="st">'gamma'</span>]</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>delta <span class="op">=</span> model_config[<span class="st">'delta'</span>]</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>gamma_E <span class="op">=</span> model_config[<span class="st">'gamma_E'</span>]</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract solver parameters needed for visualization</span></span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>hyperparameters <span class="op">=</span> solver_config[<span class="st">'hyperparameters'</span>]</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>state_range <span class="op">=</span> <span class="bu">tuple</span>(solver_config[<span class="st">'state_range'</span>])</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>hidden_sizes <span class="op">=</span> hyperparameters.get(<span class="st">'hidden_sizes'</span>, [<span class="dv">32</span>, <span class="dv">32</span>])</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>epsilon_tol <span class="op">=</span> solver_config[<span class="st">'epsilon_tol'</span>]</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Load precomputed grids for diagnostics</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>policy_store <span class="op">=</span> np.load(artifact_dir <span class="op">/</span> <span class="st">'policy_data.npz'</span>)</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>state_grid <span class="op">=</span> policy_store[<span class="st">'state_grid'</span>]</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>v0_grid <span class="op">=</span> policy_store[<span class="st">'v0'</span>]</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>v1_grid <span class="op">=</span> policy_store[<span class="st">'v1'</span>]</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>prob_a0_grid <span class="op">=</span> policy_store[<span class="st">'prob_a0'</span>]</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>prob_a1_grid <span class="op">=</span> policy_store[<span class="st">'prob_a1'</span>]</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>history_store <span class="op">=</span> np.load(artifact_dir <span class="op">/</span> <span class="st">'convergence_history.npz'</span>)</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>history_iterations <span class="op">=</span> history_store[<span class="st">'iterations'</span>]</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>history_max_errors <span class="op">=</span> history_store[<span class="st">'max_errors'</span>]</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Loaded trained networks with hidden sizes </span><span class="sc">{</span>hidden_sizes<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Rebuild networks and load weights</span></span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>v_theta_0 <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hidden_sizes)</span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>v_theta_1 <span class="op">=</span> MonotonicNetwork(hidden_sizes<span class="op">=</span>hidden_sizes)</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>v_theta_0.load_state_dict(torch.load(artifact_dir <span class="op">/</span> <span class="st">'v_theta_0.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>v_theta_1.load_state_dict(torch.load(artifact_dir <span class="op">/</span> <span class="st">'v_theta_1.pt'</span>, map_location<span class="op">=</span><span class="st">'cpu'</span>))</span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>v_theta_0.<span class="bu">eval</span>()</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>v_theta_1.<span class="bu">eval</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded trained networks with hidden sizes [32, 32]</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>MonotonicNetwork(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=32, bias=True)
+    (1): Linear(in_features=32, out_features=32, bias=True)
+    (2): Linear(in_features=32, out_features=1, bias=True)
+  )
+)</code></pre>
+</div>
+</div>
+</section>
+<section id="stored-policy-diagnostics" class="level2">
+<h2 class="anchored" data-anchor-id="stored-policy-diagnostics">Stored Policy Diagnostics</h2>
+<div id="e56b3e4f" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">5</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>plot_choice_value_functions(</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    v0_values<span class="op">=</span>v0_grid,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    v1_values<span class="op">=</span>v1_grid,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax1,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">'Choice-Specific Value Functions'</span>,</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>plot_convergence_history(</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    iterations<span class="op">=</span>history_iterations,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    max_errors<span class="op">=</span>history_max_errors,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    epsilon_tol<span class="op">=</span>epsilon_tol,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    ax<span class="op">=</span>ax2,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">'Convergence History'</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="simulate_mdp_files/figure-html/cell-3-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="0f76c735" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> plot_policy_probabilities(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    state_grid<span class="op">=</span>state_grid,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    prob_a0<span class="op">=</span>prob_a0_grid,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    prob_a1<span class="op">=</span>prob_a1_grid,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>ax.figure.tight_layout()</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="simulate_mdp_files/figure-html/cell-4-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="run-monte-carlo-simulation" class="level2">
+<h2 class="anchored" data-anchor-id="run-monte-carlo-simulation">Run Monte Carlo Simulation</h2>
+<p>Now we use the trained policy to simulate the MDP dynamics and analyze the behavior of the optimal policy.</p>
+<div id="59c7c144" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_simulator <span class="im">import</span> SimulateMDP</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> config_mdp <span class="im">import</span> get_simulator_config</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Load simulator configuration</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>sim_config <span class="op">=</span> get_simulator_config()</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>M <span class="op">=</span> sim_config[<span class="st">'M'</span>]</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>T <span class="op">=</span> sim_config[<span class="st">'T'</span>]</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>seed <span class="op">=</span> sim_config[<span class="st">'seed'</span>]</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Running Monte Carlo simulation with M=</span><span class="sc">{</span>M<span class="sc">}</span><span class="ss"> paths, T=</span><span class="sc">{</span>T<span class="sc">}</span><span class="ss"> periods"</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Initial state range: </span><span class="sc">{</span>state_range<span class="sc">}</span><span class="ss">, Random seed: </span><span class="sc">{</span>seed<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Run simulation with uniform initial state distribution</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>states, actions, rewards <span class="op">=</span> SimulateMDP(</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    v_theta_0<span class="op">=</span>v_theta_0,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    v_theta_1<span class="op">=</span>v_theta_1,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    beta<span class="op">=</span>beta,</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    gamma<span class="op">=</span>gamma,</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    delta<span class="op">=</span>delta,</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    M<span class="op">=</span>M,</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    T<span class="op">=</span>T,</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    state_range<span class="op">=</span>state_range,</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span>seed</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Simulation complete!"</span>)</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"States shape: </span><span class="sc">{</span>states<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Actions shape: </span><span class="sc">{</span>actions<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Rewards shape: </span><span class="sc">{</span>rewards<span class="sc">.</span>shape<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Save simulation results</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>output_dir <span class="op">=</span> Path(<span class="st">'../../output/simulate_mdp'</span>)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>output_dir.mkdir(parents<span class="op">=</span><span class="va">True</span>, exist_ok<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>np.savez(</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>    output_dir <span class="op">/</span> <span class="st">'simulation_results.npz'</span>,</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>    states<span class="op">=</span>states,</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>    actions<span class="op">=</span>actions,</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>    rewards<span class="op">=</span>rewards,</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    M<span class="op">=</span>M,</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>    T<span class="op">=</span>T,</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>    state_range<span class="op">=</span>state_range,</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>    seed<span class="op">=</span>seed</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Save configuration for downstream workflows (estimator)</span></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Model config comes from solver (loaded as data), simulator config from Python module</span></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>config_payload <span class="op">=</span> {</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>    <span class="st">'model'</span>: model_config,</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>    <span class="st">'simulator'</span>: sim_config</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(output_dir <span class="op">/</span> <span class="st">'config.json'</span>, <span class="st">'w'</span>, encoding<span class="op">=</span><span class="st">'utf-8'</span>) <span class="im">as</span> f:</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>    json.dump(config_payload, f, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Saved simulation results to </span><span class="sc">{</span>output_dir<span class="sc">.</span>resolve()<span class="sc">}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running Monte Carlo simulation with M=1000 paths, T=100 periods
+Initial state range: (0.0, 10.0), Random seed: 42
+
+Simulation complete!
+States shape: (1000, 100)
+Actions shape: (1000, 100)
+Rewards shape: (1000, 100)
+Saved simulation results to C:\Users\kohei\Documents\TestAI\output\simulate_mdp</code></pre>
+</div>
+</div>
+</section>
+<section id="empirical-vs-theoretical-choice-probabilities" class="level2">
+<h2 class="anchored" data-anchor-id="empirical-vs-theoretical-choice-probabilities">Empirical vs Theoretical Choice Probabilities</h2>
+<p>We compare the empirical choice probabilities from the simulation with the theoretical probabilities from the trained value functions.</p>
+<div id="b7533cca" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mdp_solver <span class="im">import</span> ComputeChoiceProbability</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute empirical choice probabilities from simulation</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># For each unique state, compute the fraction of times action 1 was chosen</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Discretize states into bins for empirical probability calculation</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>n_bins <span class="op">=</span> <span class="dv">50</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>state_min <span class="op">=</span> <span class="bu">min</span>(states.<span class="bu">min</span>(), state_grid.<span class="bu">min</span>())</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>state_max <span class="op">=</span> <span class="bu">max</span>(states.<span class="bu">max</span>(), state_grid.<span class="bu">max</span>())</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>state_bins <span class="op">=</span> np.linspace(state_min, state_max, n_bins <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>bin_centers <span class="op">=</span> (state_bins[:<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> state_bins[<span class="dv">1</span>:]) <span class="op">/</span> <span class="dv">2</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute empirical probabilities</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>empirical_prob_a1 <span class="op">=</span> np.zeros(n_bins)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>empirical_counts <span class="op">=</span> np.zeros(n_bins)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> m <span class="kw">in</span> <span class="bu">range</span>(M):</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(T):</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>        s <span class="op">=</span> states[m, t]</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>        a <span class="op">=</span> actions[m, t]</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Find which bin this state belongs to</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>        bin_idx <span class="op">=</span> np.searchsorted(state_bins[<span class="dv">1</span>:], s)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="dv">0</span> <span class="op">&lt;=</span> bin_idx <span class="op">&lt;</span> n_bins:</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>            empirical_counts[bin_idx] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> a <span class="op">==</span> <span class="dv">1</span>:</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>                empirical_prob_a1[bin_idx] <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute empirical probabilities (only for bins with observations)</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>mask <span class="op">=</span> empirical_counts <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>empirical_prob_a1[mask] <span class="op">=</span> empirical_prob_a1[mask] <span class="op">/</span> empirical_counts[mask]</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute theoretical probabilities at bin centers</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>theoretical_prob_a1 <span class="op">=</span> np.zeros(n_bins)</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, s <span class="kw">in</span> <span class="bu">enumerate</span>(bin_centers):</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> mask[i]:  <span class="co"># Only compute for bins with observations</span></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>        prob_a0, prob_a1 <span class="op">=</span> ComputeChoiceProbability(</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span>s,</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>            v_theta_0<span class="op">=</span>v_theta_0,</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>            v_theta_1<span class="op">=</span>v_theta_1</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>        theoretical_prob_a1[i] <span class="op">=</span> prob_a1</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter to only bins with sufficient observations</span></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>min_obs <span class="op">=</span> <span class="dv">10</span></span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>sufficient_mask <span class="op">=</span> empirical_counts <span class="op">&gt;=</span> min_obs</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Create scatter plot</span></span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>))</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>ax.scatter(</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    theoretical_prob_a1[sufficient_mask],</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    empirical_prob_a1[sufficient_mask],</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>    alpha<span class="op">=</span><span class="fl">0.6</span>,</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>    s<span class="op">=</span>empirical_counts[sufficient_mask] <span class="op">/</span> <span class="dv">10</span>,  <span class="co"># Size proportional to observations</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>    c<span class="op">=</span><span class="st">'blue'</span>,</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>    label<span class="op">=</span><span class="ss">f'Bins (n≥</span><span class="sc">{</span>min_obs<span class="sc">}</span><span class="ss">)'</span></span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a><span class="co"># Add 45-degree line</span></span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a>prob_range <span class="op">=</span> [<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>ax.plot(prob_range, prob_range, <span class="st">'k--'</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>, label<span class="op">=</span><span class="st">'45° line'</span>)</span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Theoretical P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Empirical P(a=1|s)'</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Empirical vs Theoretical Choice Probabilities'</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a>ax.set_aspect(<span class="st">'equal'</span>)</span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute correlation and RMSE</span></span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a>valid_data <span class="op">=</span> sufficient_mask</span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a>correlation <span class="op">=</span> np.corrcoef(</span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a>    theoretical_prob_a1[valid_data],</span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a>    empirical_prob_a1[valid_data]</span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a>)[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a>rmse <span class="op">=</span> np.sqrt(np.mean(</span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a>    (theoretical_prob_a1[valid_data] <span class="op">-</span> empirical_prob_a1[valid_data])<span class="op">**</span><span class="dv">2</span></span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Comparison Statistics:"</span>)</span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Number of bins with sufficient data (n≥</span><span class="sc">{</span>min_obs<span class="sc">}</span><span class="ss">): </span><span class="sc">{</span>valid_data<span class="sc">.</span><span class="bu">sum</span>()<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Correlation: </span><span class="sc">{</span>correlation<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"RMSE: </span><span class="sc">{</span>rmse<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="simulate_mdp_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Comparison Statistics:
+Number of bins with sufficient data (n≥10): 50
+Correlation: 0.9238
+RMSE: 0.0383</code></pre>
+</div>
+</div>
+</section>
+<section id="simulation-summary-statistics" class="level2">
+<h2 class="anchored" data-anchor-id="simulation-summary-statistics">Simulation Summary Statistics</h2>
+<div id="3f6c0f8a" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute summary statistics across paths</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>state_mean <span class="op">=</span> states.mean(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>state_std <span class="op">=</span> states.std(axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>state_q25 <span class="op">=</span> np.percentile(states, <span class="dv">25</span>, axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>state_q50 <span class="op">=</span> np.percentile(states, <span class="dv">50</span>, axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>state_q75 <span class="op">=</span> np.percentile(states, <span class="dv">75</span>, axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>action_freq <span class="op">=</span> actions.mean(axis<span class="op">=</span><span class="dv">0</span>)  <span class="co"># Fraction of times action 1 was chosen</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute cumulative discounted rewards</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>discount_factors <span class="op">=</span> delta <span class="op">**</span> np.arange(T)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>discounted_rewards <span class="op">=</span> rewards <span class="op">*</span> discount_factors[np.newaxis, :]</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>cumulative_discounted_rewards <span class="op">=</span> discounted_rewards.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">State Evolution:"</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Initial state range: </span><span class="sc">{</span>state_range<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Initial state - mean: </span><span class="sc">{</span>state_mean[<span class="dv">0</span>]<span class="sc">:.3f}</span><span class="ss">, std: </span><span class="sc">{</span>state_std[<span class="dv">0</span>]<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Final state - mean: </span><span class="sc">{</span>state_mean[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.3f}</span><span class="ss">, std: </span><span class="sc">{</span>state_std[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Final state - median: </span><span class="sc">{</span>state_q50[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Action Statistics:"</span>)</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Overall fraction of a=1: </span><span class="sc">{</span>actions<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  First period a=1 frequency: </span><span class="sc">{</span>action_freq[<span class="dv">0</span>]<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Last period a=1 frequency: </span><span class="sc">{</span>action_freq[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Reward Statistics:"</span>)</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Mean cumulative discounted reward: </span><span class="sc">{</span>cumulative_discounted_rewards<span class="sc">.</span>mean()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Std cumulative discounted reward: </span><span class="sc">{</span>cumulative_discounted_rewards<span class="sc">.</span>std()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Min cumulative discounted reward: </span><span class="sc">{</span>cumulative_discounted_rewards<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Max cumulative discounted reward: </span><span class="sc">{</span>cumulative_discounted_rewards<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot state evolution over time</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">14</span>, <span class="dv">10</span>))</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="co"># State evolution</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">0</span>]</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>ax.plot(state_mean, <span class="st">'b-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Mean'</span>)</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>ax.fill_between(<span class="bu">range</span>(T), state_q25, state_q75, alpha<span class="op">=</span><span class="fl">0.3</span>, label<span class="op">=</span><span class="st">'IQR (25-75%)'</span>)</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>ax.plot(state_q50, <span class="st">'r--'</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>, label<span class="op">=</span><span class="st">'Median'</span>)</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Time period'</span>)</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'State'</span>)</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'State Evolution Across Paths'</span>)</span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Action frequency over time</span></span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>, <span class="dv">1</span>]</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a>ax.plot(action_freq, <span class="st">'g-'</span>, linewidth<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Time period'</span>)</span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Frequency of a=1'</span>)</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Action Choice Over Time'</span>)</span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Distribution of final states</span></span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">0</span>]</span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a>ax.hist(states[:, <span class="op">-</span><span class="dv">1</span>], bins<span class="op">=</span><span class="dv">30</span>, alpha<span class="op">=</span><span class="fl">0.7</span>, edgecolor<span class="op">=</span><span class="st">'black'</span>)</span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a>ax.axvline(state_mean[<span class="op">-</span><span class="dv">1</span>], color<span class="op">=</span><span class="st">'red'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="ss">f'Mean: </span><span class="sc">{</span>state_mean[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.2f}</span><span class="ss">'</span>)</span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Final state value'</span>)</span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Number of paths'</span>)</span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Distribution of Final States'</span>)</span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a><span class="co"># Distribution of cumulative rewards</span></span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">1</span>, <span class="dv">1</span>]</span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>ax.hist(cumulative_discounted_rewards, bins<span class="op">=</span><span class="dv">30</span>, alpha<span class="op">=</span><span class="fl">0.7</span>, edgecolor<span class="op">=</span><span class="st">'black'</span>)</span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a>ax.axvline(cumulative_discounted_rewards.mean(), color<span class="op">=</span><span class="st">'red'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="ss">f'Mean: </span><span class="sc">{</span>cumulative_discounted_rewards<span class="sc">.</span>mean()<span class="sc">:.2f}</span><span class="ss">'</span>)</span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">'Cumulative discounted reward'</span>)</span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">'Number of paths'</span>)</span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">'Distribution of Total Rewards'</span>)</span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>ax.legend()</span>
+<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">True</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a>fig.tight_layout()</span>
+<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+State Evolution:
+  Initial state range: (0.0, 10.0)
+  Initial state - mean: 5.180, std: 2.806
+  Final state - mean: 5.238, std: 1.040
+  Final state - median: 5.194
+
+Action Statistics:
+  Overall fraction of a=1: 0.523
+  First period a=1 frequency: 0.533
+  Last period a=1 frequency: 0.497
+
+Reward Statistics:
+  Mean cumulative discounted reward: 25.232
+  Std cumulative discounted reward: 3.407
+  Min cumulative discounted reward: 15.783
+  Max cumulative discounted reward: 30.420</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="simulate_mdp_files/figure-html/cell-7-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
