@@ -1,18 +1,22 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
       "Bash(Rscript:*)",
       "Bash(npx -y live-server:*)",
       "Bash(export PATH=\"$HOME/.elan/bin:$PATH\")",
       "Bash(lean:*)",
-      "Bash(quarto render:*)"
+      "Bash(quarto render:*)",
+      "Bash(uv run:*)",
+      "Bash(git log:*)",
+      "Bash(python:*)"
     ],
     "deny": [
       "Bash(git push:*)",
       "Bash(git pull:*)"
     ],
-    "ask": []
+    "ask": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
   }
 }

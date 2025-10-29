@@ -52,3 +52,6 @@ Thumbs.db
 
 # Keep the final HTML reports
 !*.html
+
+# Temporary files
+temporary/

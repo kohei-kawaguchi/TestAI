@@ -113,18 +113,64 @@ rmarkdown::render('scripts/analyze_data/randomization_fisher_pvalue.Rmd')
 source('scripts/analyze_data_true/compare_results.R')
 ```
 
-#### MDP Solver
+#### MDP Pipeline (Solver → Simulator → Estimator)
+
+Run the complete MDP pipeline sequentially:
+
+```bash
+# Run all three steps: solver, simulator, and estimator
+./scripts/run_mdp.sh
+```
+
+This script will:
+1. Solve the MDP using value iteration (saves to `output/solve_mdp/`)
+2. Simulate data from the solved model (saves to `output/simulate_mdp/`)
+3. Estimate parameters from simulated data (saves to `output/estimate_mdp/`)
+
+Or run individual steps:
+
+**MDP Solver**
 ```bash
 # Run unit tests
 uv run pytest test/
 
-# Render Quarto documentation with results
+# Render solver report
 cd scripts/solve_mdp
 uv run quarto render solve_mdp.qmd
 
-# View the rendered HTML report
-# Open scripts/solve_mdp/solve_mdp.html in your browser
+# Launch live preview (serves at http://127.0.0.1:4200 after port-forwarding)
+uv run quarto preview scripts/solve_mdp/solve_mdp.qmd
 ```
+
+**MDP Simulator**
+```bash
+# Render simulator report (requires solver output)
+cd scripts/simulate_mdp
+uv run quarto render simulate_mdp.qmd
+
+# Launch live preview (serves at http://127.0.0.1:4300 after port-forwarding)
+uv run quarto preview scripts/simulate_mdp/simulate_mdp.qmd
+```
+
+**MDP Estimator**
+```bash
+# Render estimator report (requires simulator output)
+cd scripts/estimate_mdp
+uv run quarto render estimate_mdp.qmd
+
+# Launch live preview (serves at http://127.0.0.1:4400 after port-forwarding)
+uv run quarto preview scripts/estimate_mdp/estimate_mdp.qmd
+```
+
+**Container workflow:**
+When working inside a container (e.g., VS Code Dev Containers), forward ports `4200`, `4300`, and `4400` to access the live previews for solver, simulator, and estimator respectively.
+
+**Quarto workflow with cached figures:**
+- Always use the project environment: `uv run` or prefix commands with `QUARTO_PYTHON=.venv/bin/python`
+- Render once with execution enabled: `uv run quarto render <document.qmd>`
+- For previews, reuse the cache: `uv run quarto preview <document.qmd>`
+- Avoid `--no-execute` unless you only need text; it strips figure references from the regenerated HTML
+- To share a static copy, bundle the HTML with `*_files/` or render with `--self-contained`
 
 ## Validation Results
 

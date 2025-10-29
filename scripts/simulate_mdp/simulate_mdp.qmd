@@ -1,0 +1,511 @@
+---
+title: "Simulating Markov Decision Processes"
+format:
+  html:
+    toc: true
+    code-fold: false
+jupyter: python3
+execute:
+  daemon: false
+---
+
+## Overview
+
+This document loads the policy learned in `solve_mdp.qmd`, reconstructs the trained neural
+networks, and runs Monte Carlo simulations to analyze the dynamic behavior of the optimal policy.
+
+## Monte Carlo Simulation Algorithm
+
+We simulate the Markov Decision Process under the optimal policy learned by the neural networks. The simulation generates multiple paths of state evolution and action choices to analyze the long-run behavior of the system.
+
+**Model Specification** (from [solve_mdp.qmd](../solve_mdp/solve_mdp.qmd)):
+
+- **State transition**: $s_{t+1} = (1 - \gamma) s_t + a_t$
+- **Mean reward**: $\bar{r}(s, a) = \beta \log(1 + s) - a$
+- **Choice probabilities**: $P(a | s) = \frac{\exp(v(s, a))}{\sum_{a' \in \{0,1\}} \exp(v(s, a'))}$
+  where $v(s, a)$ is the choice-specific value function learned by the neural networks
+
+**Simulation Parameters**:
+
+- Number of paths: $M = 100$
+- Time periods per path: $T = 100$
+- Initial state distribution: $s_0^{(m)} \sim \text{Uniform}(\text{state\_range})$ for better state space coverage
+
+**Algorithm**:
+
+For each path $m = 1, \ldots, M$:
+
+1. **Initialize**: Draw initial state $s_0^{(m)} \sim \text{Uniform}(s_{\min}, s_{\max})$ from the state range
+
+2. **Simulate forward** for $t = 0, \ldots, T-1$:
+
+   a. **Compute choice probabilities**: Evaluate the trained neural networks at current state $s_t^{(m)}$:
+      $$P(a=0 | s_t^{(m)}) = \frac{\exp(v_\theta^{(0)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}$$
+      $$P(a=1 | s_t^{(m)}) = \frac{\exp(v_\theta^{(1)}(s_t^{(m)}))}{\exp(v_\theta^{(0)}(s_t^{(m)})) + \exp(v_\theta^{(1)}(s_t^{(m)}))}$$
+
+   b. **Draw action**: Sample action from the choice probabilities:
+      $$a_t^{(m)} \sim \text{Categorical}(P(a=0 | s_t^{(m)}), P(a=1 | s_t^{(m)}))$$
+
+   c. **Compute mean reward**:
+      $$r_t^{(m)} = \beta \log(1 + s_t^{(m)}) - a_t^{(m)}$$
+
+   d. **Update state**:
+      $$s_{t+1}^{(m)} = (1 - \gamma) s_t^{(m)} + a_t^{(m)}$$
+
+3. **Store path**: Save $(s_t^{(m)}, a_t^{(m)}, r_t^{(m)})_{t=0}^{T-1}$ for analysis
+
+**Output Statistics**:
+
+- State evolution: Mean, median, and quantiles of $s_t$ across paths
+- Action frequency: Fraction of times each action is chosen at each period
+- Cumulative rewards: Mean discounted rewards $\sum_{t=0}^{T-1} \delta^t r_t^{(m)}$ across paths
+- Policy behavior: State-dependent action choices and convergence to steady state
+
+### Pseudo Code
+
+::: {.callout-note appearance="simple"}
+
+## Algorithm: Monte Carlo Simulation of MDP Policy
+
+**Design Principles:**
+
+This pseudo code is designed for direct implementation:
+
+- **No placeholders**: Every operation corresponds to a concrete function or method call
+- **Explicit parameters**: All inputs are passed as parameters, no implicit/global state
+- **Reuses shared functions**: Uses `ComputeChoiceProbability`, `ComputeNextState`, `ComputeMeanReward` from solve_mdp
+- **No hard-coding**: All values are parameterized
+
+**Input:**
+
+- Trained networks: $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network (from solve_mdp)
+- MDP parameters: $\beta$: float, $\gamma$: float, $\delta$: float (from shared config)
+- Simulation parameters: $M$: int (number of paths), $T$: int (time periods), state_range: tuple[float, float] (initial state range)
+- Random seed: seed: int (for reproducibility)
+
+**Output:**
+
+- Simulated paths: states: Array[$M \times T$], actions: Array[$M \times T$], rewards: Array[$M \times T$]
+
+---
+
+### Main Algorithm
+
+**Procedure** `SimulateMDP`($v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network, $\beta$: float, $\gamma$: float, $\delta$: float, $M$: int, $T$: int, state_range: tuple[float, float], seed: int) $\to$ (Array[$M \times T$], Array[$M \times T$], Array[$M \times T$])
+
+1. Set random seed to seed
+
+2. states: Array[$M \times T$], actions: Array[$M \times T$], rewards: Array[$M \times T$] $\leftarrow$ Empty arrays
+
+3. For $m$: int = 1 to $M$:
+
+   a. $s_0^{(m)}$: float $\leftarrow$ `DrawUniform`(state_range[0], state_range[1]) &nbsp;&nbsp;&nbsp;&nbsp;// Draw initial state from uniform distribution
+
+   b. states[$m$, 1] $\leftarrow s_0^{(m)}$ &nbsp;&nbsp;&nbsp;&nbsp;// Initialize first state
+
+   c. For $t$: int = 1 to $T$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i. $s_t$: float $\leftarrow$ states[$m$, $t$]
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ii. $P(a=0|s_t)$: float, $P(a=1|s_t)$: float $\leftarrow$ `ComputeChoiceProbability`($s_t$, $v_\theta^{(0)}$, $v_\theta^{(1)}$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iii. $a_t$: int $\leftarrow$ `DrawAction`($P(a=0|s_t)$, $P(a=1|s_t)$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;iv. actions[$m$, $t$] $\leftarrow a_t$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v. $r_t$: float $\leftarrow$ `ComputeMeanReward`($s_t$, $a_t$, $\beta$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vi. rewards[$m$, $t$] $\leftarrow r_t$
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vii. **If** $t < T$:
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$s_{t+1}$: float $\leftarrow$ `ComputeNextState`($s_t$, $a_t$, $\gamma$)
+
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;states[$m$, $t+1$] $\leftarrow s_{t+1}$
+
+4. **Return** states, actions, rewards
+
+---
+
+### Subroutines
+
+**Procedure** `DrawAction`($P_0$: float, $P_1$: float) $\to$ int
+
+- Draw $u$: float $\sim$ Uniform(0, 1)
+- **If** $u < P_0$: **Return** 0
+- **Else**: **Return** 1
+
+---
+
+### Shared Functions from solve_mdp
+
+The following functions are imported from solve_mdp and reused directly:
+
+**Procedure** `ComputeChoiceProbability`($s$: float, $v_\theta^{(0)}$: Network, $v_\theta^{(1)}$: Network) $\to$ (float, float)
+
+- Computes $P(a=0|s)$ and $P(a=1|s)$ using logit formula
+- See solve_mdp documentation for implementation details
+
+**Procedure** `ComputeNextState`($s$: float, $a$: int, $\gamma$: float) $\to$ float
+
+- Returns $(1 - \gamma) \cdot s + a$
+- See solve_mdp documentation for implementation details
+
+**Procedure** `ComputeMeanReward`($s$: float, $a$: int, $\beta$: float) $\to$ float
+
+- Returns $\beta \cdot \log(1 + s) - a$
+- See solve_mdp documentation for implementation details
+
+:::
+
+**Key Implementation Details:**
+
+- **Shared configuration**: Load $\beta$, $\gamma$, $\delta$ from the same config used in solve_mdp
+- **Reproducibility**: Set random seed before simulation for reproducible results
+- **Categorical sampling**: Use inverse CDF method to draw actions from choice probabilities
+- **Storage efficiency**: Pre-allocate arrays for states, actions, and rewards before loop
+
+## Load Trained Policy
+
+```{python}
+import sys
+sys.path.insert(0, '..')
+sys.path.insert(0, '../../src')
+
+import json
+from pathlib import Path
+
+import numpy as np
+import torch
+import matplotlib.pyplot as plt
+
+from mdp_solver import MonotonicNetwork
+from mdp_utils import (
+    plot_choice_value_functions,
+    plot_convergence_history,
+    plot_policy_probabilities,
+)
+
+artifact_dir = Path('../../output/sovle_mdp')
+if not artifact_dir.exists():
+    raise FileNotFoundError(
+        f"Expected trained artifacts in {artifact_dir}. Run solve_mdp.qmd first."
+    )
+
+# Load configuration from solver output (as data from previous step)
+with open(artifact_dir / 'config.json', 'r', encoding='utf-8') as config_file:
+    config = json.load(config_file)
+
+model_config = config['model']
+solver_config = config['solver']
+comparative_statics = config['comparative_statics']
+
+# Extract model parameters
+beta = model_config['beta']
+gamma = model_config['gamma']
+delta = model_config['delta']
+gamma_E = model_config['gamma_E']
+
+# Extract solver parameters needed for visualization
+hyperparameters = solver_config['hyperparameters']
+state_range = tuple(solver_config['state_range'])
+hidden_sizes = hyperparameters.get('hidden_sizes', [32, 32])
+epsilon_tol = solver_config['epsilon_tol']
+
+# Load precomputed grids for diagnostics
+policy_store = np.load(artifact_dir / 'policy_data.npz')
+state_grid = policy_store['state_grid']
+v0_grid = policy_store['v0']
+v1_grid = policy_store['v1']
+prob_a0_grid = policy_store['prob_a0']
+prob_a1_grid = policy_store['prob_a1']
+
+history_store = np.load(artifact_dir / 'convergence_history.npz')
+history_iterations = history_store['iterations']
+history_max_errors = history_store['max_errors']
+
+print(f"Loaded trained networks with hidden sizes {hidden_sizes}")
+
+# Rebuild networks and load weights
+v_theta_0 = MonotonicNetwork(hidden_sizes=hidden_sizes)
+v_theta_1 = MonotonicNetwork(hidden_sizes=hidden_sizes)
+
+v_theta_0.load_state_dict(torch.load(artifact_dir / 'v_theta_0.pt', map_location='cpu'))
+v_theta_1.load_state_dict(torch.load(artifact_dir / 'v_theta_1.pt', map_location='cpu'))
+
+v_theta_0.eval()
+v_theta_1.eval()
+```
+
+## Stored Policy Diagnostics
+
+```{python}
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+plot_choice_value_functions(
+    state_grid=state_grid,
+    v0_values=v0_grid,
+    v1_values=v1_grid,
+    ax=ax1,
+    title='Choice-Specific Value Functions',
+)
+plot_convergence_history(
+    iterations=history_iterations,
+    max_errors=history_max_errors,
+    epsilon_tol=epsilon_tol,
+    ax=ax2,
+    title='Convergence History',
+)
+fig.tight_layout()
+plt.show()
+```
+
+```{python}
+ax = plot_policy_probabilities(
+    state_grid=state_grid,
+    prob_a0=prob_a0_grid,
+    prob_a1=prob_a1_grid,
+)
+ax.figure.tight_layout()
+plt.show()
+```
+
+## Run Monte Carlo Simulation
+
+Now we use the trained policy to simulate the MDP dynamics and analyze the behavior of the optimal policy.
+
+```{python}
+from mdp_simulator import SimulateMDP
+from config_mdp import get_simulator_config
+
+# Load simulator configuration
+sim_config = get_simulator_config()
+M = sim_config['M']
+T = sim_config['T']
+seed = sim_config['seed']
+
+print(f"Running Monte Carlo simulation with M={M} paths, T={T} periods")
+print(f"Initial state range: {state_range}, Random seed: {seed}")
+
+# Run simulation with uniform initial state distribution
+states, actions, rewards = SimulateMDP(
+    v_theta_0=v_theta_0,
+    v_theta_1=v_theta_1,
+    beta=beta,
+    gamma=gamma,
+    delta=delta,
+    M=M,
+    T=T,
+    state_range=state_range,
+    seed=seed
+)
+
+print(f"\nSimulation complete!")
+print(f"States shape: {states.shape}")
+print(f"Actions shape: {actions.shape}")
+print(f"Rewards shape: {rewards.shape}")
+
+# Save simulation results
+output_dir = Path('../../output/simulate_mdp')
+output_dir.mkdir(parents=True, exist_ok=True)
+
+np.savez(
+    output_dir / 'simulation_results.npz',
+    states=states,
+    actions=actions,
+    rewards=rewards,
+    M=M,
+    T=T,
+    state_range=state_range,
+    seed=seed
+)
+
+# Save configuration for downstream workflows (estimator)
+# Model config comes from solver (loaded as data), simulator config from Python module
+config_payload = {
+    'model': model_config,
+    'simulator': sim_config
+}
+
+with open(output_dir / 'config.json', 'w', encoding='utf-8') as f:
+    json.dump(config_payload, f, indent=2)
+
+print(f"Saved simulation results to {output_dir.resolve()}")
+```
+
+## Empirical vs Theoretical Choice Probabilities
+
+We compare the empirical choice probabilities from the simulation with the theoretical probabilities from the trained value functions.
+
+```{python}
+from mdp_solver import ComputeChoiceProbability
+
+# Compute empirical choice probabilities from simulation
+# For each unique state, compute the fraction of times action 1 was chosen
+
+# Discretize states into bins for empirical probability calculation
+n_bins = 50
+state_min = min(states.min(), state_grid.min())
+state_max = max(states.max(), state_grid.max())
+state_bins = np.linspace(state_min, state_max, n_bins + 1)
+bin_centers = (state_bins[:-1] + state_bins[1:]) / 2
+
+# Compute empirical probabilities
+empirical_prob_a1 = np.zeros(n_bins)
+empirical_counts = np.zeros(n_bins)
+
+for m in range(M):
+    for t in range(T):
+        s = states[m, t]
+        a = actions[m, t]
+
+        # Find which bin this state belongs to
+        bin_idx = np.searchsorted(state_bins[1:], s)
+        if 0 <= bin_idx < n_bins:
+            empirical_counts[bin_idx] += 1
+            if a == 1:
+                empirical_prob_a1[bin_idx] += 1
+
+# Compute empirical probabilities (only for bins with observations)
+mask = empirical_counts > 0
+empirical_prob_a1[mask] = empirical_prob_a1[mask] / empirical_counts[mask]
+
+# Compute theoretical probabilities at bin centers
+theoretical_prob_a1 = np.zeros(n_bins)
+for i, s in enumerate(bin_centers):
+    if mask[i]:  # Only compute for bins with observations
+        prob_a0, prob_a1 = ComputeChoiceProbability(
+            s=s,
+            v_theta_0=v_theta_0,
+            v_theta_1=v_theta_1
+        )
+        theoretical_prob_a1[i] = prob_a1
+
+# Filter to only bins with sufficient observations
+min_obs = 10
+sufficient_mask = empirical_counts >= min_obs
+
+# Create scatter plot
+fig, ax = plt.subplots(figsize=(8, 8))
+
+ax.scatter(
+    theoretical_prob_a1[sufficient_mask],
+    empirical_prob_a1[sufficient_mask],
+    alpha=0.6,
+    s=empirical_counts[sufficient_mask] / 10,  # Size proportional to observations
+    c='blue',
+    label=f'Bins (n≥{min_obs})'
+)
+
+# Add 45-degree line
+prob_range = [0, 1]
+ax.plot(prob_range, prob_range, 'k--', linewidth=1.5, label='45° line')
+
+ax.set_xlabel('Theoretical P(a=1|s)', fontsize=12)
+ax.set_ylabel('Empirical P(a=1|s)', fontsize=12)
+ax.set_title('Empirical vs Theoretical Choice Probabilities', fontsize=14)
+ax.legend()
+ax.grid(True, alpha=0.3)
+ax.set_xlim(0, 1)
+ax.set_ylim(0, 1)
+ax.set_aspect('equal')
+
+plt.tight_layout()
+plt.show()
+
+# Compute correlation and RMSE
+valid_data = sufficient_mask
+correlation = np.corrcoef(
+    theoretical_prob_a1[valid_data],
+    empirical_prob_a1[valid_data]
+)[0, 1]
+rmse = np.sqrt(np.mean(
+    (theoretical_prob_a1[valid_data] - empirical_prob_a1[valid_data])**2
+))
+
+print(f"\nComparison Statistics:")
+print(f"Number of bins with sufficient data (n≥{min_obs}): {valid_data.sum()}")
+print(f"Correlation: {correlation:.4f}")
+print(f"RMSE: {rmse:.4f}")
+```
+
+## Simulation Summary Statistics
+
+```{python}
+# Compute summary statistics across paths
+state_mean = states.mean(axis=0)
+state_std = states.std(axis=0)
+state_q25 = np.percentile(states, 25, axis=0)
+state_q50 = np.percentile(states, 50, axis=0)
+state_q75 = np.percentile(states, 75, axis=0)
+
+action_freq = actions.mean(axis=0)  # Fraction of times action 1 was chosen
+
+# Compute cumulative discounted rewards
+discount_factors = delta ** np.arange(T)
+discounted_rewards = rewards * discount_factors[np.newaxis, :]
+cumulative_discounted_rewards = discounted_rewards.sum(axis=1)
+
+print(f"\nState Evolution:")
+print(f"  Initial state range: {state_range}")
+print(f"  Initial state - mean: {state_mean[0]:.3f}, std: {state_std[0]:.3f}")
+print(f"  Final state - mean: {state_mean[-1]:.3f}, std: {state_std[-1]:.3f}")
+print(f"  Final state - median: {state_q50[-1]:.3f}")
+
+print(f"\nAction Statistics:")
+print(f"  Overall fraction of a=1: {actions.mean():.3f}")
+print(f"  First period a=1 frequency: {action_freq[0]:.3f}")
+print(f"  Last period a=1 frequency: {action_freq[-1]:.3f}")
+
+print(f"\nReward Statistics:")
+print(f"  Mean cumulative discounted reward: {cumulative_discounted_rewards.mean():.3f}")
+print(f"  Std cumulative discounted reward: {cumulative_discounted_rewards.std():.3f}")
+print(f"  Min cumulative discounted reward: {cumulative_discounted_rewards.min():.3f}")
+print(f"  Max cumulative discounted reward: {cumulative_discounted_rewards.max():.3f}")
+
+# Plot state evolution over time
+fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+# State evolution
+ax = axes[0, 0]
+ax.plot(state_mean, 'b-', linewidth=2, label='Mean')
+ax.fill_between(range(T), state_q25, state_q75, alpha=0.3, label='IQR (25-75%)')
+ax.plot(state_q50, 'r--', linewidth=1.5, label='Median')
+ax.set_xlabel('Time period')
+ax.set_ylabel('State')
+ax.set_title('State Evolution Across Paths')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+# Action frequency over time
+ax = axes[0, 1]
+ax.plot(action_freq, 'g-', linewidth=2)
+ax.set_xlabel('Time period')
+ax.set_ylabel('Frequency of a=1')
+ax.set_title('Action Choice Over Time')
+ax.set_ylim(0, 1)
+ax.grid(True, alpha=0.3)
+
+# Distribution of final states
+ax = axes[1, 0]
+ax.hist(states[:, -1], bins=30, alpha=0.7, edgecolor='black')
+ax.axvline(state_mean[-1], color='red', linestyle='--', linewidth=2, label=f'Mean: {state_mean[-1]:.2f}')
+ax.set_xlabel('Final state value')
+ax.set_ylabel('Number of paths')
+ax.set_title('Distribution of Final States')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+# Distribution of cumulative rewards
+ax = axes[1, 1]
+ax.hist(cumulative_discounted_rewards, bins=30, alpha=0.7, edgecolor='black')
+ax.axvline(cumulative_discounted_rewards.mean(), color='red', linestyle='--', linewidth=2,
+           label=f'Mean: {cumulative_discounted_rewards.mean():.2f}')
+ax.set_xlabel('Cumulative discounted reward')
+ax.set_ylabel('Number of paths')
+ax.set_title('Distribution of Total Rewards')
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+fig.tight_layout()
+plt.show()
+```

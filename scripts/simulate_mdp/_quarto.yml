@@ -1,0 +1,11 @@
+project:
+  type: default
+  output-dir: .
+
+execute:
+  freeze: auto
+
+preview:
+  host: 0.0.0.0
+  port: 4300
+  browser: false
