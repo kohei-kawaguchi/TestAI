@@ -122,3 +122,11 @@ solve → simulate → estimate → recoverのパイプラインを構築し、�
 ### 実装の全公開
 
 詳細な会話履歴、すべてのコード、レンダリングされたHTMLレポートは[GitHubリポジトリ](https://github.com/kohei-kawaguchi/TestAI)で公開しています。特に、[`docs/conversation/mdp_simulator_estimator_conversation_transcript.md`](../../conversation/mdp_simulator_estimator_conversation_transcript.md)には、会話履歴と各段階での判断基準が記録されています。
+
+### レンダリングされたレポート
+
+各ステップの詳細な分析結果は、以下のHTMLレポートで確認できます：
+
+- [MDP Solver](https://kohei-kawaguchi.github.io/TestAI/solve_mdp.html) - 価値関数近似による均衡計算
+- [MDP Simulator](https://kohei-kawaguchi.github.io/TestAI/simulate_mdp.html) - 均衡価値関数を用いたエージェント行動のシミュレーション
+- [MDP Estimator](https://kohei-kawaguchi.github.io/TestAI/estimate_mdp.html) - シミュレーションデータからのパラメータ推定と回復の検証
