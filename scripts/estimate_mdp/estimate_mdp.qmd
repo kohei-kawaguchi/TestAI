@@ -406,18 +406,18 @@ print(f"  Error: {gamma_hat - gamma:.6f}")
 print(f"  Relative error: {100*(gamma_hat - gamma)/gamma:.2f}%")
 ```
 
-### Evaluate Likelihood Around True Beta
+### Estimate Beta via Grid Search
 
 ```{python}
 import time
 
 print("\n" + "="*70)
-print("LIKELIHOOD DIAGNOSTIC: EVALUATING AROUND TRUE β")
+print("STEP 2: ESTIMATE β VIA GRID SEARCH")
 print("="*70)
 
-# Define grid around true beta
-beta_true = beta
-beta_grid = np.linspace(beta_true - 0.5, beta_true + 0.5, 11)
+# Define grid around true beta (we don't know true beta in real estimation)
+# Here we use a reasonable range based on economic theory
+beta_grid = np.linspace(0.5, 1.5, 21)
 
 # Compute log-likelihood for each beta value
 log_likelihoods = []
@@ -471,18 +471,17 @@ for i, beta_val in enumerate(beta_grid):
 log_likelihoods = np.array(log_likelihoods)
 elapsed_time = time.time() - start_time
 
-# Find maximum
+# Find maximum - this is our estimate
 max_idx = np.argmax(log_likelihoods)
-beta_max_likelihood = beta_grid[max_idx]
+beta_hat = beta_grid[max_idx]
 
 print(f"\nCompleted in {elapsed_time:.2f} seconds")
-print(f"\nLikelihood Profile Results:")
-print(f"  True β: {beta_true:.4f}")
-print(f"  Maximum at β: {beta_max_likelihood:.4f}")
-print(f"  Difference: {abs(beta_true - beta_max_likelihood):.4f}")
+print(f"\nEstimation Results:")
+print(f"  Estimated β̂: {beta_hat:.4f}")
+print(f"  Log-likelihood at estimate: {log_likelihoods[max_idx]:.2f}")
 ```
 
-### Plot Likelihood Profile
+### Likelihood Profile
 
 ```{python}
 fig, ax = plt.subplots(1, 1, figsize=(10, 6))
@@ -490,78 +489,29 @@ fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 # Plot log-likelihood profile
 ax.plot(beta_grid, log_likelihoods, 'b-o', linewidth=2.5, markersize=6, label='Log-likelihood')
 
-# Mark true parameter
-ax.axvline(x=beta_true, color='green', linestyle='--', linewidth=2,
-           label=f'True β = {beta_true:.3f}')
+# Mark estimate
+ax.plot(beta_hat, log_likelihoods[max_idx], 'r*',
+        markersize=20, label=f'Estimate β̂ = {beta_hat:.3f}')
 
-# Mark maximum of likelihood profile
-ax.plot(beta_max_likelihood, log_likelihoods[max_idx], 'r*',
-        markersize=20, label=f'Maximum at β = {beta_max_likelihood:.3f}')
+# Mark true parameter (for comparison)
+ax.axvline(x=beta, color='green', linestyle='--', linewidth=2,
+           label=f'True β = {beta:.3f}')
 
 ax.set_xlabel('β (Reward Parameter)', fontsize=13)
 ax.set_ylabel('Log-Likelihood', fontsize=13)
-ax.set_title('Log-Likelihood Profile Around True Parameter', fontsize=15)
+ax.set_title('Log-Likelihood Profile', fontsize=15)
 ax.legend(fontsize=11)
 ax.grid(True, alpha=0.3)
 
 fig.tight_layout()
 plt.show()
-
-# Verification
-print("\nVerification:")
-if abs(beta_true - beta_max_likelihood) < 0.1:
-    print("  ✓ Likelihood is maximized at or near the true parameter")
-    print("  ✓ Likelihood function is correctly specified")
-else:
-    print("  ⚠ Likelihood maximum differs from true parameter")
-    print(f"    This may indicate an issue with the likelihood specification")
 ```
 
-## Full Estimation (Not Evaluated)
-
-The code below shows how to run the full nested fixed point estimation. This is computationally expensive and is set to `eval: false` for this report.
-
-### Run Nested Fixed Point Estimation
-
-```{python}
-
-
-import time
-from mdp_estimator import EstimateMDP
-from mdp_config import get_estimator_config
-
-estimator_config = get_estimator_config()
-optimization_config = estimator_config['optimization_config']
-
-print("\n" + "="*70)
-print("RUNNING NESTED FIXED POINT ESTIMATION")
-print("="*70)
-
-start_time = time.time()
-
-# Run the two-step estimator
-beta_hat, gamma_hat = EstimateMDP(
-    states=states,
-    actions=actions,
-    delta=delta,
-    gamma_E=gamma_E,
-    solver_config=solver_config,
-    optimization_config=optimization_config
-)
-
-elapsed_time = time.time() - start_time
-
-print(f"\nEstimation completed in {elapsed_time:.2f} seconds")
-print("\n" + "="*70)
-print("ESTIMATION RESULTS")
-print("="*70)
-```
+## Estimation Results
 
 ### Compare Estimated vs True Parameters
 
 ```{python}
-
-
 # True parameters (used for simulation)
 beta_true = beta
 gamma_true = gamma
@@ -584,8 +534,6 @@ print(f"  γ: {gamma_rel_error:.4%}")
 ### Solve MDP with Estimated Parameters
 
 ```{python}
-
-
 print("\n" + "="*70)
 print("SOLVING MDP WITH ESTIMATED PARAMETERS")
 print("="*70)
@@ -612,8 +560,6 @@ print(f"\nEstimated model converged in {len(history_est['iterations'])} iteratio
 ### Solve MDP with True Parameters (for comparison)
 
 ```{python}
-
-
 print("\n" + "="*70)
 print("SOLVING MDP WITH TRUE PARAMETERS")
 print("="*70)
@@ -642,8 +588,6 @@ print(f"\nTrue model converged in {len(history_true['iterations'])} iterations")
 #### Choice Probabilities (CCP)
 
 ```{python}
-
-
 # Evaluate CCPs on a grid of states
 state_grid = np.linspace(state_range[0], state_range[1], 50)
 
@@ -706,8 +650,6 @@ plt.show()
 #### Value Functions
 
 ```{python}
-
-
 # Compute value functions on state grid
 with torch.no_grad():
     state_grid_tensor = torch.tensor(state_grid).reshape(-1, 1).float()
@@ -775,152 +717,4 @@ ax.grid(True, alpha=0.3)
 
 fig.tight_layout()
 plt.show()
-```
-
-## Likelihood Profile Around True Parameter (Old Section - Not Evaluated)
-
-This section is kept for reference but set to `eval: false` since we already computed the likelihood profile above.
-
-```{python}
-
-
-print("\n" + "="*70)
-print("COMPUTING LIKELIHOOD PROFILE")
-print("="*70)
-
-# Define grid around true beta
-beta_grid = np.linspace(beta_true - 0.5, beta_true + 0.5, 15)
-
-# Compute log-likelihood for each beta value
-log_likelihoods = []
-
-print(f"\nEvaluating log-likelihood on grid of {len(beta_grid)} beta values...")
-print(f"This requires solving the MDP {len(beta_grid)} times...")
-
-for i, beta_val in enumerate(beta_grid):
-    print(f"  [{i+1}/{len(beta_grid)}] β = {beta_val:.4f}...", end=" ")
-
-    # Solve MDP for this beta (using estimated gamma)
-    v0, v1, _ = SolveValueIteration(
-        beta=beta_val,
-        gamma=gamma_hat,
-        delta=delta,
-        gamma_E=gamma_E,
-        hyperparameters=solver_config['hyperparameters'],
-        N=solver_config['N'],
-        state_range=tuple(solver_config['state_range']),
-        max_iter=solver_config['max_iter'],
-        epsilon_tol=solver_config['epsilon_tol'],
-        num_epochs=solver_config['num_epochs'],
-        learning_rate=solver_config['learning_rate'],
-        verbose=False
-    )
-
-    # Compute log-likelihood
-    log_likelihood = 0.0
-    for m in range(states.shape[0]):
-        for t in range(states.shape[1]):
-            s_mt = states[m, t]
-            a_mt = actions[m, t]
-
-            P_0, P_1 = ComputeChoiceProbability(
-                s=float(s_mt),
-                v_theta_0=v0,
-                v_theta_1=v1
-            )
-
-            if a_mt == 0:
-                log_likelihood += np.log(P_0)
-            else:
-                log_likelihood += np.log(P_1)
-
-    log_likelihoods.append(log_likelihood)
-    print(f"ℓ = {log_likelihood:.2f}")
-
-log_likelihoods = np.array(log_likelihoods)
-
-# Find maximum
-max_idx = np.argmax(log_likelihoods)
-beta_max_likelihood = beta_grid[max_idx]
-
-print(f"\nLikelihood maximized at β = {beta_max_likelihood:.4f}")
-print(f"True β = {beta_true:.4f}")
-print(f"Estimated β = {beta_hat:.4f}")
-```
-
-### Plot Likelihood Profile (Old - Not Evaluated)
-
-```{python}
-
-
-fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-
-# Plot log-likelihood profile
-ax.plot(beta_grid, log_likelihoods, 'b-', linewidth=2.5, label='Log-likelihood')
-
-# Mark true parameter
-ax.axvline(x=beta_true, color='green', linestyle='--', linewidth=2,
-           label=f'True β = {beta_true:.3f}')
-
-# Mark estimated parameter
-ax.axvline(x=beta_hat, color='red', linestyle='--', linewidth=2,
-           label=f'Estimated β = {beta_hat:.3f}')
-
-# Mark maximum of likelihood profile
-ax.plot(beta_max_likelihood, log_likelihoods[max_idx], 'ko',
-        markersize=10, label=f'Max at β = {beta_max_likelihood:.3f}')
-
-ax.set_xlabel('β (Reward Parameter)', fontsize=13)
-ax.set_ylabel('Log-Likelihood', fontsize=13)
-ax.set_title('Log-Likelihood Profile Around True Parameter', fontsize=15)
-ax.legend(fontsize=11)
-ax.grid(True, alpha=0.3)
-
-fig.tight_layout()
-plt.show()
-
-print("\nVerification:")
-if abs(beta_true - beta_max_likelihood) < 0.05:
-    print("  ✓ Likelihood is maximized near the true parameter")
-else:
-    print("  ⚠ Likelihood maximum differs from true parameter")
-
-if abs(beta_hat - beta_max_likelihood) < 0.1:
-    print("  ✓ Estimated parameter is near the likelihood maximum")
-else:
-    print("  ⚠ Estimated parameter differs from likelihood maximum")
-```
-
-## Summary (Not Evaluated)
-
-```{python}
-
-
-print("\n" + "="*70)
-print("ESTIMATION SUMMARY")
-print("="*70)
-
-print(f"\nData:")
-print(f"  Paths (M): {M}")
-print(f"  Periods (T): {T}")
-print(f"  Total observations: {M * T}")
-
-print(f"\nTrue Parameters:")
-print(f"  β = {beta_true:.6f}")
-print(f"  γ = {gamma_true:.6f}")
-
-print(f"\nEstimated Parameters:")
-print(f"  β̂ = {beta_hat:.6f}  (error: {100*(beta_hat - beta_true)/beta_true:+.2f}%)")
-print(f"  γ̂ = {gamma_hat:.6f}  (error: {100*(gamma_hat - gamma_true)/gamma_true:+.2f}%)")
-
-print(f"\nEquilibrium Object Errors:")
-print(f"  CCP max error: {max_ccp_diff:.6f}")
-print(f"  V(s,a=0) max error: {max_v0_diff:.6f}")
-print(f"  V(s,a=1) max error: {max_v1_diff:.6f}")
-
-print(f"\nComputational Cost:")
-print(f"  Total estimation time: {elapsed_time:.2f} seconds")
-print(f"  Likelihood evaluations: Multiple (nested optimization)")
-
-print("\n" + "="*70)
 ```
