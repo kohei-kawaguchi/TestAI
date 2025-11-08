@@ -33,9 +33,7 @@ style: |
     color: #0066cc;
   }
 ---
-
-# Use AI as an RA for Economic Analysis
-## 
+# Leveraging AI as an RA for Data Science
 
 Kohei Kawaguchi, Hong Kong University of Science and Technology
 
@@ -53,20 +51,19 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
   - Integrate research and implementation
   - Better implementation
 - Demerits
-  - Integrity 
   - Training opportunity
+  - Integrity
 
 ---
-
 
 <!-- _class: gradient -->
 
 ## Resources
 
 - git clone git@github.com:kohei-kawaguchi/TestAI.git
+- VS Code/Cursor + git + GitHub (+ TeXLive + LaTeX Workshop)
 
 ---
-
 
 <!-- _class: gradient -->
 
@@ -74,21 +71,19 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 - OpenAI Codex CLI: [https://developers.openai.com/codex/cli/](https://developers.openai.com/codex/cli/)
   - Smart, consistent, but not fun to work with
-  - Currently, needs WSL or Linux container on Windows
   - Install the CLI and VS Code/Cursor extension
 - Claude Code CLI: [https://www.claude.com/product/claude-code](https://www.claude.com/product/claude-code)
   - Less smart than Codex, but lovely
   - Company understands the importance of UI/UX
-  - Works with Windows
   - Install the CLI and VS Code/Cursor extension
 - Cursor: [https://cursor.com/](https://cursor.com/)
-  - Bad at task management
+  - Improving
 
 ---
 
 <!-- _class: gradient -->
 
-## On-demand data analysis is the best task for AI 
+## On-demand data analysis is the best task for AI
 
 - The task can be mathematically defined and described
 - The end user is the supervisor themselves
@@ -103,14 +98,14 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ### Economics
 
 - Equilibrium, endogenous/exogenous, observable/unobservable, parameters of interest/nuisance parameters are exotic concepts for AI
-→ Translate them into CS/statistical concepts
-→ Test knowledge with an oral exam
+  → Translate them into CS/statistical concepts
+  → Test knowledge with an oral exam
 
 ### Solving bugs/problems
 
 - AI makes up a fake solution if asked to **solve** a problem
-→ Always ask to find the **root cause** of the problem
-→ Solution must be determined by the supervisor
+  → Always ask to find the **root cause** of the problem
+  → Solution must be determined by the supervisor
 
 ---
 
@@ -141,7 +136,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
   - Model-free analysis
   - Data cleaning
 
---- 
+---
 
 <!-- _class: gradient -->
 
@@ -166,6 +161,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ## Solving and simulating an economic model
 
 **Planning**
+
 1. Create an issue and create a separate branch
 2. Write down the model setting in a document
 3. Ask AI to write down the equilibrium condition (oral exam)
@@ -177,11 +173,13 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 <!-- _class: gradient -->
 
 ## Solving and simulating an economic model (continued)
-  
+
 **Implementation**
+
 1. Ask AI to write functions in `src/` following the pseudocode
 
 **Verification**
+
 1. Ask AI to write unit tests in `scripts/test` and check all pass
 2. Ask AI to list any inconsistency between the pseudocode and `src/` implementation
 
@@ -192,11 +190,13 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ## Solving and simulating an economic model (continued)
 
 **Validation**
+
 1. Ask AI to write an execution file in `scripts/pipeline` and execute it
 2. Ask AI to write a reporting file in `scripts/report` and render it
 3. Generate relevant comparative statics, spot any strange behavior, speculate the reasons or let AI investigate the root causes (never ask AI to solve the issue)
 
 **Rules**
+
 - Every time you change the implementation, make sure to repeat the same process
 - Every time you streamline the implementation, require no backward compatibility
 - At each of the above steps, ask AI to commit changes, so that AI can summarize the changes and status for reference
@@ -241,12 +241,11 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 **Implementation**
 
-1. Ask AI to run the analysis in the report 
+1. Ask AI to run the analysis in the report
 
 **Validation**
 
 1. Ask AI to refresh the report and verify the result
-
 
 This oral exam method works for **data cleaning** tasks as well
 
@@ -254,15 +253,30 @@ This oral exam method works for **data cleaning** tasks as well
 
 <!-- _class: gradient -->
 
-## Tips
+## Issue-driven approach
 
-- Make a docs/issue/ folder and let AI summarize the problem and plan for each issue
-- Make a gitignored scripts/temporary/ folder for AI to write temporary scripts for investigating problems
+1. Ask AI to summarize the issue and plan in `docs/issue/`
+2. Make a GitHub issue for it
+3. Make a separate branch for it
+4. 1 session = 1 commit = minimal and complete changes
+5. Pull request and merge to the main branch after validation
+
 - Never let AI automatically git add/commit/pull/push, explicitly ask AI to commit
-- Periodically ask AI to streamline the document and implementation, make it explicit no backward compatibility is needed
-- Let AI write down pseudocode of the implementation
-- Let AI add a link to source for any method it suggests
-- Let AI read the document and git history to understand the current issue and status
+- Issue + git history + README + AGENTS.md (or CLAUDE.md) to refresh AI's memory
+
+---
+
+## Debugging workflow
+
+<!-- _class: gradient -->
+
+
+1. Reproduce the bug with a validation script
+2. Explain the bug to AI
+3. Ask AI to summarize the issue in `docs/issue/`
+4. Ask AI to list up discrepancies between pseudocode and implementation and fix
+5. Ask AI to inspect code for the root cause
+6. Ask AI to set up a git worktree to run a debugger to find the root cause
 
 ---
 
@@ -270,9 +284,8 @@ This oral exam method works for **data cleaning** tasks as well
 
 ## Mobile work
 
-
-- <img src="https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png" alt="AWS" width="60" style="vertical-align:middle; margin-right:8px;"/> **AWS**: Easily connect to cloud machines and access resources anywhere
-- <img src="https://avatars.githubusercontent.com/u/14285486?s=200&v=4" alt="Termius" width="40" style="vertical-align:middle; margin-right:8px;"/> **Termius**: Great SSH client for connecting to servers from your laptop, tablet, or phone
+- `<img src="https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png" alt="AWS" width="60" style="vertical-align:middle; margin-right:8px;"/>` **AWS**: Easily connect to cloud machines and access resources anywhere
+- `<img src="https://avatars.githubusercontent.com/u/14285486?s=200&v=4" alt="Termius" width="40" style="vertical-align:middle; margin-right:8px;"/>` **Termius**: Great SSH client for connecting to servers from your laptop, tablet, or phone
 
 ---
 
