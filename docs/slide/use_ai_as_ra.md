@@ -158,6 +158,35 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 <!-- _class: gradient -->
 
+## Issue-driven approach
+
+1. Ask AI to summarize the issue and plan in `docs/issue/`
+2. Make a GitHub issue for it
+3. Make a separate branch for it
+4. 1 session = 1 commit = minimal and complete changes
+5. Pull request and merge to the main branch after validation
+
+- Never let AI automatically git add/commit/pull/push, explicitly ask AI to commit
+- Issue + git history + README + AGENTS.md (or CLAUDE.md) to refresh AI's memory
+
+---
+
+## Debugging workflow
+
+<!-- _class: gradient -->
+
+
+1. Reproduce the bug with a validation script
+2. Explain the bug to AI
+3. Ask AI to summarize the issue in `docs/issue/`
+4. Ask AI to list up discrepancies between pseudocode and implementation and fix
+5. Ask AI to inspect code for the root cause
+6. Ask AI to set up a git worktree to run a debugger to find the root cause
+
+---
+
+<!-- _class: gradient -->
+
 ## Solving and simulating an economic model
 
 **Planning**
@@ -248,35 +277,6 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 1. Ask AI to refresh the report and verify the result
 
 This oral exam method works for **data cleaning** tasks as well
-
----
-
-<!-- _class: gradient -->
-
-## Issue-driven approach
-
-1. Ask AI to summarize the issue and plan in `docs/issue/`
-2. Make a GitHub issue for it
-3. Make a separate branch for it
-4. 1 session = 1 commit = minimal and complete changes
-5. Pull request and merge to the main branch after validation
-
-- Never let AI automatically git add/commit/pull/push, explicitly ask AI to commit
-- Issue + git history + README + AGENTS.md (or CLAUDE.md) to refresh AI's memory
-
----
-
-## Debugging workflow
-
-<!-- _class: gradient -->
-
-
-1. Reproduce the bug with a validation script
-2. Explain the bug to AI
-3. Ask AI to summarize the issue in `docs/issue/`
-4. Ask AI to list up discrepancies between pseudocode and implementation and fix
-5. Ask AI to inspect code for the root cause
-6. Ask AI to set up a git worktree to run a debugger to find the root cause
 
 ---
 
