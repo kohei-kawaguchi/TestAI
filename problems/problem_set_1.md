@@ -16,4 +16,4 @@ This problem set extends the existing MDP training pipeline to a static oligopol
 - `problems/simulate_opm/simulate_opm.qmd`: Simulation brief explaining how to reuse solver outputs to generate market panels, monitor convergence, and summarize outcomes.
 - `problems/estimate_opm/estimate_opm.qmd`: Estimation brief outlining the two-step procedure (demand estimation + cost recovery) and required diagnostics.
 
-Each document is intentionally code-free—juniors must fill in all implementations, figures, and tables. Supervisors can evaluate submissions by checking whether trainees adhered to the structure, reproduced the MDP rigor, and justified modeling choices specific to static oligopoly pricing.
+Each document is intentionally code-free—juniors must fill in all implementations, figures, and tables **exclusively by orchestrating AI coding tools** (no manual implementation). This problem set is a guided exercise in supervising AI assistance: supervisors evaluate whether trainees adhered to the structure, reproduced the MDP rigor, and justified modeling choices specific to static oligopoly pricing while demonstrating effective AI-driven development.
