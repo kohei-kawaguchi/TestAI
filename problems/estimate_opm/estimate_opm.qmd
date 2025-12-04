@@ -17,10 +17,10 @@ Define the estimation exercise that mirrors `scripts/estimate_mdp/estimate_mdp.q
 ## Required Components
 
 1. **Data ingestion**: Outline how trainees should load simulated datasets (prices, quantities, instruments, cost shifters) and configuration metadata.
-2. **Estimation strategy**: Specify a two-step procedure—(i) estimate demand elasticities using GMM/IV logit demand, (ii) back out marginal costs or conduct parameters via the first-order conditions.
-3. **Nested fixed point analogy**: Highlight where the MDP NFXP logic carries over (solving markup equations inside the likelihood/GMM objective) and what changes in the static setting.
-4. **Model validation**: Require fit diagnostics, over-identification tests, or comparison between recovered costs and true simulated costs.
+2. **Estimation strategy**: Specify a two-step procedure—(i) back out demand shocks from the share equations and estimate demand parameters using GMM, (ii) back out marginal costs from the first-order conditions and estimate the cost parameters by a regression.
+3. **Model validation**: Require fit diagnostics, comparison between recovered and true shocks in demand and cost. The shape of the GMM objective function around the true parameter along each dimension.
 
 ## Deliverable
 
-An estimation report template with no executed code, serving purely as instructions for juniors to build the full oligopoly estimator.
+An executable Quarto report (to be implemented by juniors) and rendered html report that mirrors the flow of the MDP estimator, but focuses solely on static oligopoly market simulations. Juniors will fill in all code, figures, and tables.
+
