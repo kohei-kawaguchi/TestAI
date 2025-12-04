@@ -1,0 +1,31 @@
+---
+title: "Problem: Solve the Static Oligopoly Pricing Model"
+format:
+  html:
+    toc: false
+    code-fold: false
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+## Goal
+
+Replicate the structure of `scripts/solve_mdp/solve_mdp.qmd`, but replace the Markov Decision Process with a **static oligopoly pricing model** in which multiple firms set prices simultaneously to maximize period profits. The objective is to design and document a solver that:
+
+- Specifies firm demand (e.g., logit demand with market share as a function of own price and rivals' prices)
+- Defines marginal costs and strategic interaction assumptions (Bertrand competition with differentiated products)
+- Derives the Nash equilibrium first-order conditions for optimal prices
+- Implements a numerical fixed-point or contraction mapping routine that solves for equilibrium prices and markups under the chosen demand system
+
+## Required Components
+
+1. **Model primitives**: Demand parameters, cost structure, number of firms/products, and any instruments or exogenous shifters.
+2. **Equilibrium algorithm**: Clear pseudo code mirroring the MDP value-iteration section but adapted for static pricing (e.g., Gauss–Seidel on markup equations or Newton steps on FOCs).
+3. **Verification plan**: Outline how juniors should validate convergence (e.g., norm of FOC residuals, comparison to analytical benchmarks in symmetric cases).
+4. **Documentation**: Describe expected figures/tables (markup convergence plot, comparative statics over demand elasticities) without implementing them.
+
+## Deliverable
+
+An executable Quarto report (to be implemented by juniors) that mirrors the MDP solver report while focusing entirely on the static oligopoly pricing equilibrium problem. Keep this file as an instruction-only scaffold; all code, figures, and tables are to be authored by the trainees.

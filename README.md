@@ -29,6 +29,11 @@ TestAI/
 │   └── solve_mdp/              # MDP solver documentation
 │       ├── solve_mdp.qmd       # Quarto document with implementation
 │       └── solve_mdp.html      # Rendered HTML report
+├── problems/                   # Junior training problem sets
+│   ├── solve_opm/              # Static oligopoly solver brief (Quarto scaffold)
+│   ├── simulate_opm/           # Static oligopoly simulator brief
+│   ├── estimate_opm/           # Static oligopoly estimator brief
+│   └── config_opm/             # Configuration guidance for the OPM problem set
 ├── output/                     # Generated datasets and results
 │   ├── difference_in_differences_multiperiods/
 │   └── randomization_fisher_pvalue/
@@ -201,6 +206,17 @@ The solver successfully produces:
 - Converged value functions for both actions (a=0, a=1)
 - Optimal state-dependent policies exhibiting threshold structure
 - Comparative statics showing intuitive parameter effects on value and policy
+
+## Junior Training Problem Set
+
+The `problems/` directory contains Quarto scaffolds that challenge junior researchers to rebuild the MDP pipeline for a **static oligopoly pricing model**:
+
+- `problems/solve_opm/solve_opm.qmd` documents the expected equilibrium solver for differentiated-product Bertrand competition.
+- `problems/simulate_opm/simulate_opm.qmd` specifies how to run market-level Monte Carlo simulations using the oligopoly solver outputs.
+- `problems/estimate_opm/estimate_opm.qmd` outlines the demand-and-cost estimation workflow that mirrors the MDP NFXP estimator.
+- `problems/config_opm/config_opm.qmd` describes the configuration module that treats demand, cost, and algorithm settings as data.
+
+Each report is intentionally code-free; it states the learning goals, required components, and deliverables so juniors can translate the existing MDP materials into the static oligopoly setting.
 
 ## Documentation
 

@@ -1,0 +1,26 @@
+---
+title: "Problem: Configure the Static Oligopoly Pricing Model"
+format:
+  html:
+    toc: false
+    code-fold: false
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+## Goal
+
+Provide guidance for juniors to design a configuration module (analogous to `scripts/config_mdp/mdp_config.py`) that stores all primitives required by the static oligopoly pricing problem set.
+
+## Required Components
+
+1. **Demand parameters**: Market size, product characteristics, mean utility coefficients, and variance of taste shocks (e.g., logit or nested-logit structures).
+2. **Cost parameters**: Marginal cost levels, ownership matrices, conduct parameters, and cost-shifter distributions for simulation.
+3. **Equilibrium solver settings**: Numerical tolerances, damping factors for fixed-point iterations, comparative statics grids over demand/cost primitives.
+4. **Simulation & estimation configs**: Number of markets, draws per market, instrument specifications, GMM weighting choices.
+
+## Deliverable
+
+A Quarto note that explains the expected structure of `opm_config.py`, emphasizing that configuration is treated as data (no hard-coded values inside solver/simulator/estimator notebooks). Juniors will implement the actual Python module based on this brief.

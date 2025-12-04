@@ -1,0 +1,26 @@
+---
+title: "Problem: Simulate the Static Oligopoly Pricing Model"
+format:
+  html:
+    toc: false
+    code-fold: false
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+## Goal
+
+Guide juniors to build the analogue of `scripts/simulate_mdp/simulate_mdp.qmd` for the static oligopoly pricing environment solved in `problems/solve_opm/solve_opm.qmd`. The simulation should draw repeated markets, solve for equilibrium prices using the solver outputs, and collect market-level outcomes (prices, quantities, markups, profits).
+
+## Required Components
+
+1. **Input artifacts**: Describe how to load the calibrated demand and cost parameters, as well as any solver outputs (e.g., equilibrium price functions or markup fixed-point objects).
+2. **Simulation design**: Specify market size, demand shocks, and rival cost shocks that should be resampled each Monte Carlo repetition; stress the need for reproducible seeds via configuration files.
+3. **Outputs**: Enumerate summary statistics juniors must produce (distribution of equilibrium prices, markup dispersion, pass-through to costs, comparative statics over cost shocks).
+4. **Diagnostics**: Explain how to check equilibrium feasibility (FOC residuals) and how to fail fast when the solver cannot converge for a simulated draw.
+
+## Deliverable
+
+An instruction-only Quarto report that mirrors the flow of the MDP simulator but focuses solely on static oligopoly market simulations. Juniors will fill in all code, figures, and tables.

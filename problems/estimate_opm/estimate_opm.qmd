@@ -1,0 +1,26 @@
+---
+title: "Problem: Estimate the Static Oligopoly Pricing Model"
+format:
+  html:
+    toc: false
+    code-fold: false
+jupyter: python3
+execute:
+  echo: false
+  warning: false
+---
+
+## Goal
+
+Define the estimation exercise that mirrors `scripts/estimate_mdp/estimate_mdp.qmd`, but now focuses on recovering demand and cost primitives of the static oligopoly pricing model using the simulated market outcomes generated in `problems/simulate_opm/simulate_opm.qmd`.
+
+## Required Components
+
+1. **Data ingestion**: Outline how trainees should load simulated datasets (prices, quantities, instruments, cost shifters) and configuration metadata.
+2. **Estimation strategy**: Specify a two-step procedure—(i) estimate demand elasticities using GMM/IV logit demand, (ii) back out marginal costs or conduct parameters via the first-order conditions.
+3. **Nested fixed point analogy**: Highlight where the MDP NFXP logic carries over (solving markup equations inside the likelihood/GMM objective) and what changes in the static setting.
+4. **Model validation**: Require fit diagnostics, over-identification tests, or comparison between recovered costs and true simulated costs.
+
+## Deliverable
+
+An estimation report template with no executed code, serving purely as instructions for juniors to build the full oligopoly estimator.
