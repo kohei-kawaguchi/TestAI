@@ -28,4 +28,4 @@ Replicate the structure of `scripts/solve_mdp/solve_mdp.qmd`, but replace the Ma
 
 ## Deliverable
 
-An executable Quarto report (to be implemented by juniors) that mirrors the MDP solver report while focusing entirely on the static oligopoly pricing equilibrium problem. Keep this file as an instruction-only scaffold; all code, figures, and tables are to be authored by the trainees.
+An executable Quarto report (to be implemented by juniors) and rendered html report that mirrors the MDP solver report while focusing entirely on the static oligopoly pricing equilibrium problem. Keep this file as an instruction-only scaffold; all code, figures, and tables are to be authored by the trainees.
