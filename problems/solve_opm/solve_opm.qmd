@@ -21,10 +21,10 @@ Replicate the structure of `scripts/solve_mdp/solve_mdp.qmd`, but replace the Ma
 
 ## Required Components
 
-1. **Model primitives**: Demand parameters, cost structure, number of firms/products, and any instruments or exogenous shifters.
-2. **Equilibrium algorithm**: Clear pseudo code mirroring the MDP value-iteration section but adapted for static pricing (e.g., Gauss–Seidel on markup equations or Newton steps on FOCs).
+1. **Model primitives**: Demand parameters, cost structure, number of firms/products, and any demand and cost shifters.
+2. **Equilibrium algorithm**: Specify how to numerically solve the nonlinear system of first-order conditions (FOCs) characterizing the static Nash equilibrium in prices.
 3. **Verification plan**: Outline how juniors should validate convergence (e.g., norm of FOC residuals, comparison to analytical benchmarks in symmetric cases).
-4. **Documentation**: Describe expected figures/tables (markup convergence plot, comparative statics over demand elasticities) without implementing them.
+4. **Documentation**: Describe expected figures/tables (e.g., comparative statics over demand elasticities, passthrough analyses) without implementing them.
 
 ## Deliverable
 
