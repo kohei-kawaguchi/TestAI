@@ -61,7 +61,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ## Resources
 
 - git clone git@github.com:kohei-kawaguchi/TestAI.git
-- VS Code/Cursor + git + GitHub (+ TeXLive + LaTeX Workshop)
+- VS Code/Cursor/Antigravity + git + GitHub (+ TeXLive + LaTeX Workshop)
 
 ---
 
@@ -69,6 +69,8 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 ## Which AI to use
 
+- Cursor: [https://cursor.com/](https://cursor.com/)
+  - GPT-5.2 is currently the best AI
 - OpenAI Codex CLI: [https://developers.openai.com/codex/cli/](https://developers.openai.com/codex/cli/)
   - Smart, consistent, but not fun to work with
   - Install the CLI and VS Code/Cursor extension
@@ -76,8 +78,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
   - Less smart than Codex, but lovely
   - Company understands the importance of UI/UX
   - Install the CLI and VS Code/Cursor extension
-- Cursor: [https://cursor.com/](https://cursor.com/)
-  - Improving
+
 
 ---
 
@@ -106,6 +107,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 - AI makes up a fake solution if asked to **solve** a problem
   → Always ask to find the **root cause** of the problem
   → Solution must be determined by the supervisor
+- You can ask AI to list up solution candidates, but you must review and select
 
 ---
 
@@ -113,9 +115,14 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 ## General Principle
 
-- Follow the best practices of project management
+- Follow the **best practices of project management**
 - Supervise AI RA **exactly** like human RA
 - If AI does not work, it is not because of AI, but because of your project management
+
+### My next agenda
+
+- How to train human RA to use AI as an RA?
+- How to use AI as a collaborator?
 
 ---
 
@@ -135,6 +142,8 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 - Effective when formulating the task is cumbersome
   - Model-free analysis
   - Data cleaning
+
+### Reading group method (not tested yet)
 
 ---
 
