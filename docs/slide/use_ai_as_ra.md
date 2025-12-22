@@ -148,6 +148,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ### Pipeline management
 
 - Package-like folder structure, git version control, document → implementation → test → validation workflow, command scripts
+- Define skills reused in each step
 
 ### Scope management
 
