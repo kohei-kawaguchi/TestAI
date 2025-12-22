@@ -61,6 +61,7 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ## Resources
 
 - git clone git@github.com:kohei-kawaguchi/TestAI.git
+- git clone git@github.com:kohei-kawaguchi/Economics.git
 - VS Code/Cursor/Antigravity + git + GitHub (+ TeXLive + LaTeX Workshop)
 
 ---
