@@ -96,12 +96,6 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 
 ## What AI is NOT good at
 
-### Economics
-
-- Equilibrium, endogenous/exogenous, observable/unobservable, parameters of interest/nuisance parameters are exotic concepts for AI
-  → Translate them into CS/statistical concepts
-  → Test knowledge with an oral exam
-
 ### Solving bugs/problems
 
 - AI makes up a fake solution if asked to **solve** a problem
@@ -158,6 +152,20 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ### Scope management
 
 - Specify what can be changed and what cannot be changed
+- Plan - proceed
+
+---
+
+<!-- _class: gradient -->
+
+## Key best practices
+
+### Context management
+
+- .cursorruls/CLAUDE.md/AGENTS.md for general rules
+- README.md for project context
+- git history for project history
+- Issue notes for current problems and milestones
 
 ### Multi-level validations
 
