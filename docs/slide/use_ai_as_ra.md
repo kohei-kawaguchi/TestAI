@@ -33,7 +33,7 @@ style: |
     color: #0066cc;
   }
 ---
-# Leveraging AI as an RA for Data Science
+# Leveraging AI as an RA (or even as a Collaborator)
 
 Kohei Kawaguchi, Hong Kong University of Science and Technology
 
@@ -71,12 +71,13 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 ## Which AI to use
 
 - Cursor: [https://cursor.com/](https://cursor.com/)
-  - GPT-5.2 is currently the best AI
+  - GPT-5.3-Codex is currently the best for me
 - OpenAI Codex CLI: [https://developers.openai.com/codex/cli/](https://developers.openai.com/codex/cli/)
   - Smart, consistent, but not fun to work with
   - Install the CLI and VS Code/Cursor extension
 - Claude Code CLI: [https://www.claude.com/product/claude-code](https://www.claude.com/product/claude-code)
-  - Less smart than Codex, but lovely
+  - Sonnet: Less smart than Codex, but lovely
+  - Opus 4.6: Smarter than GPT-5.3, but costly
   - Company understands the importance of UI/UX
   - Install the CLI and VS Code/Cursor extension
 
@@ -103,6 +104,9 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
   → Always ask to find the **root cause** of the problem
   → Solution must be determined by the supervisor
 - You can ask AI to list up solution candidates, but you must review and select
+- Cursor has a debug mode:
+  - Generate hypotheses, tests, and proceed
+  - Okay to run in a separate branch
 
 ---
 
@@ -131,14 +135,25 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
   - Model setting, solution, pseudocode
 - Then ask AI to implement it
 
-### Oral exam method
+---
+
+<!-- _class: gradient -->
+
+## Main Framework
+
+### Oral exam method 
 
 - Develop the ground truth interactively with AI
 - Effective when formulating the task is cumbersome
   - Model-free analysis
   - Data cleaning
 
-### Reading group method (not tested yet)
+### Reading group method 
+
+- Put reference on the repo
+- Discuss an issue with AI
+- Summarize the discussion and suggestion in a document
+- Combine it with a plan mode of Cursor
 
 ---
 
@@ -167,7 +182,8 @@ Kohei Kawaguchi, Hong Kong University of Science and Technology
 - .cursorruls/CLAUDE.md/AGENTS.md for general rules
 - README.md for project context
 - git history for project history
-- Issue notes for current problems and milestones
+- Issue notes for current problems 
+- Plan for milestones and concrete steps
 
 ### Multi-level validations
 
