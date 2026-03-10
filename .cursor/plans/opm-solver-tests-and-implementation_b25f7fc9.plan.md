@@ -4,19 +4,19 @@ overview: Define pseudocode-driven unit tests for the oligopoly pricing solver f
 todos:
   - id: extract-spec-contracts
     content: Translate qmd pseudocode into exact Python function contracts and expected invariants
-    status: pending
+    status: completed
   - id: write-opm-tests-first
     content: Create pytest unit tests in test/opm_solver from pseudocode signatures and mathematical relations
-    status: pending
+    status: completed
   - id: implement-opm-solver
     content: Implement modular solver and helper procedures in src/opm_solver
-    status: pending
+    status: completed
   - id: update-public-exports
     content: Switch __init__.py exports to SolveNashEquilibrium API
-    status: pending
+    status: completed
   - id: run-uv-pytest-and-project-tests
     content: Execute uv pytest for opm tests, then run ./run.sh test and summarize
-    status: pending
+    status: completed
 isProject: false
 ---
 

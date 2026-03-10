@@ -1,7 +1,33 @@
-"""Test AI package for static oligopoly pricing solver."""
+"""Static oligopoly pricing solver package."""
 
-from .opm_solver import SolvePricingEquilibrium
+from .opm_solver import (
+    BuildCostShifterIndex,
+    BuildDemandShifterIndex,
+    BuildDiagnostics,
+    ComputeFOCResidual,
+    ComputeMarginalCost,
+    ComputeMeanUtility,
+    ComputeResidualNorm,
+    ComputeShareCoreTerms,
+    ComputeShareJacobian,
+    ComputeShares,
+    SolveNashEquilibrium,
+    SolveNonlinearSystem,
+    ValidateConfig,
+)
 
 __all__ = [
-    "SolvePricingEquilibrium",
+    "BuildCostShifterIndex",
+    "BuildDemandShifterIndex",
+    "BuildDiagnostics",
+    "ComputeFOCResidual",
+    "ComputeMarginalCost",
+    "ComputeMeanUtility",
+    "ComputeResidualNorm",
+    "ComputeShareCoreTerms",
+    "ComputeShareJacobian",
+    "ComputeShares",
+    "SolveNashEquilibrium",
+    "SolveNonlinearSystem",
+    "ValidateConfig",
 ]
