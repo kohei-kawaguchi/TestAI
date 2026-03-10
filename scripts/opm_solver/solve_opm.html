@@ -108,17 +108,17 @@ window.Quarto = {
 <p>For each product, the characteristic vector is partitioned into demand shifters and cost shifters. Let <span class="math inline">\(X_j = S_X Z_j\)</span> denote the subset or linear index of characteristics that enters demand, and let <span class="math inline">\(W_j = S_W Z_j\)</span> denote the subset or linear index of characteristics that enters marginal cost, where <span class="math inline">\(S_X\)</span> and <span class="math inline">\(S_W\)</span> are selection or loading operators. The two indices may overlap, but they play different structural roles in utility and cost.</p>
 <p>A representative consumer has indirect utility from product <span class="math inline">\(j\)</span> given by</p>
 <p><span class="math display">\[
-u_j = \delta_j - \alpha p_j + \varepsilon_j, \quad \delta_j = X_j' \beta_d,
+u_j = \delta_j + \varepsilon_j, \quad \delta_j = X_j' \beta - \alpha p_j,
 \]</span></p>
-<p>where <span class="math inline">\(p_j\)</span> is price, <span class="math inline">\(\alpha &gt; 0\)</span> is the marginal utility of income parameter, <span class="math inline">\(\beta_d\)</span> is a demand-parameter vector, and <span class="math inline">\(\varepsilon_j\)</span> is an idiosyncratic taste shock. For the outside option, utility is normalized as</p>
+<p>where <span class="math inline">\(\delta_j\)</span> is mean indirect utility including the price term, <span class="math inline">\(p_j\)</span> is price, <span class="math inline">\(\alpha &gt; 0\)</span> is the marginal utility of income parameter, <span class="math inline">\(\beta\)</span> is a demand-parameter vector, and <span class="math inline">\(\varepsilon_j\)</span> is an idiosyncratic taste shock. This <span class="math inline">\(\delta_j\)</span> is the object recovered in demand estimation. For the outside option, utility is normalized as</p>
 <p><span class="math display">\[
 u_0 = \varepsilon_0.
 \]</span></p>
 <p>Marginal cost for product <span class="math inline">\(j\)</span> is constant in quantity within the market and is parameterized by the cost index:</p>
 <p><span class="math display">\[
-mc_j = \exp(W_j' \beta_c),
+mc_j = W_j' \gamma,
 \]</span></p>
-<p>where <span class="math inline">\(\beta_c\)</span> is a cost-parameter vector. This specification guarantees strictly positive marginal cost while keeping the per-unit cost constant for each product in the static game.</p>
+<p>where <span class="math inline">\(\gamma\)</span> is a cost-parameter vector. Marginal cost is constant in quantity within each market for each product.</p>
 <p>The timing is as follows. First, product characteristics <span class="math inline">\(Z_j\)</span> are given. Second, firms simultaneously choose prices <span class="math inline">\(p_1, \ldots, p_J\)</span>. Third, consumers choose among the <span class="math inline">\(J\)</span> inside products and the outside option. The objective in subsequent sections is to characterize equilibrium prices under this environment, but we do not derive demand shares or optimal pricing conditions in this section.</p>
 </section>
 
