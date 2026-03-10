@@ -10,10 +10,30 @@ execute:
   daemon: false
 ---
 
-## Introduction
+## Model Setup
 
-This file is a placeholder scaffold for the static oligopoly pricing solver report.
+We consider a static differentiated-products oligopoly in one market. There are $J$ inside products indexed by $j \in \{1, \ldots, J\}$ and an outside option indexed by $0$. Each inside product is supplied by a distinct single-product firm, so firm $j$ chooses only the price of product $j$. Let the observed product characteristics be $Z_j \in \mathbb{R}^K$.
 
-## Next Steps
+For each product, the characteristic vector is partitioned into demand shifters and cost shifters. Let $X_j = S_X Z_j$ denote the subset or linear index of characteristics that enters demand, and let $W_j = S_W Z_j$ denote the subset or linear index of characteristics that enters marginal cost, where $S_X$ and $S_W$ are selection or loading operators. The two indices may overlap, but they play different structural roles in utility and cost.
 
-Implement the full document by following `problems/solve_opm/solve_opm.qmd` and mirroring the structure in `scripts/solve_mdp/solve_mdp.qmd`.
+A representative consumer has indirect utility from product $j$ given by
+
+$$
+u_j = \delta_j - \alpha p_j + \varepsilon_j, \quad \delta_j = X_j' \beta_d,
+$$
+
+where $p_j$ is price, $\alpha > 0$ is the marginal utility of income parameter, $\beta_d$ is a demand-parameter vector, and $\varepsilon_j$ is an idiosyncratic taste shock. For the outside option, utility is normalized as
+
+$$
+u_0 = \varepsilon_0.
+$$
+
+Marginal cost for product $j$ is constant in quantity within the market and is parameterized by the cost index:
+
+$$
+mc_j = \exp(W_j' \beta_c),
+$$
+
+where $\beta_c$ is a cost-parameter vector. This specification guarantees strictly positive marginal cost while keeping the per-unit cost constant for each product in the static game.
+
+The timing is as follows. First, product characteristics $Z_j$ are given. Second, firms simultaneously choose prices $p_1, \ldots, p_J$. Third, consumers choose among the $J$ inside products and the outside option. The objective in subsequent sections is to characterize equilibrium prices under this environment, but we do not derive demand shares or optimal pricing conditions in this section.
