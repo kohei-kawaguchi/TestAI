@@ -19,10 +19,10 @@ For each product, the characteristic vector is partitioned into demand shifters 
 A representative consumer has indirect utility from product $j$ given by
 
 $$
-u_j = \delta_j - \alpha p_j + \varepsilon_j, \quad \delta_j = X_j' \beta_d,
+u_j = \delta_j - \alpha p_j + \varepsilon_j, \quad \delta_j = X_j' \beta,
 $$
 
-where $p_j$ is price, $\alpha > 0$ is the marginal utility of income parameter, $\beta_d$ is a demand-parameter vector, and $\varepsilon_j$ is an idiosyncratic taste shock. For the outside option, utility is normalized as
+where $p_j$ is price, $\alpha > 0$ is the marginal utility of income parameter, $\beta$ is a demand-parameter vector, and $\varepsilon_j$ is an idiosyncratic taste shock. For the outside option, utility is normalized as
 
 $$
 u_0 = \varepsilon_0.
@@ -31,9 +31,9 @@ $$
 Marginal cost for product $j$ is constant in quantity within the market and is parameterized by the cost index:
 
 $$
-mc_j = \exp(W_j' \beta_c),
+mc_j = W_j' \gamma,
 $$
 
-where $\beta_c$ is a cost-parameter vector. This specification guarantees strictly positive marginal cost while keeping the per-unit cost constant for each product in the static game.
+where $\gamma$ is a cost-parameter vector. Marginal cost is constant in quantity within each market for each product.
 
 The timing is as follows. First, product characteristics $Z_j$ are given. Second, firms simultaneously choose prices $p_1, \ldots, p_J$. Third, consumers choose among the $J$ inside products and the outside option. The objective in subsequent sections is to characterize equilibrium prices under this environment, but we do not derive demand shares or optimal pricing conditions in this section.
