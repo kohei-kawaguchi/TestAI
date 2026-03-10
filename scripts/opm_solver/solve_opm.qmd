@@ -28,6 +28,8 @@ $$
 u_0 = \varepsilon_0.
 $$
 
+Assume the taste shocks $\{\varepsilon_j\}_{j=0}^J$ are independent and identically distributed Type-I Extreme Value.
+
 Marginal cost for product $j$ is constant in quantity within the market and is parameterized by the cost index:
 
 $$
@@ -37,3 +39,70 @@ $$
 where $\gamma$ is a cost-parameter vector. Marginal cost is constant in quantity within each market for each product.
 
 The timing is as follows. First, product characteristics $Z_j$ are given. Second, firms simultaneously choose prices $p_1, \ldots, p_J$. Third, consumers choose among the $J$ inside products and the outside option. The objective in subsequent sections is to characterize equilibrium prices under this environment, but we do not derive demand shares or optimal pricing conditions in this section.
+
+## Characterization of the Solution
+
+### Demand Side
+
+Under this assumption, the market share for inside product $j$ is
+
+$$
+s_j(p) = \frac{\exp(\delta_j)}{1 + \sum_{k=1}^J \exp(\delta_k)},
+$$
+
+where $\delta_j = X_j' \beta - \alpha p_j$. The outside share is
+
+$$
+s_0(p) = \frac{1}{1 + \sum_{k=1}^J \exp(\delta_k)}.
+$$
+
+These expressions map the full price vector $p = (p_1, \ldots, p_J)'$ into demand quantities through choice probabilities.
+
+For the supply side first-order conditions, we also need the Jacobian of shares with respect to prices. For each pair $(j,k)$,
+
+$$
+\frac{\partial s_j}{\partial p_k}
+= -\alpha s_j(\mathbf{1}\{j=k\} - s_k).
+$$
+
+Hence own-price and cross-price derivatives are
+
+$$
+\frac{\partial s_j}{\partial p_j} = -\alpha s_j(1 - s_j),
+\quad
+\frac{\partial s_j}{\partial p_k} = \alpha s_j s_k \text{ for } k \neq j.
+$$
+
+### Supply Side Nash Equilibrium
+
+Each single-product firm $j$ chooses $p_j$ to maximize static profit
+
+$$
+\pi_j(p) = (p_j - mc_j) s_j(p), \quad mc_j = W_j' \gamma.
+$$
+
+Taking rivals' prices as given, the first-order condition for firm $j$ is
+
+$$
+\frac{\partial \pi_j}{\partial p_j}
+= s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j}
+= 0.
+$$
+
+Substituting the logit own-price derivative gives
+
+$$
+s_j(p) - \alpha (p_j - mc_j) s_j(p)(1 - s_j(p)) = 0,
+$$
+
+or equivalently
+
+$$
+p_j = mc_j + \frac{1}{\alpha (1 - s_j(p))}.
+$$
+
+A Nash equilibrium price vector is any $p^* \in \mathbb{R}^J$ that solves this system for all $j=1,\ldots,J$ simultaneously:
+
+$$
+F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
+$$
