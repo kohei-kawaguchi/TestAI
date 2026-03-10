@@ -1,0 +1,19 @@
+---
+title: "Solving Static Oligopoly Pricing Model"
+author: ""
+format:
+  html:
+    code-fold: false
+    toc: true
+jupyter: python3
+execute:
+  daemon: false
+---
+
+## Introduction
+
+This file is a placeholder scaffold for the static oligopoly pricing solver report.
+
+## Next Steps
+
+Implement the full document by following `problems/solve_opm/solve_opm.qmd` and mirroring the structure in `scripts/solve_mdp/solve_mdp.qmd`.
