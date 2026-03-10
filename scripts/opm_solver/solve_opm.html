@@ -83,6 +83,7 @@ window.Quarto = {
   <li><a href="#demand-side" id="toc-demand-side" class="nav-link" data-scroll-target="#demand-side">Demand Side</a></li>
   <li><a href="#supply-side-nash-equilibrium" id="toc-supply-side-nash-equilibrium" class="nav-link" data-scroll-target="#supply-side-nash-equilibrium">Supply Side Nash Equilibrium</a></li>
   </ul></li>
+  <li><a href="#pseudocode" id="toc-pseudocode" class="nav-link" data-scroll-target="#pseudocode">Pseudocode</a></li>
   </ul>
 </nav>
 </div>
@@ -177,6 +178,126 @@ p_j = mc_j + \frac{1}{\alpha (1 - s_j(p))}.
 F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 \]</span></p>
 </section>
+</section>
+<section id="pseudocode" class="level2">
+<h2 class="anchored" data-anchor-id="pseudocode">Pseudocode</h2>
+<p>The solver is organized into small reusable procedures so each formula is implemented once and reused by higher-level routines. All constants and options are passed through a single configuration object, and all stochastic components use a fixed seed stored in the configuration to make outputs reproducible.</p>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Algorithm: Static Oligopoly Pricing Solver
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Input:</p>
+<ul>
+<li>config: dict
+<ul>
+<li>model: dict (<code>beta</code>, <code>gamma</code>, <code>alpha</code>, <code>J</code>)</li>
+<li>data: dict (<code>Z</code>, <code>S_X</code>, <code>S_W</code>)</li>
+<li>solver: dict (<code>max_iter</code>, <code>tol</code>, <code>step_size</code>, <code>damping</code>)</li>
+<li>reproducibility: dict (<code>seed</code>)</li>
+<li>initialization: dict (<code>p_init</code>)</li>
+</ul></li>
+</ul>
+<p>Output:</p>
+<ul>
+<li>p_star: Vector[J] (Nash equilibrium prices)</li>
+<li>diagnostics: dict (<code>residual_norm</code>, <code>iterations</code>, <code>converged</code>)</li>
+</ul>
+<section id="main-procedure" class="level3">
+<h3 class="anchored" data-anchor-id="main-procedure">Main Procedure</h3>
+<p>Procedure <code>SolveNashEquilibrium</code>(config: dict) -&gt; (Vector[J], dict)</p>
+<ol type="1">
+<li><code>SetRandomSeed</code>(seed=config[“reproducibility”][“seed”])</li>
+<li><code>ValidateConfig</code>(config=config)</li>
+<li><code>p_current</code> &lt;- config[“initialization”][“p_init”]</li>
+<li>For <code>iteration</code> in <code>0..config["solver"]["max_iter"]-1</code>:
+<ul>
+<li><code>residual</code> &lt;- <code>ComputeFOCResidual</code>(p=p_current, config=config)</li>
+<li><code>residual_norm</code> &lt;- <code>ComputeResidualNorm</code>(residual=residual)</li>
+<li>If <code>residual_norm &lt; config["solver"]["tol"]</code>, return <code>(p_current, diagnostics)</code></li>
+<li><code>p_next</code> &lt;- <code>UpdatePriceVector</code>( p=p_current, residual=residual, step_size=config[“solver”][“step_size”], damping=config[“solver”][“damping”] )</li>
+<li><code>p_current</code> &lt;- p_next</li>
+</ul></li>
+<li>Return <code>(p_current, diagnostics)</code></li>
+</ol>
+</section>
+<section id="demand-procedures" class="level3">
+<h3 class="anchored" data-anchor-id="demand-procedures">Demand Procedures</h3>
+<p>Procedure <code>ComputeMeanUtility</code>(p: Vector[J], config: dict) -&gt; Vector[J]</p>
+<ol type="1">
+<li><code>X</code> &lt;- <code>BuildDemandShifterIndex</code>(Z=config[“data”][“Z”], S_X=config[“data”][“S_X”])</li>
+<li>Return <code>X @ config["model"]["beta"] - config["model"]["alpha"] * p</code></li>
+</ol>
+<p>Procedure <code>ComputeShares</code>(delta: Vector[J]) -&gt; (Vector[J], float)</p>
+<ol type="1">
+<li><code>exp_delta</code> &lt;- <code>Exp</code>(delta=delta)</li>
+<li><code>denom</code> &lt;- <code>1.0 + Sum</code>(x=exp_delta)</li>
+<li><code>s_inside</code> &lt;- <code>exp_delta / denom</code></li>
+<li><code>s_outside</code> &lt;- <code>1.0 / denom</code></li>
+<li>Return <code>(s_inside, s_outside)</code></li>
+</ol>
+<p>Procedure <code>ComputeShareJacobian</code>(s_inside: Vector[J], alpha: float) -&gt; Matrix[JxJ]</p>
+<ol type="1">
+<li>For each <code>(j, k)</code> in <code>{1, ..., J} x {1, ..., J}</code>:
+<ul>
+<li><code>jacobian[j, k]</code> &lt;- <code>-alpha * s_inside[j] * (Indicator(j == k) - s_inside[k])</code></li>
+</ul></li>
+<li>Return <code>jacobian</code></li>
+</ol>
+</section>
+<section id="supply-procedures" class="level3">
+<h3 class="anchored" data-anchor-id="supply-procedures">Supply Procedures</h3>
+<p>Procedure <code>ComputeMarginalCost</code>(config: dict) -&gt; Vector[J]</p>
+<ol type="1">
+<li><code>W</code> &lt;- <code>BuildCostShifterIndex</code>(Z=config[“data”][“Z”], S_W=config[“data”][“S_W”])</li>
+<li>Return <code>W @ config["model"]["gamma"]</code></li>
+</ol>
+<p>Procedure <code>ComputeFOCResidual</code>(p: Vector[J], config: dict) -&gt; Vector[J]</p>
+<ol type="1">
+<li><code>delta</code> &lt;- <code>ComputeMeanUtility</code>(p=p, config=config)</li>
+<li><code>(s_inside, _)</code> &lt;- <code>ComputeShares</code>(delta=delta)</li>
+<li><code>jacobian</code> &lt;- <code>ComputeShareJacobian</code>(s_inside=s_inside, alpha=config[“model”][“alpha”])</li>
+<li><code>mc</code> &lt;- <code>ComputeMarginalCost</code>(config=config)</li>
+<li>For each <code>j</code> in <code>{1, ..., J}</code>:
+<ul>
+<li><code>residual[j]</code> &lt;- <code>s_inside[j] + (p[j] - mc[j]) * jacobian[j, j]</code></li>
+</ul></li>
+<li>Return <code>residual</code></li>
+</ol>
+</section>
+<section id="shared-helper-procedures" class="level3">
+<h3 class="anchored" data-anchor-id="shared-helper-procedures">Shared Helper Procedures</h3>
+<p>Procedure <code>BuildDemandShifterIndex</code>(Z: Matrix[JxK], S_X: Matrix[KxK_X]) -&gt; Matrix[JxK_X]</p>
+<ol type="1">
+<li>Return <code>Z @ S_X</code></li>
+</ol>
+<p>Procedure <code>BuildCostShifterIndex</code>(Z: Matrix[JxK], S_W: Matrix[KxK_W]) -&gt; Matrix[JxK_W]</p>
+<ol type="1">
+<li>Return <code>Z @ S_W</code></li>
+</ol>
+<p>Procedure <code>ComputeResidualNorm</code>(residual: Vector[J]) -&gt; float</p>
+<ol type="1">
+<li>Return <code>MaxAbs</code>(x=residual)</li>
+</ol>
+<p>Procedure <code>UpdatePriceVector</code>(p: Vector[J], residual: Vector[J], step_size: float, damping: float) -&gt; Vector[J]</p>
+<ol type="1">
+<li><code>direction</code> &lt;- <code>-step_size * residual</code></li>
+<li>Return <code>p + damping * direction</code></li>
+</ol>
+<p>Procedure <code>ValidateConfig</code>(config: dict) -&gt; None</p>
+<ol type="1">
+<li>Verify required keys exist in <code>config</code>.</li>
+<li>Verify dimension consistency across <code>Z</code>, <code>S_X</code>, <code>S_W</code>, <code>beta</code>, and <code>gamma</code>.</li>
+<li>Verify <code>J</code> equals number of products in <code>Z</code>.</li>
+</ol>
+</section>
+</div>
+</div>
 </section>
 
 </main>

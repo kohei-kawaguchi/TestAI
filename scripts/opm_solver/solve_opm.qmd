@@ -106,3 +106,109 @@ A Nash equilibrium price vector is any $p^* \in \mathbb{R}^J$ that solves this s
 $$
 F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 $$
+
+## Pseudocode
+
+The solver is organized into small reusable procedures so each formula is implemented once and reused by higher-level routines. All constants and options are passed through a single configuration object, and all stochastic components use a fixed seed stored in the configuration to make outputs reproducible.
+
+:::: {.callout-note appearance="simple"}
+## Algorithm: Static Oligopoly Pricing Solver
+
+Input:
+
+- config: dict
+  - model: dict (`beta`, `gamma`, `alpha`, `J`)
+  - data: dict (`Z`, `S_X`, `S_W`)
+  - solver: dict (`max_iter`, `tol`, `step_size`, `damping`)
+  - reproducibility: dict (`seed`)
+  - initialization: dict (`p_init`)
+
+Output:
+
+- p_star: Vector[J] (Nash equilibrium prices)
+- diagnostics: dict (`residual_norm`, `iterations`, `converged`)
+
+### Main Procedure
+
+Procedure `SolveNashEquilibrium`(config: dict) -> (Vector[J], dict)
+
+1. `SetRandomSeed`(seed=config["reproducibility"]["seed"])
+2. `ValidateConfig`(config=config)
+3. `p_current` <- config["initialization"]["p_init"]
+4. For `iteration` in `0..config["solver"]["max_iter"]-1`:
+   - `residual` <- `ComputeFOCResidual`(p=p_current, config=config)
+   - `residual_norm` <- `ComputeResidualNorm`(residual=residual)
+   - If `residual_norm < config["solver"]["tol"]`, return `(p_current, diagnostics)`
+   - `p_next` <- `UpdatePriceVector`(
+       p=p_current,
+       residual=residual,
+       step_size=config["solver"]["step_size"],
+       damping=config["solver"]["damping"]
+     )
+   - `p_current` <- p_next
+5. Return `(p_current, diagnostics)`
+
+### Demand Procedures
+
+Procedure `ComputeMeanUtility`(p: Vector[J], config: dict) -> Vector[J]
+
+1. `X` <- `BuildDemandShifterIndex`(Z=config["data"]["Z"], S_X=config["data"]["S_X"])
+2. Return `X @ config["model"]["beta"] - config["model"]["alpha"] * p`
+
+Procedure `ComputeShares`(delta: Vector[J]) -> (Vector[J], float)
+
+1. `exp_delta` <- `Exp`(delta=delta)
+2. `denom` <- `1.0 + Sum`(x=exp_delta)
+3. `s_inside` <- `exp_delta / denom`
+4. `s_outside` <- `1.0 / denom`
+5. Return `(s_inside, s_outside)`
+
+Procedure `ComputeShareJacobian`(s_inside: Vector[J], alpha: float) -> Matrix[JxJ]
+
+1. For each `(j, k)` in `{1, ..., J} x {1, ..., J}`:
+   - `jacobian[j, k]` <- `-alpha * s_inside[j] * (Indicator(j == k) - s_inside[k])`
+2. Return `jacobian`
+
+### Supply Procedures
+
+Procedure `ComputeMarginalCost`(config: dict) -> Vector[J]
+
+1. `W` <- `BuildCostShifterIndex`(Z=config["data"]["Z"], S_W=config["data"]["S_W"])
+2. Return `W @ config["model"]["gamma"]`
+
+Procedure `ComputeFOCResidual`(p: Vector[J], config: dict) -> Vector[J]
+
+1. `delta` <- `ComputeMeanUtility`(p=p, config=config)
+2. `(s_inside, _)` <- `ComputeShares`(delta=delta)
+3. `jacobian` <- `ComputeShareJacobian`(s_inside=s_inside, alpha=config["model"]["alpha"])
+4. `mc` <- `ComputeMarginalCost`(config=config)
+5. For each `j` in `{1, ..., J}`:
+   - `residual[j]` <- `s_inside[j] + (p[j] - mc[j]) * jacobian[j, j]`
+6. Return `residual`
+
+### Shared Helper Procedures
+
+Procedure `BuildDemandShifterIndex`(Z: Matrix[JxK], S_X: Matrix[KxK_X]) -> Matrix[JxK_X]
+
+1. Return `Z @ S_X`
+
+Procedure `BuildCostShifterIndex`(Z: Matrix[JxK], S_W: Matrix[KxK_W]) -> Matrix[JxK_W]
+
+1. Return `Z @ S_W`
+
+Procedure `ComputeResidualNorm`(residual: Vector[J]) -> float
+
+1. Return `MaxAbs`(x=residual)
+
+Procedure `UpdatePriceVector`(p: Vector[J], residual: Vector[J], step_size: float, damping: float) -> Vector[J]
+
+1. `direction` <- `-step_size * residual`
+2. Return `p + damping * direction`
+
+Procedure `ValidateConfig`(config: dict) -> None
+
+1. Verify required keys exist in `config`.
+2. Verify dimension consistency across `Z`, `S_X`, `S_W`, `beta`, and `gamma`.
+3. Verify `J` equals number of products in `Z`.
+
+::::
