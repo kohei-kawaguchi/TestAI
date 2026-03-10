@@ -198,7 +198,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <ul>
 <li>model: dict (<code>beta</code>, <code>gamma</code>, <code>alpha</code>, <code>J</code>)</li>
 <li>data: dict (<code>Z</code>, <code>S_X</code>, <code>S_W</code>)</li>
-<li>solver: dict (<code>max_iter</code>, <code>tol</code>, <code>step_size</code>, <code>damping</code>)</li>
+<li>solver: dict (<code>tol</code>, <code>max_iter</code>, <code>method</code>)</li>
 <li>reproducibility: dict (<code>seed</code>)</li>
 <li>initialization: dict (<code>p_init</code>)</li>
 </ul></li>
@@ -214,16 +214,12 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <ol type="1">
 <li><code>SetRandomSeed</code>(seed=config[“reproducibility”][“seed”])</li>
 <li><code>ValidateConfig</code>(config=config)</li>
-<li><code>p_current</code> &lt;- config[“initialization”][“p_init”]</li>
-<li>For <code>iteration</code> in <code>0..config["solver"]["max_iter"]-1</code>:
-<ul>
-<li><code>residual</code> &lt;- <code>ComputeFOCResidual</code>(p=p_current, config=config)</li>
+<li><code>root_result</code> &lt;- <code>SolveNonlinearSystem</code>( module=“generic root-finding module”, function=ComputeFOCResidual, initial_value=config[“initialization”][“p_init”], function_args={“config”: config}, method=config[“solver”][“method”], tolerance=config[“solver”][“tol”], max_iterations=config[“solver”][“max_iter”] )</li>
+<li><code>p_star</code> &lt;- root_result[“solution”]</li>
+<li><code>residual</code> &lt;- <code>ComputeFOCResidual</code>(p=p_star, config=config)</li>
 <li><code>residual_norm</code> &lt;- <code>ComputeResidualNorm</code>(residual=residual)</li>
-<li>If <code>residual_norm &lt; config["solver"]["tol"]</code>, return <code>(p_current, diagnostics)</code></li>
-<li><code>p_next</code> &lt;- <code>UpdatePriceVector</code>( p=p_current, residual=residual, step_size=config[“solver”][“step_size”], damping=config[“solver”][“damping”] )</li>
-<li><code>p_current</code> &lt;- p_next</li>
-</ul></li>
-<li>Return <code>(p_current, diagnostics)</code></li>
+<li><code>diagnostics</code> &lt;- <code>BuildDiagnostics</code>(root_result=root_result, residual_norm=residual_norm)</li>
+<li>Return <code>(p_star, diagnostics)</code></li>
 </ol>
 </section>
 <section id="demand-procedures" class="level3">
@@ -233,21 +229,17 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <li><code>X</code> &lt;- <code>BuildDemandShifterIndex</code>(Z=config[“data”][“Z”], S_X=config[“data”][“S_X”])</li>
 <li>Return <code>X @ config["model"]["beta"] - config["model"]["alpha"] * p</code></li>
 </ol>
-<p>Procedure <code>ComputeShares</code>(delta: Vector[J]) -&gt; (Vector[J], float)</p>
+<p>Procedure <code>ComputeDemandObjects</code>(delta: Vector[J], alpha: float) -&gt; (Vector[J], float, Matrix[JxJ])</p>
 <ol type="1">
 <li><code>exp_delta</code> &lt;- <code>Exp</code>(delta=delta)</li>
 <li><code>denom</code> &lt;- <code>1.0 + Sum</code>(x=exp_delta)</li>
 <li><code>s_inside</code> &lt;- <code>exp_delta / denom</code></li>
 <li><code>s_outside</code> &lt;- <code>1.0 / denom</code></li>
-<li>Return <code>(s_inside, s_outside)</code></li>
-</ol>
-<p>Procedure <code>ComputeShareJacobian</code>(s_inside: Vector[J], alpha: float) -&gt; Matrix[JxJ]</p>
-<ol type="1">
 <li>For each <code>(j, k)</code> in <code>{1, ..., J} x {1, ..., J}</code>:
 <ul>
 <li><code>jacobian[j, k]</code> &lt;- <code>-alpha * s_inside[j] * (Indicator(j == k) - s_inside[k])</code></li>
 </ul></li>
-<li>Return <code>jacobian</code></li>
+<li>Return <code>(s_inside, s_outside, jacobian)</code></li>
 </ol>
 </section>
 <section id="supply-procedures" class="level3">
@@ -260,8 +252,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <p>Procedure <code>ComputeFOCResidual</code>(p: Vector[J], config: dict) -&gt; Vector[J]</p>
 <ol type="1">
 <li><code>delta</code> &lt;- <code>ComputeMeanUtility</code>(p=p, config=config)</li>
-<li><code>(s_inside, _)</code> &lt;- <code>ComputeShares</code>(delta=delta)</li>
-<li><code>jacobian</code> &lt;- <code>ComputeShareJacobian</code>(s_inside=s_inside, alpha=config[“model”][“alpha”])</li>
+<li><code>(s_inside, _, jacobian)</code> &lt;- <code>ComputeDemandObjects</code>(delta=delta, alpha=config[“model”][“alpha”])</li>
 <li><code>mc</code> &lt;- <code>ComputeMarginalCost</code>(config=config)</li>
 <li>For each <code>j</code> in <code>{1, ..., J}</code>:
 <ul>
@@ -284,10 +275,9 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <ol type="1">
 <li>Return <code>MaxAbs</code>(x=residual)</li>
 </ol>
-<p>Procedure <code>UpdatePriceVector</code>(p: Vector[J], residual: Vector[J], step_size: float, damping: float) -&gt; Vector[J]</p>
+<p>Procedure <code>BuildDiagnostics</code>(root_result: dict, residual_norm: float) -&gt; dict</p>
 <ol type="1">
-<li><code>direction</code> &lt;- <code>-step_size * residual</code></li>
-<li>Return <code>p + damping * direction</code></li>
+<li>Return dict with keys: <code>residual_norm</code>, <code>iterations</code>, <code>converged</code>, <code>solver_status</code></li>
 </ol>
 <p>Procedure <code>ValidateConfig</code>(config: dict) -&gt; None</p>
 <ol type="1">
