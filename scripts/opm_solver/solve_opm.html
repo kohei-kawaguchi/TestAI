@@ -229,17 +229,27 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <li><code>X</code> &lt;- <code>BuildDemandShifterIndex</code>(Z=config[“data”][“Z”], S_X=config[“data”][“S_X”])</li>
 <li>Return <code>X @ config["model"]["beta"] - config["model"]["alpha"] * p</code></li>
 </ol>
-<p>Procedure <code>ComputeDemandObjects</code>(delta: Vector[J], alpha: float) -&gt; (Vector[J], float, Matrix[JxJ])</p>
+<p>Procedure <code>ComputeShareCoreTerms</code>(delta: Vector[J]) -&gt; (Vector[J], float, Vector[J])</p>
 <ol type="1">
 <li><code>exp_delta</code> &lt;- <code>Exp</code>(delta=delta)</li>
 <li><code>denom</code> &lt;- <code>1.0 + Sum</code>(x=exp_delta)</li>
 <li><code>s_inside</code> &lt;- <code>exp_delta / denom</code></li>
+<li>Return <code>(exp_delta, denom, s_inside)</code></li>
+</ol>
+<p>Procedure <code>ComputeShares</code>(delta: Vector[J]) -&gt; (Vector[J], float)</p>
+<ol type="1">
+<li><code>(_, denom, s_inside)</code> &lt;- <code>ComputeShareCoreTerms</code>(delta=delta)</li>
 <li><code>s_outside</code> &lt;- <code>1.0 / denom</code></li>
+<li>Return <code>(s_inside, s_outside)</code></li>
+</ol>
+<p>Procedure <code>ComputeShareJacobian</code>(delta: Vector[J], alpha: float) -&gt; Matrix[JxJ]</p>
+<ol type="1">
+<li><code>(_, _, s_inside)</code> &lt;- <code>ComputeShareCoreTerms</code>(delta=delta)</li>
 <li>For each <code>(j, k)</code> in <code>{1, ..., J} x {1, ..., J}</code>:
 <ul>
 <li><code>jacobian[j, k]</code> &lt;- <code>-alpha * s_inside[j] * (Indicator(j == k) - s_inside[k])</code></li>
 </ul></li>
-<li>Return <code>(s_inside, s_outside, jacobian)</code></li>
+<li>Return <code>jacobian</code></li>
 </ol>
 </section>
 <section id="supply-procedures" class="level3">
@@ -252,7 +262,8 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <p>Procedure <code>ComputeFOCResidual</code>(p: Vector[J], config: dict) -&gt; Vector[J]</p>
 <ol type="1">
 <li><code>delta</code> &lt;- <code>ComputeMeanUtility</code>(p=p, config=config)</li>
-<li><code>(s_inside, _, jacobian)</code> &lt;- <code>ComputeDemandObjects</code>(delta=delta, alpha=config[“model”][“alpha”])</li>
+<li><code>(s_inside, _)</code> &lt;- <code>ComputeShares</code>(delta=delta)</li>
+<li><code>jacobian</code> &lt;- <code>ComputeShareJacobian</code>(delta=delta, alpha=config[“model”][“alpha”])</li>
 <li><code>mc</code> &lt;- <code>ComputeMarginalCost</code>(config=config)</li>
 <li>For each <code>j</code> in <code>{1, ..., J}</code>:
 <ul>

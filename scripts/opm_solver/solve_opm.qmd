@@ -156,15 +156,25 @@ Procedure `ComputeMeanUtility`(p: Vector[J], config: dict) -> Vector[J]
 1. `X` <- `BuildDemandShifterIndex`(Z=config["data"]["Z"], S_X=config["data"]["S_X"])
 2. Return `X @ config["model"]["beta"] - config["model"]["alpha"] * p`
 
-Procedure `ComputeDemandObjects`(delta: Vector[J], alpha: float) -> (Vector[J], float, Matrix[JxJ])
+Procedure `ComputeShareCoreTerms`(delta: Vector[J]) -> (Vector[J], float, Vector[J])
 
 1. `exp_delta` <- `Exp`(delta=delta)
 2. `denom` <- `1.0 + Sum`(x=exp_delta)
 3. `s_inside` <- `exp_delta / denom`
-4. `s_outside` <- `1.0 / denom`
-5. For each `(j, k)` in `{1, ..., J} x {1, ..., J}`:
+4. Return `(exp_delta, denom, s_inside)`
+
+Procedure `ComputeShares`(delta: Vector[J]) -> (Vector[J], float)
+
+1. `(_, denom, s_inside)` <- `ComputeShareCoreTerms`(delta=delta)
+2. `s_outside` <- `1.0 / denom`
+3. Return `(s_inside, s_outside)`
+
+Procedure `ComputeShareJacobian`(delta: Vector[J], alpha: float) -> Matrix[JxJ]
+
+1. `(_, _, s_inside)` <- `ComputeShareCoreTerms`(delta=delta)
+2. For each `(j, k)` in `{1, ..., J} x {1, ..., J}`:
    - `jacobian[j, k]` <- `-alpha * s_inside[j] * (Indicator(j == k) - s_inside[k])`
-6. Return `(s_inside, s_outside, jacobian)`
+3. Return `jacobian`
 
 ### Supply Procedures
 
@@ -176,7 +186,8 @@ Procedure `ComputeMarginalCost`(config: dict) -> Vector[J]
 Procedure `ComputeFOCResidual`(p: Vector[J], config: dict) -> Vector[J]
 
 1. `delta` <- `ComputeMeanUtility`(p=p, config=config)
-2. `(s_inside, _, jacobian)` <- `ComputeDemandObjects`(delta=delta, alpha=config["model"]["alpha"])
+2. `(s_inside, _)` <- `ComputeShares`(delta=delta)
+3. `jacobian` <- `ComputeShareJacobian`(delta=delta, alpha=config["model"]["alpha"])
 4. `mc` <- `ComputeMarginalCost`(config=config)
 5. For each `j` in `{1, ..., J}`:
    - `residual[j]` <- `s_inside[j] + (p[j] - mc[j]) * jacobian[j, j]`
