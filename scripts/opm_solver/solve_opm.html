@@ -359,7 +359,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="execution" class="level2">
 <h2 class="anchored" data-anchor-id="execution">Execution</h2>
-<div id="74690e0a" class="cell" data-execution_count="1">
+<div id="a64194de" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">".."</span>)</span>
@@ -379,7 +379,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    SolveNashEquilibrium,</span>
 <span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="b57a1ea7" class="cell" data-cache="true" data-execution_count="2">
+<div id="eb2d8b5b" class="cell" data-cache="true" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> build_opm_solver_config()</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>p_star, diagnostics <span class="op">=</span> SolveNashEquilibrium(config<span class="op">=</span>config)</span>
@@ -413,7 +413,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="convergence-path" class="level2">
 <h2 class="anchored" data-anchor-id="convergence-path">Convergence Path</h2>
-<div id="b1ffedd5" class="cell" data-cache="true" data-execution_count="3">
+<div id="c792760f" class="cell" data-cache="true" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>residual_history <span class="op">=</span> np.asarray(diagnostics[<span class="st">"residual_history"</span>], dtype<span class="op">=</span><span class="bu">float</span>)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>iteration_index <span class="op">=</span> np.arange(<span class="dv">1</span>, residual_history.shape[<span class="dv">0</span>] <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span><span class="bu">int</span>)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -436,7 +436,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
-<div id="dfd45ff9" class="cell" data-cache="true" data-execution_count="4">
+<div id="135177c2" class="cell" data-cache="true" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> pd.DataFrame(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    {</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"product"</span>: np.arange(<span class="dv">1</span>, config[<span class="st">"model"</span>][<span class="st">"J"</span>] <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span><span class="bu">int</span>),</span>
@@ -497,7 +497,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="comparative-statics" class="level2">
 <h2 class="anchored" data-anchor-id="comparative-statics">Comparative Statics</h2>
-<div id="d356f34b" class="cell" data-cache="true" data-execution_count="5">
+<div id="fc0a8990" class="cell" data-cache="true" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>comparative_statics <span class="op">=</span> get_comparative_statics()</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> SolveComparativeStatics(</span>
@@ -837,7 +837,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </div>
 <section id="price-coefficient-comparative-statics" class="level3">
 <h3 class="anchored" data-anchor-id="price-coefficient-comparative-statics">Price-Coefficient Comparative Statics</h3>
-<div id="3a5a2b5b" class="cell" data-cache="true" data-execution_count="6">
+<div id="477331d2" class="cell" data-cache="true" data-execution_count="6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">3.5</span>))</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(alpha_results[<span class="st">"parameter_value"</span>], alpha_results[<span class="st">"mean_price"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
@@ -868,7 +868,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="demand-coefficient-comparative-statics" class="level3">
 <h3 class="anchored" data-anchor-id="demand-coefficient-comparative-statics">Demand-Coefficient Comparative Statics</h3>
-<div id="6a9d1728" class="cell" data-cache="true" data-execution_count="7">
+<div id="6c374860" class="cell" data-cache="true" data-execution_count="7">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">3.5</span>))</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(beta_results[<span class="st">"parameter_value"</span>], beta_results[<span class="st">"mean_price"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
@@ -899,7 +899,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="cost-coefficient-comparative-statics" class="level3">
 <h3 class="anchored" data-anchor-id="cost-coefficient-comparative-statics">Cost-Coefficient Comparative Statics</h3>
-<div id="69b30f3f" class="cell" data-cache="true" data-execution_count="8">
+<div id="93287f97" class="cell" data-cache="true" data-execution_count="8">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">3.5</span>))</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(gamma_results[<span class="st">"parameter_value"</span>], gamma_results[<span class="st">"mean_price"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
@@ -928,6 +928,12 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </div>
 </div>
 </section>
+</section>
+<section id="discussion-of-model-behavior" class="level2">
+<h2 class="anchored" data-anchor-id="discussion-of-model-behavior">Discussion of Model Behavior</h2>
+<p>The comparative statics follow the economic structure of the logit-Bertrand model. When the price coefficient increases, consumers become more price sensitive, so firms optimally set lower prices and accept lower markups. The inside shares also decline because higher price sensitivity amplifies the demand loss from any positive markup relative to marginal cost.</p>
+<p>When the first demand coefficient increases, products become more attractive at a given price, which raises equilibrium prices and markups. The mean inside share also rises because the utility index shifts upward, moving demand from the outside option toward inside goods. The monotone increase across the selected grid indicates stable comparative-statics behavior in this specification.</p>
+<p>When the second cost coefficient increases, marginal costs rise through the cost index, and equilibrium prices increase accordingly. Markups decline modestly over this range, which is consistent with incomplete pass-through under downward-sloping demand. At the same time, inside shares fall as higher costs feed into higher prices and reduce demand. Across all three experiments, solutions remain converged with small residual norms, which supports the numerical reliability of these behavioral comparisons.</p>
 </section>
 </div>
 </div>

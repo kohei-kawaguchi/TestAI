@@ -474,4 +474,12 @@ plt.tight_layout()
 plt.show()
 ```
 
+## Discussion of Model Behavior
+
+The comparative statics follow the economic structure of the logit-Bertrand model. When the price coefficient increases, consumers become more price sensitive, so firms optimally set lower prices and accept lower markups. The inside shares also decline because higher price sensitivity amplifies the demand loss from any positive markup relative to marginal cost.
+
+When the first demand coefficient increases, products become more attractive at a given price, which raises equilibrium prices and markups. The mean inside share also rises because the utility index shifts upward, moving demand from the outside option toward inside goods. The monotone increase across the selected grid indicates stable comparative-statics behavior in this specification.
+
+When the second cost coefficient increases, marginal costs rise through the cost index, and equilibrium prices increase accordingly. Markups decline modestly over this range, which is consistent with incomplete pass-through under downward-sloping demand. At the same time, inside shares fall as higher costs feed into higher prices and reduce demand. Across all three experiments, solutions remain converged with small residual norms, which supports the numerical reliability of these behavioral comparisons.
+
 ::::
