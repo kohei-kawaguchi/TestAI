@@ -111,7 +111,7 @@ To validate numerical convergence, we track the residual norm at each solver ite
 
 ## Pseudocode
 
-The solver is organized into small reusable procedures so each formula is implemented once and reused by higher-level routines. All constants and options are passed through a single configuration object, and all stochastic components use a fixed seed stored in the configuration to make outputs reproducible.
+The solver is organized into small reusable procedures so each formula is implemented once and reused by higher-level routines. All constants and options are passed through a single configuration object, and all stochastic components use a fixed seed stored in the configuration to make outputs reproducible. End-to-end validation additionally runs one-at-a-time comparative statics over the price coefficient, one demand coefficient, and one cost coefficient, and records how equilibrium outcomes move with these parameter changes.
 
 :::: {.callout-note appearance="simple"}
 ## Algorithm: Static Oligopoly Pricing Solver
@@ -218,6 +218,22 @@ Procedure `ValidateConfig`(config: dict) -> None
 2. Verify dimension consistency across `Z`, `S_X`, `S_W`, `beta`, and `gamma`.
 3. Verify `J` equals number of products in `Z`.
 
+### Comparative Statics Validation Procedure
+
+Procedure `RunComparativeStatics`(base_config: dict, statics: dict) -> DataFrame
+
+1. Define three experiments:
+   - vary `alpha` over `statics["alpha_values"]`
+   - vary `beta[0]` over `statics["beta_0_values"]`
+   - vary `gamma[1]` over `statics["gamma_1_values"]`
+2. For each experiment and each grid value:
+   - copy `base_config`
+   - update only the target parameter
+   - set initialization price to the previous solved equilibrium (warm start)
+   - solve equilibrium with `SolveNashEquilibrium`
+   - compute endogenous outcomes (`mean_price`, `mean_markup`, `mean_inside_share`)
+3. Stack all outcomes into one table and return it.
+
 ## Execution
 
 ```{python}
@@ -231,7 +247,14 @@ import numpy as np
 import pandas as pd
 
 from config_opm import build_opm_solver_config
-from opm_solver import ComputeFOCResidual, ComputeMarginalCost, SolveNashEquilibrium
+from config_opm import get_comparative_statics
+from opm_solver import (
+    ComputeFOCResidual,
+    ComputeMarginalCost,
+    ComputeMeanUtility,
+    ComputeShares,
+    SolveNashEquilibrium,
+)
 ```
 
 ```{python}
@@ -293,6 +316,162 @@ results = pd.DataFrame(
 )
 
 results
+```
+
+## Comparative Statics
+
+```{python}
+#| cache: true
+
+comparative_statics = get_comparative_statics()
+
+def SolveComparativeStatics(
+    base_config: dict,
+    experiment_name: str,
+    parameter_key: str,
+    parameter_values: list[float],
+) -> pd.DataFrame:
+    records = []
+    previous_prices = np.asarray(base_config["initialization"]["p_init"], dtype=float)
+
+    for parameter_value in parameter_values:
+        scenario_config = build_opm_solver_config()
+        scenario_config["initialization"]["p_init"] = previous_prices.copy()
+
+        if parameter_key == "alpha":
+            scenario_config["model"]["alpha"] = float(parameter_value)
+        elif parameter_key == "beta_0":
+            scenario_config["model"]["beta"][0] = float(parameter_value)
+        elif parameter_key == "gamma_1":
+            scenario_config["model"]["gamma"][1] = float(parameter_value)
+
+        solved_prices, scenario_diagnostics = SolveNashEquilibrium(config=scenario_config)
+        scenario_mc = ComputeMarginalCost(config=scenario_config)
+        scenario_delta = ComputeMeanUtility(p=solved_prices, config=scenario_config)
+        scenario_inside_share, _ = ComputeShares(delta=scenario_delta)
+
+        records.append(
+            {
+                "experiment": experiment_name,
+                "parameter_key": parameter_key,
+                "parameter_value": float(parameter_value),
+                "mean_price": float(np.mean(solved_prices)),
+                "mean_markup": float(np.mean(solved_prices - scenario_mc)),
+                "mean_inside_share": float(np.mean(scenario_inside_share)),
+                "iterations": int(scenario_diagnostics["iterations"]),
+                "residual_norm": float(scenario_diagnostics["residual_norm"]),
+                "converged": bool(scenario_diagnostics["converged"]),
+            }
+        )
+
+        previous_prices = solved_prices.copy()
+
+    return pd.DataFrame(records)
+
+
+alpha_results = SolveComparativeStatics(
+    base_config=config,
+    experiment_name="Price coefficient",
+    parameter_key="alpha",
+    parameter_values=comparative_statics["alpha_values"],
+)
+beta_results = SolveComparativeStatics(
+    base_config=config,
+    experiment_name="Demand coefficient",
+    parameter_key="beta_0",
+    parameter_values=comparative_statics["beta_0_values"],
+)
+gamma_results = SolveComparativeStatics(
+    base_config=config,
+    experiment_name="Cost coefficient",
+    parameter_key="gamma_1",
+    parameter_values=comparative_statics["gamma_1_values"],
+)
+
+comparative_results = pd.concat(
+    [alpha_results, beta_results, gamma_results],
+    ignore_index=True,
+)
+
+comparative_results
+```
+
+### Price-Coefficient Comparative Statics
+
+```{python}
+#| cache: true
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.5))
+
+axes[0].plot(alpha_results["parameter_value"], alpha_results["mean_price"], marker="o")
+axes[0].set_xlabel(r"$\alpha$")
+axes[0].set_ylabel("Mean equilibrium price")
+axes[0].set_title("Price level")
+
+axes[1].plot(alpha_results["parameter_value"], alpha_results["mean_markup"], marker="o")
+axes[1].set_xlabel(r"$\alpha$")
+axes[1].set_ylabel("Mean markup")
+axes[1].set_title("Markup")
+
+axes[2].plot(alpha_results["parameter_value"], alpha_results["mean_inside_share"], marker="o")
+axes[2].set_xlabel(r"$\alpha$")
+axes[2].set_ylabel("Mean inside share")
+axes[2].set_title("Demand share")
+
+plt.tight_layout()
+plt.show()
+```
+
+### Demand-Coefficient Comparative Statics
+
+```{python}
+#| cache: true
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.5))
+
+axes[0].plot(beta_results["parameter_value"], beta_results["mean_price"], marker="o")
+axes[0].set_xlabel(r"$\beta_0$")
+axes[0].set_ylabel("Mean equilibrium price")
+axes[0].set_title("Price level")
+
+axes[1].plot(beta_results["parameter_value"], beta_results["mean_markup"], marker="o")
+axes[1].set_xlabel(r"$\beta_0$")
+axes[1].set_ylabel("Mean markup")
+axes[1].set_title("Markup")
+
+axes[2].plot(beta_results["parameter_value"], beta_results["mean_inside_share"], marker="o")
+axes[2].set_xlabel(r"$\beta_0$")
+axes[2].set_ylabel("Mean inside share")
+axes[2].set_title("Demand share")
+
+plt.tight_layout()
+plt.show()
+```
+
+### Cost-Coefficient Comparative Statics
+
+```{python}
+#| cache: true
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 3.5))
+
+axes[0].plot(gamma_results["parameter_value"], gamma_results["mean_price"], marker="o")
+axes[0].set_xlabel(r"$\gamma_1$")
+axes[0].set_ylabel("Mean equilibrium price")
+axes[0].set_title("Price level")
+
+axes[1].plot(gamma_results["parameter_value"], gamma_results["mean_markup"], marker="o")
+axes[1].set_xlabel(r"$\gamma_1$")
+axes[1].set_ylabel("Mean markup")
+axes[1].set_title("Markup")
+
+axes[2].plot(gamma_results["parameter_value"], gamma_results["mean_inside_share"], marker="o")
+axes[2].set_xlabel(r"$\gamma_1$")
+axes[2].set_ylabel("Mean inside share")
+axes[2].set_title("Demand share")
+
+plt.tight_layout()
+plt.show()
 ```
 
 ::::

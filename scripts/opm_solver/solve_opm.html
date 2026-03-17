@@ -220,7 +220,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="pseudocode" class="level2">
 <h2 class="anchored" data-anchor-id="pseudocode">Pseudocode</h2>
-<p>The solver is organized into small reusable procedures so each formula is implemented once and reused by higher-level routines. All constants and options are passed through a single configuration object, and all stochastic components use a fixed seed stored in the configuration to make outputs reproducible.</p>
+<p>The solver is organized into small reusable procedures so each formula is implemented once and reused by higher-level routines. All constants and options are passed through a single configuration object, and all stochastic components use a fixed seed stored in the configuration to make outputs reproducible. End-to-end validation additionally runs one-at-a-time comparative statics over the price coefficient, one demand coefficient, and one cost coefficient, and records how equilibrium outcomes move with these parameter changes.</p>
 <div class="callout callout-style-simple callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -336,9 +336,30 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <li>Verify <code>J</code> equals number of products in <code>Z</code>.</li>
 </ol>
 </section>
+<section id="comparative-statics-validation-procedure" class="level3">
+<h3 class="anchored" data-anchor-id="comparative-statics-validation-procedure">Comparative Statics Validation Procedure</h3>
+<p>Procedure <code>RunComparativeStatics</code>(base_config: dict, statics: dict) -&gt; DataFrame</p>
+<ol type="1">
+<li>Define three experiments:
+<ul>
+<li>vary <code>alpha</code> over <code>statics["alpha_values"]</code></li>
+<li>vary <code>beta[0]</code> over <code>statics["beta_0_values"]</code></li>
+<li>vary <code>gamma[1]</code> over <code>statics["gamma_1_values"]</code></li>
+</ul></li>
+<li>For each experiment and each grid value:
+<ul>
+<li>copy <code>base_config</code></li>
+<li>update only the target parameter</li>
+<li>set initialization price to the previous solved equilibrium (warm start)</li>
+<li>solve equilibrium with <code>SolveNashEquilibrium</code></li>
+<li>compute endogenous outcomes (<code>mean_price</code>, <code>mean_markup</code>, <code>mean_inside_share</code>)</li>
+</ul></li>
+<li>Stack all outcomes into one table and return it.</li>
+</ol>
+</section>
 <section id="execution" class="level2">
 <h2 class="anchored" data-anchor-id="execution">Execution</h2>
-<div id="290529db" class="cell" data-execution_count="1">
+<div id="74690e0a" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">".."</span>)</span>
@@ -349,9 +370,16 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> config_opm <span class="im">import</span> build_opm_solver_config</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> opm_solver <span class="im">import</span> ComputeFOCResidual, ComputeMarginalCost, SolveNashEquilibrium</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> config_opm <span class="im">import</span> get_comparative_statics</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> opm_solver <span class="im">import</span> (</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    ComputeFOCResidual,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    ComputeMarginalCost,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    ComputeMeanUtility,</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    ComputeShares,</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    SolveNashEquilibrium,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<div id="98805574" class="cell" data-cache="true" data-execution_count="2">
+<div id="b57a1ea7" class="cell" data-cache="true" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> build_opm_solver_config()</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>p_star, diagnostics <span class="op">=</span> SolveNashEquilibrium(config<span class="op">=</span>config)</span>
@@ -385,7 +413,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="convergence-path" class="level2">
 <h2 class="anchored" data-anchor-id="convergence-path">Convergence Path</h2>
-<div id="f4dd8f12" class="cell" data-cache="true" data-execution_count="3">
+<div id="b1ffedd5" class="cell" data-cache="true" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>residual_history <span class="op">=</span> np.asarray(diagnostics[<span class="st">"residual_history"</span>], dtype<span class="op">=</span><span class="bu">float</span>)</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>iteration_index <span class="op">=</span> np.arange(<span class="dv">1</span>, residual_history.shape[<span class="dv">0</span>] <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span><span class="bu">int</span>)</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -408,7 +436,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </section>
 <section id="results" class="level2">
 <h2 class="anchored" data-anchor-id="results">Results</h2>
-<div id="8228c141" class="cell" data-cache="true" data-execution_count="4">
+<div id="dfd45ff9" class="cell" data-cache="true" data-execution_count="4">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> pd.DataFrame(</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    {</span>
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"product"</span>: np.arange(<span class="dv">1</span>, config[<span class="st">"model"</span>][<span class="st">"J"</span>] <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span><span class="bu">int</span>),</span>
@@ -466,6 +494,440 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </div>
 </div>
 </div>
+</section>
+<section id="comparative-statics" class="level2">
+<h2 class="anchored" data-anchor-id="comparative-statics">Comparative Statics</h2>
+<div id="d356f34b" class="cell" data-cache="true" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>comparative_statics <span class="op">=</span> get_comparative_statics()</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> SolveComparativeStatics(</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    base_config: <span class="bu">dict</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    experiment_name: <span class="bu">str</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    parameter_key: <span class="bu">str</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    parameter_values: <span class="bu">list</span>[<span class="bu">float</span>],</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> pd.DataFrame:</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    records <span class="op">=</span> []</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    previous_prices <span class="op">=</span> np.asarray(base_config[<span class="st">"initialization"</span>][<span class="st">"p_init"</span>], dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> parameter_value <span class="kw">in</span> parameter_values:</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        scenario_config <span class="op">=</span> build_opm_solver_config()</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        scenario_config[<span class="st">"initialization"</span>][<span class="st">"p_init"</span>] <span class="op">=</span> previous_prices.copy()</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> parameter_key <span class="op">==</span> <span class="st">"alpha"</span>:</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>            scenario_config[<span class="st">"model"</span>][<span class="st">"alpha"</span>] <span class="op">=</span> <span class="bu">float</span>(parameter_value)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> parameter_key <span class="op">==</span> <span class="st">"beta_0"</span>:</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>            scenario_config[<span class="st">"model"</span>][<span class="st">"beta"</span>][<span class="dv">0</span>] <span class="op">=</span> <span class="bu">float</span>(parameter_value)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> parameter_key <span class="op">==</span> <span class="st">"gamma_1"</span>:</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>            scenario_config[<span class="st">"model"</span>][<span class="st">"gamma"</span>][<span class="dv">1</span>] <span class="op">=</span> <span class="bu">float</span>(parameter_value)</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>        solved_prices, scenario_diagnostics <span class="op">=</span> SolveNashEquilibrium(config<span class="op">=</span>scenario_config)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        scenario_mc <span class="op">=</span> ComputeMarginalCost(config<span class="op">=</span>scenario_config)</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        scenario_delta <span class="op">=</span> ComputeMeanUtility(p<span class="op">=</span>solved_prices, config<span class="op">=</span>scenario_config)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>        scenario_inside_share, _ <span class="op">=</span> ComputeShares(delta<span class="op">=</span>scenario_delta)</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>        records.append(</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>            {</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>                <span class="st">"experiment"</span>: experiment_name,</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>                <span class="st">"parameter_key"</span>: parameter_key,</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>                <span class="st">"parameter_value"</span>: <span class="bu">float</span>(parameter_value),</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>                <span class="st">"mean_price"</span>: <span class="bu">float</span>(np.mean(solved_prices)),</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>                <span class="st">"mean_markup"</span>: <span class="bu">float</span>(np.mean(solved_prices <span class="op">-</span> scenario_mc)),</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>                <span class="st">"mean_inside_share"</span>: <span class="bu">float</span>(np.mean(scenario_inside_share)),</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>                <span class="st">"iterations"</span>: <span class="bu">int</span>(scenario_diagnostics[<span class="st">"iterations"</span>]),</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>                <span class="st">"residual_norm"</span>: <span class="bu">float</span>(scenario_diagnostics[<span class="st">"residual_norm"</span>]),</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>                <span class="st">"converged"</span>: <span class="bu">bool</span>(scenario_diagnostics[<span class="st">"converged"</span>]),</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>        previous_prices <span class="op">=</span> solved_prices.copy()</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pd.DataFrame(records)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>alpha_results <span class="op">=</span> SolveComparativeStatics(</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>    base_config<span class="op">=</span>config,</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>    experiment_name<span class="op">=</span><span class="st">"Price coefficient"</span>,</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">"alpha"</span>,</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>    parameter_values<span class="op">=</span>comparative_statics[<span class="st">"alpha_values"</span>],</span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>beta_results <span class="op">=</span> SolveComparativeStatics(</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>    base_config<span class="op">=</span>config,</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>    experiment_name<span class="op">=</span><span class="st">"Demand coefficient"</span>,</span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">"beta_0"</span>,</span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>    parameter_values<span class="op">=</span>comparative_statics[<span class="st">"beta_0_values"</span>],</span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>gamma_results <span class="op">=</span> SolveComparativeStatics(</span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>    base_config<span class="op">=</span>config,</span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>    experiment_name<span class="op">=</span><span class="st">"Cost coefficient"</span>,</span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>    parameter_key<span class="op">=</span><span class="st">"gamma_1"</span>,</span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>    parameter_values<span class="op">=</span>comparative_statics[<span class="st">"gamma_1_values"</span>],</span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a>comparative_results <span class="op">=</span> pd.concat(</span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a>    [alpha_results, beta_results, gamma_results],</span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>    ignore_index<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a>comparative_results</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display" data-execution_count="5">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">experiment</th>
+<th data-quarto-table-cell-role="th">parameter_key</th>
+<th data-quarto-table-cell-role="th">parameter_value</th>
+<th data-quarto-table-cell-role="th">mean_price</th>
+<th data-quarto-table-cell-role="th">mean_markup</th>
+<th data-quarto-table-cell-role="th">mean_inside_share</th>
+<th data-quarto-table-cell-role="th">iterations</th>
+<th data-quarto-table-cell-role="th">residual_norm</th>
+<th data-quarto-table-cell-role="th">converged</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>Price coefficient</td>
+<td>alpha</td>
+<td>0.7</td>
+<td>2.609435</td>
+<td>1.822769</td>
+<td>0.215553</td>
+<td>24</td>
+<td>5.390607e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>Price coefficient</td>
+<td>alpha</td>
+<td>0.9</td>
+<td>2.184318</td>
+<td>1.397651</td>
+<td>0.204594</td>
+<td>20</td>
+<td>4.686054e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>Price coefficient</td>
+<td>alpha</td>
+<td>1.1</td>
+<td>1.913889</td>
+<td>1.127222</td>
+<td>0.193294</td>
+<td>18</td>
+<td>3.765241e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>Price coefficient</td>
+<td>alpha</td>
+<td>1.3</td>
+<td>1.726858</td>
+<td>0.940191</td>
+<td>0.181746</td>
+<td>16</td>
+<td>4.225975e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>Price coefficient</td>
+<td>alpha</td>
+<td>1.6</td>
+<td>1.534448</td>
+<td>0.747782</td>
+<td>0.164188</td>
+<td>14</td>
+<td>3.103459e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5</th>
+<td>Price coefficient</td>
+<td>alpha</td>
+<td>1.9</td>
+<td>1.403459</td>
+<td>0.616793</td>
+<td>0.146677</td>
+<td>11</td>
+<td>9.052764e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">6</th>
+<td>Price coefficient</td>
+<td>alpha</td>
+<td>2.2</td>
+<td>1.308921</td>
+<td>0.522255</td>
+<td>0.129582</td>
+<td>11</td>
+<td>9.295567e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">7</th>
+<td>Demand coefficient</td>
+<td>beta_0</td>
+<td>0.3</td>
+<td>1.659567</td>
+<td>0.872900</td>
+<td>0.118674</td>
+<td>12</td>
+<td>9.059692e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">8</th>
+<td>Demand coefficient</td>
+<td>beta_0</td>
+<td>0.6</td>
+<td>1.686474</td>
+<td>0.899807</td>
+<td>0.145103</td>
+<td>12</td>
+<td>2.401121e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">9</th>
+<td>Demand coefficient</td>
+<td>beta_0</td>
+<td>0.9</td>
+<td>1.716394</td>
+<td>0.929727</td>
+<td>0.172591</td>
+<td>14</td>
+<td>8.679715e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">10</th>
+<td>Demand coefficient</td>
+<td>beta_0</td>
+<td>1.0</td>
+<td>1.726858</td>
+<td>0.940191</td>
+<td>0.181746</td>
+<td>15</td>
+<td>3.620534e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">11</th>
+<td>Demand coefficient</td>
+<td>beta_0</td>
+<td>1.2</td>
+<td>1.748241</td>
+<td>0.961574</td>
+<td>0.199733</td>
+<td>18</td>
+<td>4.286246e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">12</th>
+<td>Demand coefficient</td>
+<td>beta_0</td>
+<td>1.5</td>
+<td>1.780694</td>
+<td>0.994027</td>
+<td>0.225218</td>
+<td>23</td>
+<td>7.441925e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">13</th>
+<td>Demand coefficient</td>
+<td>beta_0</td>
+<td>1.8</td>
+<td>1.812410</td>
+<td>1.025743</td>
+<td>0.248050</td>
+<td>31</td>
+<td>5.493295e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">14</th>
+<td>Cost coefficient</td>
+<td>gamma_1</td>
+<td>0.2</td>
+<td>1.289512</td>
+<td>0.996179</td>
+<td>0.226832</td>
+<td>26</td>
+<td>5.180539e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">15</th>
+<td>Cost coefficient</td>
+<td>gamma_1</td>
+<td>0.4</td>
+<td>1.508061</td>
+<td>0.968061</td>
+<td>0.205000</td>
+<td>20</td>
+<td>5.650866e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">16</th>
+<td>Cost coefficient</td>
+<td>gamma_1</td>
+<td>0.6</td>
+<td>1.726858</td>
+<td>0.940191</td>
+<td>0.181746</td>
+<td>17</td>
+<td>3.047310e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">17</th>
+<td>Cost coefficient</td>
+<td>gamma_1</td>
+<td>0.8</td>
+<td>1.946787</td>
+<td>0.913453</td>
+<td>0.157884</td>
+<td>14</td>
+<td>4.303419e-11</td>
+<td>True</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">18</th>
+<td>Cost coefficient</td>
+<td>gamma_1</td>
+<td>1.0</td>
+<td>2.168634</td>
+<td>0.888634</td>
+<td>0.134329</td>
+<td>12</td>
+<td>3.999395e-11</td>
+<td>True</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">19</th>
+<td>Cost coefficient</td>
+<td>gamma_1</td>
+<td>1.1</td>
+<td>2.280473</td>
+<td>0.877140</td>
+<td>0.122949</td>
+<td>10</td>
+<td>5.973905e-11</td>
+<td>True</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<section id="price-coefficient-comparative-statics" class="level3">
+<h3 class="anchored" data-anchor-id="price-coefficient-comparative-statics">Price-Coefficient Comparative Statics</h3>
+<div id="3a5a2b5b" class="cell" data-cache="true" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">3.5</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(alpha_results[<span class="st">"parameter_value"</span>], alpha_results[<span class="st">"mean_price"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="ch">\a</span><span class="vs">lpha</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Mean equilibrium price"</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">"Price level"</span>)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].plot(alpha_results[<span class="st">"parameter_value"</span>], alpha_results[<span class="st">"mean_markup"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="ch">\a</span><span class="vs">lpha</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Mean markup"</span>)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">"Markup"</span>)</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].plot(alpha_results[<span class="st">"parameter_value"</span>], alpha_results[<span class="st">"mean_inside_share"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="ch">\a</span><span class="vs">lpha</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_ylabel(<span class="st">"Mean inside share"</span>)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_title(<span class="st">"Demand share"</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_opm_files/figure-html/cell-7-output-1.png" width="1152" height="326" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="demand-coefficient-comparative-statics" class="level3">
+<h3 class="anchored" data-anchor-id="demand-coefficient-comparative-statics">Demand-Coefficient Comparative Statics</h3>
+<div id="6a9d1728" class="cell" data-cache="true" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">3.5</span>))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(beta_results[<span class="st">"parameter_value"</span>], beta_results[<span class="st">"mean_price"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$\b</span><span class="vs">eta_0</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Mean equilibrium price"</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">"Price level"</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].plot(beta_results[<span class="st">"parameter_value"</span>], beta_results[<span class="st">"mean_markup"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$\b</span><span class="vs">eta_0</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Mean markup"</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">"Markup"</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].plot(beta_results[<span class="st">"parameter_value"</span>], beta_results[<span class="st">"mean_inside_share"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$\b</span><span class="vs">eta_0</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_ylabel(<span class="st">"Mean inside share"</span>)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_title(<span class="st">"Demand share"</span>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_opm_files/figure-html/cell-8-output-1.png" width="1142" height="324" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="cost-coefficient-comparative-statics" class="level3">
+<h3 class="anchored" data-anchor-id="cost-coefficient-comparative-statics">Cost-Coefficient Comparative Statics</h3>
+<div id="69b30f3f" class="cell" data-cache="true" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">3.5</span>))</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].plot(gamma_results[<span class="st">"parameter_value"</span>], gamma_results[<span class="st">"mean_price"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="er">\</span><span class="vs">gamma_1</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_ylabel(<span class="st">"Mean equilibrium price"</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">"Price level"</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].plot(gamma_results[<span class="st">"parameter_value"</span>], gamma_results[<span class="st">"mean_markup"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="er">\</span><span class="vs">gamma_1</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_ylabel(<span class="st">"Mean markup"</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="st">"Markup"</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].plot(gamma_results[<span class="st">"parameter_value"</span>], gamma_results[<span class="st">"mean_inside_share"</span>], marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_xlabel(<span class="vs">r"</span><span class="dv">$</span><span class="er">\</span><span class="vs">gamma_1</span><span class="dv">$</span><span class="vs">"</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_ylabel(<span class="st">"Mean inside share"</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_title(<span class="st">"Demand share"</span>)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_opm_files/figure-html/cell-9-output-1.png" width="1142" height="325" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 </section>
 </div>
 </div>
