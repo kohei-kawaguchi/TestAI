@@ -107,6 +107,64 @@ $$
 F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 $$
 
+## Execution
+
+```{python}
+import sys
+
+sys.path.insert(0, "..")
+sys.path.insert(0, "../../src")
+
+import numpy as np
+import pandas as pd
+
+from config_opm import build_opm_solver_config
+from opm_solver import ComputeFOCResidual, ComputeMarginalCost, SolveNashEquilibrium
+```
+
+```{python}
+#| cache: true
+
+config = build_opm_solver_config()
+
+p_star, diagnostics = SolveNashEquilibrium(config=config)
+residual = ComputeFOCResidual(p=p_star, config=config)
+mc = ComputeMarginalCost(config=config)
+
+tol = float(config["solver"]["tol"])
+validation_tol = max(1e-8, 10.0 * tol)
+
+assert diagnostics["converged"] is True
+assert diagnostics["residual_norm"] <= validation_tol
+assert float(np.max(np.abs(residual))) <= validation_tol
+
+print("Convergence metrics")
+print(f"  converged: {diagnostics['converged']}")
+print(f"  iterations: {diagnostics['iterations']}")
+print(f"  solver_status: {diagnostics['solver_status']}")
+print(f"  tolerance: {tol:.2e}")
+print(f"  residual_norm: {diagnostics['residual_norm']:.3e}")
+print(f"  validation_threshold: {validation_tol:.3e}")
+```
+
+## Results
+
+```{python}
+#| cache: true
+
+results = pd.DataFrame(
+    {
+        "product": np.arange(1, config["model"]["J"] + 1, dtype=int),
+        "marginal_cost": mc,
+        "equilibrium_price": p_star,
+        "markup": p_star - mc,
+        "foc_residual": residual,
+    }
+)
+
+results
+```
+
 ## Pseudocode
 
 The solver is organized into small reusable procedures so each formula is implemented once and reused by higher-level routines. All constants and options are passed through a single configuration object, and all stochastic components use a fixed seed stored in the configuration to make outputs reproducible.
