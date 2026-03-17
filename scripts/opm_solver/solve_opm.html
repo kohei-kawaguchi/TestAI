@@ -121,8 +121,6 @@ window.Quarto = {
   <li><a href="#demand-side" id="toc-demand-side" class="nav-link" data-scroll-target="#demand-side">Demand Side</a></li>
   <li><a href="#supply-side-nash-equilibrium" id="toc-supply-side-nash-equilibrium" class="nav-link" data-scroll-target="#supply-side-nash-equilibrium">Supply Side Nash Equilibrium</a></li>
   </ul></li>
-  <li><a href="#execution" id="toc-execution" class="nav-link" data-scroll-target="#execution">Execution</a></li>
-  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
   <li><a href="#pseudocode" id="toc-pseudocode" class="nav-link" data-scroll-target="#pseudocode">Pseudocode</a></li>
   </ul>
 </nav>
@@ -217,114 +215,8 @@ p_j = mc_j + \frac{1}{\alpha (1 - s_j(p))}.
 <p><span class="math display">\[
 F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 \]</span></p>
+<p>To validate numerical convergence, we track the residual norm at each solver iteration and verify that the full residual path declines to the tolerance target. This sequence is reported together with final diagnostics.</p>
 </section>
-</section>
-<section id="execution" class="level2">
-<h2 class="anchored" data-anchor-id="execution">Execution</h2>
-<div id="4bd8c8a6" class="cell" data-execution_count="1">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">".."</span>)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">"../../src"</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> config_opm <span class="im">import</span> build_opm_solver_config</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> opm_solver <span class="im">import</span> ComputeFOCResidual, ComputeMarginalCost, SolveNashEquilibrium</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<div id="2ba5852e" class="cell" data-cache="true" data-execution_count="2">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> build_opm_solver_config()</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>p_star, diagnostics <span class="op">=</span> SolveNashEquilibrium(config<span class="op">=</span>config)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>residual <span class="op">=</span> ComputeFOCResidual(p<span class="op">=</span>p_star, config<span class="op">=</span>config)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>mc <span class="op">=</span> ComputeMarginalCost(config<span class="op">=</span>config)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>tol <span class="op">=</span> <span class="bu">float</span>(config[<span class="st">"solver"</span>][<span class="st">"tol"</span>])</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>validation_tol <span class="op">=</span> <span class="bu">max</span>(<span class="fl">1e-8</span>, <span class="fl">10.0</span> <span class="op">*</span> tol)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> diagnostics[<span class="st">"converged"</span>] <span class="kw">is</span> <span class="va">True</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> diagnostics[<span class="st">"residual_norm"</span>] <span class="op">&lt;=</span> validation_tol</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">float</span>(np.<span class="bu">max</span>(np.<span class="bu">abs</span>(residual))) <span class="op">&lt;=</span> validation_tol</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Convergence metrics"</span>)</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  converged: </span><span class="sc">{</span>diagnostics[<span class="st">'converged'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  iterations: </span><span class="sc">{</span>diagnostics[<span class="st">'iterations'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  solver_status: </span><span class="sc">{</span>diagnostics[<span class="st">'solver_status'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  tolerance: </span><span class="sc">{</span>tol<span class="sc">:.2e}</span><span class="ss">"</span>)</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  residual_norm: </span><span class="sc">{</span>diagnostics[<span class="st">'residual_norm'</span>]<span class="sc">:.3e}</span><span class="ss">"</span>)</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  validation_threshold: </span><span class="sc">{</span>validation_tol<span class="sc">:.3e}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Convergence metrics
-  converged: True
-  iterations: 18
-  solver_status: converged
-  tolerance: 1.00e-10
-  residual_norm: 5.017e-11
-  validation_threshold: 1.000e-08</code></pre>
-</div>
-</div>
-</section>
-<section id="results" class="level2">
-<h2 class="anchored" data-anchor-id="results">Results</h2>
-<div id="590ab551" class="cell" data-cache="true" data-execution_count="3">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> pd.DataFrame(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"product"</span>: np.arange(<span class="dv">1</span>, config[<span class="st">"model"</span>][<span class="st">"J"</span>] <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span><span class="bu">int</span>),</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"marginal_cost"</span>: mc,</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"equilibrium_price"</span>: p_star,</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"markup"</span>: p_star <span class="op">-</span> mc,</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"foc_residual"</span>: residual,</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>results</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display" data-execution_count="3">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">product</th>
-<th data-quarto-table-cell-role="th">marginal_cost</th>
-<th data-quarto-table-cell-role="th">equilibrium_price</th>
-<th data-quarto-table-cell-role="th">markup</th>
-<th data-quarto-table-cell-role="th">foc_residual</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">0</th>
-<td>1</td>
-<td>0.64</td>
-<td>1.570970</td>
-<td>0.930970</td>
-<td>2.163228e-11</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
-<td>2</td>
-<td>0.98</td>
-<td>1.933889</td>
-<td>0.953889</td>
-<td>-5.017428e-11</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
-<td>3</td>
-<td>0.74</td>
-<td>1.675715</td>
-<td>0.935715</td>
-<td>1.811007e-11</td>
-</tr>
-</tbody>
-</table>
-
-</div>
-</div>
-</div>
 </section>
 <section id="pseudocode" class="level2">
 <h2 class="anchored" data-anchor-id="pseudocode">Pseudocode</h2>
@@ -353,7 +245,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <p>Output:</p>
 <ul>
 <li>p_star: Vector[J] (Nash equilibrium prices)</li>
-<li>diagnostics: dict (<code>residual_norm</code>, <code>iterations</code>, <code>converged</code>)</li>
+<li>diagnostics: dict (<code>residual_norm</code>, <code>iterations</code>, <code>converged</code>, <code>solver_status</code>, <code>residual_history</code>)</li>
 </ul>
 <section id="main-procedure" class="level3">
 <h3 class="anchored" data-anchor-id="main-procedure">Main Procedure</h3>
@@ -361,7 +253,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <ol type="1">
 <li><code>SetRandomSeed</code>(seed=config[“reproducibility”][“seed”])</li>
 <li><code>ValidateConfig</code>(config=config)</li>
-<li><code>root_result</code> &lt;- <code>SolveNonlinearSystem</code>( module=“generic root-finding module”, function=ComputeFOCResidual, initial_value=config[“initialization”][“p_init”], function_args={“config”: config}, method=config[“solver”][“method”], tolerance=config[“solver”][“tol”], max_iterations=config[“solver”][“max_iter”] )</li>
+<li><code>root_result</code> &lt;- <code>SolveNonlinearSystem</code>( function=ComputeFOCResidual, initial_value=config[“initialization”][“p_init”], function_args={“config”: config}, method=config[“solver”][“method”], tolerance=config[“solver”][“tol”], max_iterations=config[“solver”][“max_iter”] )</li>
 <li><code>p_star</code> &lt;- root_result[“solution”]</li>
 <li><code>residual</code> &lt;- <code>ComputeFOCResidual</code>(p=p_star, config=config)</li>
 <li><code>residual_norm</code> &lt;- <code>ComputeResidualNorm</code>(residual=residual)</li>
@@ -435,7 +327,7 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 </ol>
 <p>Procedure <code>BuildDiagnostics</code>(root_result: dict, residual_norm: float) -&gt; dict</p>
 <ol type="1">
-<li>Return dict with keys: <code>residual_norm</code>, <code>iterations</code>, <code>converged</code>, <code>solver_status</code></li>
+<li>Return dict with keys: <code>residual_norm</code>, <code>iterations</code>, <code>converged</code>, <code>solver_status</code>, <code>residual_history</code></li>
 </ol>
 <p>Procedure <code>ValidateConfig</code>(config: dict) -&gt; None</p>
 <ol type="1">
@@ -443,6 +335,137 @@ F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 <li>Verify dimension consistency across <code>Z</code>, <code>S_X</code>, <code>S_W</code>, <code>beta</code>, and <code>gamma</code>.</li>
 <li>Verify <code>J</code> equals number of products in <code>Z</code>.</li>
 </ol>
+</section>
+<section id="execution" class="level2">
+<h2 class="anchored" data-anchor-id="execution">Execution</h2>
+<div id="290529db" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">".."</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>sys.path.insert(<span class="dv">0</span>, <span class="st">"../../src"</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> config_opm <span class="im">import</span> build_opm_solver_config</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> opm_solver <span class="im">import</span> ComputeFOCResidual, ComputeMarginalCost, SolveNashEquilibrium</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="98805574" class="cell" data-cache="true" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> build_opm_solver_config()</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>p_star, diagnostics <span class="op">=</span> SolveNashEquilibrium(config<span class="op">=</span>config)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>residual <span class="op">=</span> ComputeFOCResidual(p<span class="op">=</span>p_star, config<span class="op">=</span>config)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>mc <span class="op">=</span> ComputeMarginalCost(config<span class="op">=</span>config)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>tol <span class="op">=</span> <span class="bu">float</span>(config[<span class="st">"solver"</span>][<span class="st">"tol"</span>])</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>validation_tol <span class="op">=</span> <span class="bu">max</span>(<span class="fl">1e-8</span>, <span class="fl">10.0</span> <span class="op">*</span> tol)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> diagnostics[<span class="st">"converged"</span>] <span class="kw">is</span> <span class="va">True</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> diagnostics[<span class="st">"residual_norm"</span>] <span class="op">&lt;=</span> validation_tol</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> <span class="bu">float</span>(np.<span class="bu">max</span>(np.<span class="bu">abs</span>(residual))) <span class="op">&lt;=</span> validation_tol</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Convergence metrics"</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  converged: </span><span class="sc">{</span>diagnostics[<span class="st">'converged'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  iterations: </span><span class="sc">{</span>diagnostics[<span class="st">'iterations'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  solver_status: </span><span class="sc">{</span>diagnostics[<span class="st">'solver_status'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  tolerance: </span><span class="sc">{</span>tol<span class="sc">:.2e}</span><span class="ss">"</span>)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  residual_norm: </span><span class="sc">{</span>diagnostics[<span class="st">'residual_norm'</span>]<span class="sc">:.3e}</span><span class="ss">"</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  validation_threshold: </span><span class="sc">{</span>validation_tol<span class="sc">:.3e}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Convergence metrics
+  converged: True
+  iterations: 18
+  solver_status: converged
+  tolerance: 1.00e-10
+  residual_norm: 5.017e-11
+  validation_threshold: 1.000e-08</code></pre>
+</div>
+</div>
+</section>
+<section id="convergence-path" class="level2">
+<h2 class="anchored" data-anchor-id="convergence-path">Convergence Path</h2>
+<div id="f4dd8f12" class="cell" data-cache="true" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>residual_history <span class="op">=</span> np.asarray(diagnostics[<span class="st">"residual_history"</span>], dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>iteration_index <span class="op">=</span> np.arange(<span class="dv">1</span>, residual_history.shape[<span class="dv">0</span>] <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span><span class="bu">int</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">6</span>, <span class="dv">4</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>ax.semilogy(iteration_index, residual_history, marker<span class="op">=</span><span class="st">"o"</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>, markersize<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>ax.axhline(tol, color<span class="op">=</span><span class="st">"red"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.2</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Iteration"</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Residual norm"</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"FOC residual norm by iteration"</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="solve_opm_files/figure-html/cell-4-output-1.png" width="565" height="374" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="results" class="level2">
+<h2 class="anchored" data-anchor-id="results">Results</h2>
+<div id="8228c141" class="cell" data-cache="true" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> pd.DataFrame(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"product"</span>: np.arange(<span class="dv">1</span>, config[<span class="st">"model"</span>][<span class="st">"J"</span>] <span class="op">+</span> <span class="dv">1</span>, dtype<span class="op">=</span><span class="bu">int</span>),</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"marginal_cost"</span>: mc,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"equilibrium_price"</span>: p_star,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"markup"</span>: p_star <span class="op">-</span> mc,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"foc_residual"</span>: residual,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>results</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display" data-execution_count="4">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">product</th>
+<th data-quarto-table-cell-role="th">marginal_cost</th>
+<th data-quarto-table-cell-role="th">equilibrium_price</th>
+<th data-quarto-table-cell-role="th">markup</th>
+<th data-quarto-table-cell-role="th">foc_residual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>1</td>
+<td>0.64</td>
+<td>1.570970</td>
+<td>0.930970</td>
+<td>2.163228e-11</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>2</td>
+<td>0.98</td>
+<td>1.933889</td>
+<td>0.953889</td>
+<td>-5.017428e-11</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>3</td>
+<td>0.74</td>
+<td>1.675715</td>
+<td>0.935715</td>
+<td>1.811007e-11</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
 </section>
 </div>
 </div>

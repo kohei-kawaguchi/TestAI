@@ -79,6 +79,7 @@ def BuildDiagnostics(root_result: dict, residual_norm: float) -> dict:
         "iterations": int(root_result["iterations"]),
         "converged": bool(root_result["converged"]),
         "solver_status": root_result["solver_status"],
+        "residual_history": np.asarray(root_result["residual_history"], dtype=float),
     }
 
 
@@ -156,6 +157,7 @@ def SolveNonlinearSystem(
     max_iterations: int,
 ) -> dict:
     p = np.array(initial_value, dtype=float)
+    residual_history: list[float] = []
 
     if method != "fixed_point":
         raise ValueError("Only fixed_point method is supported")
@@ -167,12 +169,14 @@ def SolveNonlinearSystem(
     for iteration in range(1, max_iterations + 1):
         residual = function(p=p, config=config)
         residual_norm = ComputeResidualNorm(residual=residual)
+        residual_history.append(float(residual_norm))
         if residual_norm <= tolerance:
             return {
                 "solution": p,
                 "iterations": iteration,
                 "converged": True,
                 "solver_status": "converged",
+                "residual_history": np.asarray(residual_history, dtype=float),
             }
 
         delta = ComputeMeanUtility(p=p, config=config)
@@ -184,6 +188,7 @@ def SolveNonlinearSystem(
         "iterations": int(max_iterations),
         "converged": False,
         "solver_status": "max_iter_reached",
+        "residual_history": np.asarray(residual_history, dtype=float),
     }
 
 

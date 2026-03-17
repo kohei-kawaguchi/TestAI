@@ -107,63 +107,7 @@ $$
 F_j(p) \equiv s_j(p) + (p_j - mc_j)\frac{\partial s_j(p)}{\partial p_j} = 0.
 $$
 
-## Execution
-
-```{python}
-import sys
-
-sys.path.insert(0, "..")
-sys.path.insert(0, "../../src")
-
-import numpy as np
-import pandas as pd
-
-from config_opm import build_opm_solver_config
-from opm_solver import ComputeFOCResidual, ComputeMarginalCost, SolveNashEquilibrium
-```
-
-```{python}
-#| cache: true
-
-config = build_opm_solver_config()
-
-p_star, diagnostics = SolveNashEquilibrium(config=config)
-residual = ComputeFOCResidual(p=p_star, config=config)
-mc = ComputeMarginalCost(config=config)
-
-tol = float(config["solver"]["tol"])
-validation_tol = max(1e-8, 10.0 * tol)
-
-assert diagnostics["converged"] is True
-assert diagnostics["residual_norm"] <= validation_tol
-assert float(np.max(np.abs(residual))) <= validation_tol
-
-print("Convergence metrics")
-print(f"  converged: {diagnostics['converged']}")
-print(f"  iterations: {diagnostics['iterations']}")
-print(f"  solver_status: {diagnostics['solver_status']}")
-print(f"  tolerance: {tol:.2e}")
-print(f"  residual_norm: {diagnostics['residual_norm']:.3e}")
-print(f"  validation_threshold: {validation_tol:.3e}")
-```
-
-## Results
-
-```{python}
-#| cache: true
-
-results = pd.DataFrame(
-    {
-        "product": np.arange(1, config["model"]["J"] + 1, dtype=int),
-        "marginal_cost": mc,
-        "equilibrium_price": p_star,
-        "markup": p_star - mc,
-        "foc_residual": residual,
-    }
-)
-
-results
-```
+To validate numerical convergence, we track the residual norm at each solver iteration and verify that the full residual path declines to the tolerance target. This sequence is reported together with final diagnostics.
 
 ## Pseudocode
 
@@ -184,7 +128,7 @@ Input:
 Output:
 
 - p_star: Vector[J] (Nash equilibrium prices)
-- diagnostics: dict (`residual_norm`, `iterations`, `converged`)
+- diagnostics: dict (`residual_norm`, `iterations`, `converged`, `solver_status`, `residual_history`)
 
 ### Main Procedure
 
@@ -193,7 +137,6 @@ Procedure `SolveNashEquilibrium`(config: dict) -> (Vector[J], dict)
 1. `SetRandomSeed`(seed=config["reproducibility"]["seed"])
 2. `ValidateConfig`(config=config)
 3. `root_result` <- `SolveNonlinearSystem`(
-     module="generic root-finding module",
      function=ComputeFOCResidual,
      initial_value=config["initialization"]["p_init"],
      function_args={"config": config},
@@ -267,12 +210,89 @@ Procedure `ComputeResidualNorm`(residual: Vector[J]) -> float
 
 Procedure `BuildDiagnostics`(root_result: dict, residual_norm: float) -> dict
 
-1. Return dict with keys: `residual_norm`, `iterations`, `converged`, `solver_status`
+1. Return dict with keys: `residual_norm`, `iterations`, `converged`, `solver_status`, `residual_history`
 
 Procedure `ValidateConfig`(config: dict) -> None
 
 1. Verify required keys exist in `config`.
 2. Verify dimension consistency across `Z`, `S_X`, `S_W`, `beta`, and `gamma`.
 3. Verify `J` equals number of products in `Z`.
+
+## Execution
+
+```{python}
+import sys
+
+sys.path.insert(0, "..")
+sys.path.insert(0, "../../src")
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from config_opm import build_opm_solver_config
+from opm_solver import ComputeFOCResidual, ComputeMarginalCost, SolveNashEquilibrium
+```
+
+```{python}
+#| cache: true
+
+config = build_opm_solver_config()
+
+p_star, diagnostics = SolveNashEquilibrium(config=config)
+residual = ComputeFOCResidual(p=p_star, config=config)
+mc = ComputeMarginalCost(config=config)
+
+tol = float(config["solver"]["tol"])
+validation_tol = max(1e-8, 10.0 * tol)
+
+assert diagnostics["converged"] is True
+assert diagnostics["residual_norm"] <= validation_tol
+assert float(np.max(np.abs(residual))) <= validation_tol
+
+print("Convergence metrics")
+print(f"  converged: {diagnostics['converged']}")
+print(f"  iterations: {diagnostics['iterations']}")
+print(f"  solver_status: {diagnostics['solver_status']}")
+print(f"  tolerance: {tol:.2e}")
+print(f"  residual_norm: {diagnostics['residual_norm']:.3e}")
+print(f"  validation_threshold: {validation_tol:.3e}")
+```
+
+## Convergence Path
+
+```{python}
+#| cache: true
+
+residual_history = np.asarray(diagnostics["residual_history"], dtype=float)
+iteration_index = np.arange(1, residual_history.shape[0] + 1, dtype=int)
+
+fig, ax = plt.subplots(figsize=(6, 4))
+ax.semilogy(iteration_index, residual_history, marker="o", linewidth=1.5, markersize=3)
+ax.axhline(tol, color="red", linestyle="--", linewidth=1.2)
+ax.set_xlabel("Iteration")
+ax.set_ylabel("Residual norm")
+ax.set_title("FOC residual norm by iteration")
+plt.tight_layout()
+plt.show()
+```
+
+## Results
+
+```{python}
+#| cache: true
+
+results = pd.DataFrame(
+    {
+        "product": np.arange(1, config["model"]["J"] + 1, dtype=int),
+        "marginal_cost": mc,
+        "equilibrium_price": p_star,
+        "markup": p_star - mc,
+        "foc_residual": residual,
+    }
+)
+
+results
+```
 
 ::::

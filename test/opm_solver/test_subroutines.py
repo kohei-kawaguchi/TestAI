@@ -139,6 +139,7 @@ def test_build_diagnostics_has_required_keys() -> None:
         "iterations": 7,
         "converged": True,
         "solver_status": "converged",
+        "residual_history": np.array([1e-2, 1e-4, 1e-7]),
     }
 
     diagnostics = BuildDiagnostics(root_result=root_result, residual_norm=1e-7)
@@ -148,9 +149,11 @@ def test_build_diagnostics_has_required_keys() -> None:
         "iterations",
         "converged",
         "solver_status",
+        "residual_history",
     }
     assert diagnostics["iterations"] == 7
     assert diagnostics["converged"] is True
+    np.testing.assert_allclose(diagnostics["residual_history"], root_result["residual_history"])
 
 
 def test_validate_config_accepts_valid_config() -> None:

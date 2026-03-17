@@ -89,9 +89,13 @@ def test_solve_nash_equilibrium_returns_expected_outputs() -> None:
         "iterations",
         "converged",
         "solver_status",
+        "residual_history",
     }
     assert diagnostics["iterations"] <= config["solver"]["max_iter"]
     assert diagnostics["residual_norm"] >= 0.0
+    assert diagnostics["residual_history"].ndim == 1
+    assert diagnostics["residual_history"].shape[0] == diagnostics["iterations"]
+    assert diagnostics["residual_history"][-1] == diagnostics["residual_norm"]
 
 
 def test_solved_prices_are_above_marginal_cost() -> None:
