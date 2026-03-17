@@ -54,6 +54,12 @@ _INITIALIZATION_CONFIG: Dict[str, Any] = {
     "p_init": np.array([1.2, 1.1, 1.0]),
 }
 
+_COMPARATIVE_STATICS: Dict[str, Any] = {
+    "alpha_values": [0.7, 0.9, 1.1, 1.3, 1.6, 1.9, 2.2],
+    "beta_0_values": [0.3, 0.6, 0.9, 1.0, 1.2, 1.5, 1.8],
+    "gamma_1_values": [0.2, 0.4, 0.6, 0.8, 1.0, 1.1],
+}
+
 
 def get_model_config() -> Dict[str, Any]:
     return {
@@ -92,6 +98,14 @@ def get_initialization_config() -> Dict[str, Any]:
     }
 
 
+def get_comparative_statics() -> Dict[str, Any]:
+    return {
+        "alpha_values": list(_COMPARATIVE_STATICS["alpha_values"]),
+        "beta_0_values": list(_COMPARATIVE_STATICS["beta_0_values"]),
+        "gamma_1_values": list(_COMPARATIVE_STATICS["gamma_1_values"]),
+    }
+
+
 def build_opm_solver_config() -> Dict[str, Any]:
     return {
         "model": get_model_config(),
@@ -109,4 +123,5 @@ __all__ = [
     "get_solver_config",
     "get_reproducibility_config",
     "get_initialization_config",
+    "get_comparative_statics",
 ]
